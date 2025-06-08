@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Text
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { STONE, IRON, WOOD, MAGMA }
@@ -29,7 +30,7 @@ fun Medallion(
 ) {
     Box(
         modifier = modifier
-            .size(250.dp)
+            .size(320.dp)
             .clip(CircleShape)
             .border(4.dp, MaterialTheme.colorScheme.onBackground, CircleShape)
     ) {
@@ -40,31 +41,43 @@ fun Medallion(
                         .weight(1f)
                         .fillMaxSize()
                         .background(Color(0xFF9E9E9E)) // stone
-                        .clickable { onSegmentClick(MedallionSegment.STONE) }
-                )
+                        .clickable { onSegmentClick(MedallionSegment.STONE) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Calendar", color = MaterialTheme.colorScheme.onBackground)
+                }
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
                         .background(Color(0xFFB0BEC5)) // iron
-                        .clickable { onSegmentClick(MedallionSegment.IRON) }
-                )
+                        .clickable { onSegmentClick(MedallionSegment.IRON) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Events", color = MaterialTheme.colorScheme.onBackground)
+                }
             }
             Row(Modifier.weight(1f)) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .background(Color(0xFF8D6E63)) // wood
-                        .clickable { onSegmentClick(MedallionSegment.WOOD) }
-                )
+                        .background(Color(0xFF8D6E63)) // wood (rock)
+                        .clickable { onSegmentClick(MedallionSegment.WOOD) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Workout", color = MaterialTheme.colorScheme.onBackground)
+                }
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
                         .background(Color(0xFFFF7043)) // magma
-                        .clickable { onSegmentClick(MedallionSegment.MAGMA) }
-                )
+                        .clickable { onSegmentClick(MedallionSegment.MAGMA) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Notes", color = MaterialTheme.colorScheme.onBackground)
+                }
             }
         }
         // Overlay cross lines for a cleaner look
