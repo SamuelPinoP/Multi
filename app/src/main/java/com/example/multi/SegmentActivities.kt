@@ -7,17 +7,21 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.Text
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.Scaffold
+import androidx.compose.material.TopAppBar
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
 import com.example.multi.ui.theme.MultiTheme
 
 open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
@@ -48,13 +52,27 @@ fun SegmentScreen(title: String, onBack: () -> Unit, onClose: () -> Unit) {
             TopAppBar(
                 title = { Text(title) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 },
                 actions = {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    IconButton(
+                        onClick = onClose,
+                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             )
