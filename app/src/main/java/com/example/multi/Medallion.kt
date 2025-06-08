@@ -29,9 +29,9 @@ fun Medallion(
 ) {
     Box(
         modifier = modifier
-            .size(200.dp)
+            .size(250.dp)
             .clip(CircleShape)
-            .border(2.dp, MaterialTheme.colorScheme.onBackground, CircleShape)
+            .border(4.dp, MaterialTheme.colorScheme.onBackground, CircleShape)
     ) {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.weight(1f)) {
@@ -39,14 +39,14 @@ fun Medallion(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .background(Color(0xFF8B8B8B)) // stone
+                        .background(Color(0xFF9E9E9E)) // stone
                         .clickable { onSegmentClick(MedallionSegment.STONE) }
                 )
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .background(Color(0xFFB0B0B0)) // iron
+                        .background(Color(0xFFB0BEC5)) // iron
                         .clickable { onSegmentClick(MedallionSegment.IRON) }
                 )
             }
@@ -55,18 +55,33 @@ fun Medallion(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .background(Color(0xFF8B4513)) // wood
+                        .background(Color(0xFF8D6E63)) // wood
                         .clickable { onSegmentClick(MedallionSegment.WOOD) }
                 )
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .background(Color(0xFFFF4500)) // magma
+                        .background(Color(0xFFFF7043)) // magma
                         .clickable { onSegmentClick(MedallionSegment.MAGMA) }
                 )
             }
         }
+        // Overlay cross lines for a cleaner look
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .width(2.dp)
+                .fillMaxHeight()
+                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+        )
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .height(2.dp)
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+        )
     }
 }
 
