@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextAlign
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { STONE, IRON, WOOD, MAGMA }
@@ -31,7 +32,7 @@ fun Medallion(
 ) {
     Box(
         modifier = modifier
-            .size(320.dp)
+            .size(400.dp)
             .clip(CircleShape)
             .border(4.dp, MaterialTheme.colorScheme.onBackground, CircleShape)
     ) {
@@ -43,13 +44,18 @@ fun Medallion(
                         .fillMaxSize()
                         .background(
                             brush = Brush.radialGradient(
-                                listOf(Color(0xFFBDBDBD), Color(0xFF757575))
+                                listOf(Color(0xFF9E9E9E), Color(0xFF424242))
                             )
                         ) // stone
                         .clickable { onSegmentClick(MedallionSegment.STONE) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Calendar", color = MaterialTheme.colorScheme.onBackground)
+                    Text(
+                        "Calendar",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
                 }
                 Box(
                     modifier = Modifier
@@ -57,13 +63,18 @@ fun Medallion(
                         .fillMaxSize()
                         .background(
                             brush = Brush.radialGradient(
-                                listOf(Color(0xFFCFD8DC), Color(0xFF607D8B))
+                                listOf(Color(0xFFB0BEC5), Color(0xFF37474F))
                             )
                         ) // iron
                         .clickable { onSegmentClick(MedallionSegment.IRON) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Events", color = MaterialTheme.colorScheme.onBackground)
+                    Text(
+                        "Events",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
             Row(Modifier.weight(1f)) {
@@ -73,13 +84,18 @@ fun Medallion(
                         .fillMaxSize()
                         .background(
                             brush = Brush.radialGradient(
-                                listOf(Color(0xFFA1887F), Color(0xFF5D4037))
+                                listOf(Color(0xFF8D6E63), Color(0xFF3E2723))
                             )
                         ) // wood (rock)
                         .clickable { onSegmentClick(MedallionSegment.WOOD) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Workout", color = MaterialTheme.colorScheme.onBackground)
+                    Text(
+                        "Workout",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
                 }
                 Box(
                     modifier = Modifier
@@ -87,13 +103,18 @@ fun Medallion(
                         .fillMaxSize()
                         .background(
                             brush = Brush.radialGradient(
-                                listOf(Color(0xFFFFAB40), Color(0xFFD84315))
+                                listOf(Color(0xFFFF7043), Color(0xFFBF360C))
                             )
                         ) // magma
                         .clickable { onSegmentClick(MedallionSegment.MAGMA) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Notes", color = MaterialTheme.colorScheme.onBackground)
+                    Text(
+                        "Notes",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
@@ -103,14 +124,14 @@ fun Medallion(
                 .align(Alignment.Center)
                 .width(2.dp)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
         )
         Box(
             Modifier
                 .align(Alignment.Center)
                 .height(2.dp)
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
         )
     }
 }
