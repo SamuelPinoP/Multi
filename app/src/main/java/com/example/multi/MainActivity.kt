@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.Scaffold
 import androidx.compose.ui.Modifier
-import com.example.multi.MedallionScreen
 import com.example.multi.ui.theme.MultiTheme
 
 class MainActivity : ComponentActivity() {
