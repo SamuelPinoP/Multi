@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -40,7 +41,11 @@ fun Medallion(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .background(Color(0xFF9E9E9E)) // stone
+                        .background(
+                            brush = Brush.radialGradient(
+                                listOf(Color(0xFFBDBDBD), Color(0xFF757575))
+                            )
+                        ) // stone
                         .clickable { onSegmentClick(MedallionSegment.STONE) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -50,7 +55,11 @@ fun Medallion(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .background(Color(0xFFB0BEC5)) // iron
+                        .background(
+                            brush = Brush.radialGradient(
+                                listOf(Color(0xFFCFD8DC), Color(0xFF607D8B))
+                            )
+                        ) // iron
                         .clickable { onSegmentClick(MedallionSegment.IRON) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -62,7 +71,11 @@ fun Medallion(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .background(Color(0xFF8D6E63)) // wood (rock)
+                        .background(
+                            brush = Brush.radialGradient(
+                                listOf(Color(0xFFA1887F), Color(0xFF5D4037))
+                            )
+                        ) // wood (rock)
                         .clickable { onSegmentClick(MedallionSegment.WOOD) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -72,7 +85,11 @@ fun Medallion(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .background(Color(0xFFFF7043)) // magma
+                        .background(
+                            brush = Brush.radialGradient(
+                                listOf(Color(0xFFFFAB40), Color(0xFFD84315))
+                            )
+                        ) // magma
                         .clickable { onSegmentClick(MedallionSegment.MAGMA) },
                     contentAlignment = Alignment.Center
                 ) {
