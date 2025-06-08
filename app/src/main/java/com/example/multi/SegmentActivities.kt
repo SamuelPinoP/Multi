@@ -9,13 +9,31 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
 import androidx.compose.material.TopAppBar
+import androidx.compose.material.Text
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    IconButton(
+                        onClick = onClose,
+                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
