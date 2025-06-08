@@ -1,6 +1,6 @@
 package com.example.multi
 
-import android.widget.Toast
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -121,7 +121,13 @@ fun MedallionScreen() {
     val context = LocalContext.current
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Medallion { segment ->
-            Toast.makeText(context, "Clicked $segment", Toast.LENGTH_SHORT).show()
+            val cls = when (segment) {
+                MedallionSegment.STONE -> CalendarActivity::class.java
+                MedallionSegment.IRON -> EventsActivity::class.java
+                MedallionSegment.WOOD -> WorkoutActivity::class.java
+                MedallionSegment.MAGMA -> NotesActivity::class.java
+            }
+            context.startActivity(Intent(context, cls))
         }
     }
 }
