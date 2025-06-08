@@ -23,6 +23,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".CalendarActivity" />
+        <activity android:name=".EventsActivity" />
+        <activity android:name=".WorkoutActivity" />
+        <activity android:name=".NotesActivity" />
     </application>
 
 </manifest>
