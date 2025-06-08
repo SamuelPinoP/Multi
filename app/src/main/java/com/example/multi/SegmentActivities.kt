@@ -13,7 +13,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallTopAppBar
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -45,7 +45,7 @@ class NotesActivity : SegmentActivity("Notes")
 fun SegmentScreen(title: String, onBack: () -> Unit, onClose: () -> Unit) {
     Scaffold(
         topBar = {
-            SmallTopAppBar(
+            TopAppBar(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
