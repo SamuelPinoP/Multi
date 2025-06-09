@@ -6,6 +6,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -140,15 +143,23 @@ fun Medallion(
 @Composable
 fun MedallionScreen() {
     val context = LocalContext.current
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Medallion { segment ->
-            val cls = when (segment) {
-                MedallionSegment.STONE -> CalendarActivity::class.java
-                MedallionSegment.IRON -> EventsActivity::class.java
-                MedallionSegment.WOOD -> WorkoutActivity::class.java
-                MedallionSegment.MAGMA -> NotesActivity::class.java
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.forest_background),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Medallion { segment ->
+                val cls = when (segment) {
+                    MedallionSegment.STONE -> CalendarActivity::class.java
+                    MedallionSegment.IRON -> EventsActivity::class.java
+                    MedallionSegment.WOOD -> WorkoutActivity::class.java
+                    MedallionSegment.MAGMA -> NotesActivity::class.java
+                }
+                context.startActivity(Intent(context, cls))
             }
-            context.startActivity(Intent(context, cls))
         }
     }
 }

@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp"
+    android:height="360dp"
+    android:viewportWidth="360"
+    android:viewportHeight="360">
+    <!-- Tree 1 -->
+    <path android:fillColor="#2E7D32" android:pathData="M40,220 L90,140 L140,220 Z"/>
+    <path android:fillColor="#8D6E63" android:pathData="M85,220 L85,260 L95,260 L95,220 Z"/>
+    <!-- Tree 2 -->
+    <path android:fillColor="#388E3C" android:pathData="M180,240 L230,160 L280,240 Z"/>
+    <path android:fillColor="#8D6E63" android:pathData="M225,240 L225,280 L235,280 L235,240 Z"/>
+    <!-- Ground -->
+    <path android:fillColor="#4CAF50" android:pathData="M0,280 L360,280 L360,360 L0,360 Z"/>
+</vector>
