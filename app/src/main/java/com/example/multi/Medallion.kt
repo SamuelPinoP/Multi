@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -17,6 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { STONE, IRON, WOOD, MAGMA }
@@ -136,19 +139,32 @@ fun Medallion(
     }
 }
 
-/** Simple screen displaying the [Medallion] in the center. */
+/**
+ * Simple screen displaying the [Medallion] over a forest background.
+ *
+ * Replace `forest_background` with your own image placed in `res/drawable`
+ * for a custom forest scene around the medallion.
+ */
 @Composable
 fun MedallionScreen() {
     val context = LocalContext.current
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Medallion { segment ->
-            val cls = when (segment) {
-                MedallionSegment.STONE -> CalendarActivity::class.java
-                MedallionSegment.IRON -> EventsActivity::class.java
-                MedallionSegment.WOOD -> WorkoutActivity::class.java
-                MedallionSegment.MAGMA -> NotesActivity::class.java
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.forest_background),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Medallion { segment ->
+                val cls = when (segment) {
+                    MedallionSegment.STONE -> CalendarActivity::class.java
+                    MedallionSegment.IRON -> EventsActivity::class.java
+                    MedallionSegment.WOOD -> WorkoutActivity::class.java
+                    MedallionSegment.MAGMA -> NotesActivity::class.java
+                }
+                context.startActivity(Intent(context, cls))
             }
-            context.startActivity(Intent(context, cls))
         }
     }
 }

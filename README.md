@@ -29,3 +29,10 @@ To run unit tests:
 ./gradlew test
 ```
 
+### Custom forest background
+
+To display a forest scene behind the medallion, place your own image named
+`forest_background.png` (or any supported drawable format) in
+`app/src/main/res/drawable/`. A simple gradient placeholder is provided as
+`forest_background.xml` which you can replace with your generated image.
+
