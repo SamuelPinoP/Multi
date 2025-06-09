@@ -44,7 +44,7 @@ fun Medallion(
                         .fillMaxSize()
                         .background(
                             brush = Brush.radialGradient(
-                                listOf(Color(0xFF9E9E9E), Color(0xFF424242))
+                                listOf(Color(0xFFE0E0E0), Color(0xFF757575))
                             )
                         ) // stone
                         .clickable { onSegmentClick(MedallionSegment.STONE) },
@@ -52,6 +52,7 @@ fun Medallion(
                 ) {
                     Text(
                         "Calendar",
+                        modifier = Modifier.padding(bottom = 4.dp),
                         color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
@@ -63,7 +64,7 @@ fun Medallion(
                         .fillMaxSize()
                         .background(
                             brush = Brush.radialGradient(
-                                listOf(Color(0xFFB0BEC5), Color(0xFF37474F))
+                                listOf(Color(0xFFCFD8DC), Color(0xFF455A64))
                             )
                         ) // iron
                         .clickable { onSegmentClick(MedallionSegment.IRON) },
@@ -71,6 +72,7 @@ fun Medallion(
                 ) {
                     Text(
                         "Events",
+                        modifier = Modifier.padding(bottom = 4.dp),
                         color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
@@ -84,7 +86,7 @@ fun Medallion(
                         .fillMaxSize()
                         .background(
                             brush = Brush.radialGradient(
-                                listOf(Color(0xFF8D6E63), Color(0xFF3E2723))
+                                listOf(Color(0xFFA1887F), Color(0xFF4E342E))
                             )
                         ) // wood (rock)
                         .clickable { onSegmentClick(MedallionSegment.WOOD) },
@@ -92,6 +94,7 @@ fun Medallion(
                 ) {
                     Text(
                         "Workout",
+                        modifier = Modifier.padding(top = 4.dp),
                         color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
@@ -103,7 +106,11 @@ fun Medallion(
                         .fillMaxSize()
                         .background(
                             brush = Brush.radialGradient(
-                                listOf(Color(0xFFFF7043), Color(0xFFBF360C))
+                                listOf(
+                                    Color(0xFFFFD54F),
+                                    Color(0xFFFF7043),
+                                    Color(0xFFD84315)
+                                )
                             )
                         ) // magma
                         .clickable { onSegmentClick(MedallionSegment.MAGMA) },
@@ -111,6 +118,7 @@ fun Medallion(
                 ) {
                     Text(
                         "Notes",
+                        modifier = Modifier.padding(top = 4.dp),
                         color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
