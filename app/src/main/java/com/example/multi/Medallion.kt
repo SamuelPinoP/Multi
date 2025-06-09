@@ -1,6 +1,12 @@
 package com.example.multi
 
 import android.content.Intent
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateColor
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,11 +14,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -49,21 +59,14 @@ fun Medallion(
                                 listOf(Color(0xFFE0E0E0), Color(0xFF757575))
                             )
                         )
+)
                         .drawBehind {
-                            val stroke = 2.dp.toPx()
-                            drawLine(
-                                Color.DarkGray,
-                                start = Offset(size.width * 0.2f, size.height * 0.2f),
-                                end = Offset(size.width * 0.8f, size.height * 0.8f),
-                                strokeWidth = stroke
-                            )
-                            drawLine(
-                                Color.DarkGray,
-                                start = Offset(size.width * 0.4f, 0f),
-                                end = Offset(size.width * 0.6f, size.height),
-                                strokeWidth = stroke / 2
-                            )
-                        } // stone with cracks
+                            val stroke = 1.5.dp.toPx()
+                            drawLine(Color.DarkGray, Offset(size.width * 0.1f, size.height * 0.3f), Offset(size.width * 0.9f, size.height * 0.35f), strokeWidth = stroke)
+                            drawLine(Color.DarkGray, Offset(size.width * 0.2f, size.height * 0.7f), Offset(size.width * 0.8f, size.height * 0.85f), strokeWidth = stroke)
+                            drawLine(Color.DarkGray, Offset(size.width * 0.55f, 0f), Offset(size.width * 0.45f, size.height), strokeWidth = stroke)
+                            drawLine(Color.DarkGray, Offset(size.width * 0.3f, size.height * 0.45f), Offset(size.width * 0.8f, size.height * 0.55f), strokeWidth = stroke)
+                        }
                         .clickable { onSegmentClick(MedallionSegment.STONE) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -80,15 +83,24 @@ fun Medallion(
                         .weight(1f)
                         .fillMaxSize()
                         .background(
-                            brush = Brush.radialGradient(
-                                listOf(Color(0xFFCFD8DC), Color(0xFF455A64))
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFFECEFF1),
+                                    Color(0xFFB0BEC5),
+                                    Color(0xFFECEFF1)
+                                ),
+                                start = Offset.Zero,
+                                end = Offset.Infinite
                             )
-                        )
+)
                         .drawBehind {
-                            val rustColor = Color(0xFFB0713D)
-                            drawCircle(rustColor.copy(alpha = 0.4f), radius = size.minDimension * 0.15f, center = Offset(size.width * 0.3f, size.height * 0.4f))
-                            drawCircle(rustColor.copy(alpha = 0.3f), radius = size.minDimension * 0.1f, center = Offset(size.width * 0.7f, size.height * 0.6f))
-                        } // iron with rust
+                            val highlight = Brush.verticalGradient(
+                                colors = listOf(Color.White.copy(alpha = 0.4f), Color.Transparent),
+                                startY = 0f,
+                                endY = size.height * 0.4f
+                            )
+                            drawRect(highlight)
+                        }
                         .clickable { onSegmentClick(MedallionSegment.IRON) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -139,20 +151,26 @@ fun Medallion(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .background(
-                            brush = Brush.sweepGradient(
-                                listOf(
-                                    Color(0xFFFFD54F),
-                                    Color(0xFFFFA726),
-                                    Color(0xFFFF7043),
-                                    Color(0xFFD84315)
+                        .drawBehind {
+                            val infinite = rememberInfiniteTransition()
+                            val outer by infinite.animateColor(
+                                initialValue = Color(0xFFFFA726),
+                                targetValue = Color(0xFFFF7043),
+                                animationSpec = infiniteRepeatable(tween(1000), repeatMode = RepeatMode.Reverse)
+                            )
+                            val inner by infinite.animateColor(
+                                initialValue = Color(0xFFFF7043),
+                                targetValue = Color(0xFFD84315),
+                                animationSpec = infiniteRepeatable(tween(1000), repeatMode = RepeatMode.Reverse)
+                            )
+                            drawRect(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(outer, inner),
+                                    center = Offset(size.width/2f, size.height/2f),
+                                    radius = size.minDimension * 0.8f
                                 )
                             )
-                        )
-                        .drawBehind {
-                            drawCircle(Color(0xFFFFF176), radius = size.minDimension * 0.25f, center = Offset(size.width * 0.4f, size.height * 0.3f))
-                            drawCircle(Color(0xFFFFB74D), radius = size.minDimension * 0.2f, center = Offset(size.width * 0.6f, size.height * 0.7f))
-                        } // magma with liquid effect
+                        }
                         .clickable { onSegmentClick(MedallionSegment.MAGMA) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -166,24 +184,6 @@ fun Medallion(
                 }
             }
         }
-        // Overlay cross lines for a cleaner look
-        Box(
-            Modifier
-                .align(Alignment.Center)
-                .width(2.dp)
-                .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
-        )
-        Box(
-            Modifier
-                .align(Alignment.Center)
-                .height(2.dp)
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
-        )
-    }
-}
-
 /** Simple screen displaying the [Medallion] in the center. */
 @Composable
 fun MedallionScreen() {
