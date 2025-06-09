@@ -45,6 +45,7 @@ class WorkoutActivity : SegmentActivity("Workout")
 class NotesActivity : SegmentActivity("Notes")
 
 @Composable
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 fun SegmentScreen(title: String, onBack: () -> Unit, onClose: () -> Unit) {
     Scaffold(
         topBar = {
