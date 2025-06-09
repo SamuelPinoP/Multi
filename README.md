@@ -26,6 +26,10 @@ The generated APK can be found in `app/build/outputs/apk/debug/`.
 To run unit tests:
 
 ```bash
-./gradlew test
+./setup.sh
 ```
+
+This script detects if Gradle can reach the network. When connectivity is
+blocked, it attempts to run the build in offline mode using any cached
+dependencies that may be available.
 
