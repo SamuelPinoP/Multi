@@ -12,8 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import androidx.compose.ui.text.style.TextAlign
@@ -46,7 +48,22 @@ fun Medallion(
                             brush = Brush.radialGradient(
                                 listOf(Color(0xFFE0E0E0), Color(0xFF757575))
                             )
-                        ) // stone
+                        )
+                        .drawBehind {
+                            val stroke = 2.dp.toPx()
+                            drawLine(
+                                Color.DarkGray,
+                                start = Offset(size.width * 0.2f, size.height * 0.2f),
+                                end = Offset(size.width * 0.8f, size.height * 0.8f),
+                                strokeWidth = stroke
+                            )
+                            drawLine(
+                                Color.DarkGray,
+                                start = Offset(size.width * 0.4f, 0f),
+                                end = Offset(size.width * 0.6f, size.height),
+                                strokeWidth = stroke / 2
+                            )
+                        } // stone with cracks
                         .clickable { onSegmentClick(MedallionSegment.STONE) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -66,7 +83,12 @@ fun Medallion(
                             brush = Brush.radialGradient(
                                 listOf(Color(0xFFCFD8DC), Color(0xFF455A64))
                             )
-                        ) // iron
+                        )
+                        .drawBehind {
+                            val rustColor = Color(0xFFB0713D)
+                            drawCircle(rustColor.copy(alpha = 0.4f), radius = size.minDimension * 0.15f, center = Offset(size.width * 0.3f, size.height * 0.4f))
+                            drawCircle(rustColor.copy(alpha = 0.3f), radius = size.minDimension * 0.1f, center = Offset(size.width * 0.7f, size.height * 0.6f))
+                        } // iron with rust
                         .clickable { onSegmentClick(MedallionSegment.IRON) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -88,7 +110,20 @@ fun Medallion(
                             brush = Brush.radialGradient(
                                 listOf(Color(0xFFA1887F), Color(0xFF4E342E))
                             )
-                        ) // wood (rock)
+                        )
+                        .drawBehind {
+                            val stroke = 1.dp.toPx()
+                            val step = size.width / 6
+                            for (i in 1..5) {
+                                val x = step * i
+                                drawLine(
+                                    Color(0xFF3E2723),
+                                    start = Offset(x, 0f),
+                                    end = Offset(x, size.height),
+                                    strokeWidth = stroke
+                                )
+                            }
+                        } // wood with splinters
                         .clickable { onSegmentClick(MedallionSegment.WOOD) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -105,14 +140,19 @@ fun Medallion(
                         .weight(1f)
                         .fillMaxSize()
                         .background(
-                            brush = Brush.radialGradient(
+                            brush = Brush.sweepGradient(
                                 listOf(
                                     Color(0xFFFFD54F),
+                                    Color(0xFFFFA726),
                                     Color(0xFFFF7043),
                                     Color(0xFFD84315)
                                 )
                             )
-                        ) // magma
+                        )
+                        .drawBehind {
+                            drawCircle(Color(0xFFFFF176), radius = size.minDimension * 0.25f, center = Offset(size.width * 0.4f, size.height * 0.3f))
+                            drawCircle(Color(0xFFFFB74D), radius = size.minDimension * 0.2f, center = Offset(size.width * 0.6f, size.height * 0.7f))
+                        } // magma with liquid effect
                         .clickable { onSegmentClick(MedallionSegment.MAGMA) },
                     contentAlignment = Alignment.Center
                 ) {
