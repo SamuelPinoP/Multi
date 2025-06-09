@@ -32,7 +32,7 @@ fun Medallion(
 ) {
     Box(
         modifier = modifier
-            .size(370.dp)
+            .size(350.dp)
             .clip(CircleShape)
             .border(4.dp, MaterialTheme.colorScheme.onBackground, CircleShape)
     ) {
