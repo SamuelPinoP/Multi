@@ -34,7 +34,7 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
                 SegmentScreen(
                     title = segmentTitle,
                     onBack = { finish() },
-                    onClose = { finish() }
+                    onClose = { finishAffinity() }
                 )
             }
         }
