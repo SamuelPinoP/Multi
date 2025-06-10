@@ -56,7 +56,6 @@ fun Medallion(
                                 listOf(Color(0xFFE0E0E0), Color(0xFF757575))
                             )
                         )
-)
                         .drawBehind {
                             val stroke = 1.5.dp.toPx()
                             drawLine(Color.DarkGray, Offset(size.width * 0.1f, size.height * 0.3f), Offset(size.width * 0.9f, size.height * 0.35f), strokeWidth = stroke)
@@ -89,7 +88,7 @@ fun Medallion(
                                 start = Offset.Zero,
                                 end = Offset.Infinite
                             )
-)
+                        )
                         .drawBehind {
                             val highlight = Brush.verticalGradient(
                                 colors = listOf(Color.White.copy(alpha = 0.4f), Color.Transparent),
