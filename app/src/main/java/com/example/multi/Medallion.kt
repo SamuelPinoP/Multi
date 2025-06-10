@@ -39,6 +39,23 @@ fun Medallion(
     modifier: Modifier = Modifier,
     onSegmentClick: (MedallionSegment) -> Unit = {}
 ) {
+    val infinite = rememberInfiniteTransition()
+    val outerProgress by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            tween(1000),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+    val innerProgress by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            tween(1000),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
     Box(
         modifier = modifier
             .size(350.dp)
@@ -147,43 +164,24 @@ fun Medallion(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .run {
-                            val infinite = rememberInfiniteTransition()
-                            val outerProgress by infinite.animateFloat(
-                                initialValue = 0f,
-                                targetValue = 1f,
-                                animationSpec = infiniteRepeatable(
-                                    tween(1000),
-                                    repeatMode = RepeatMode.Reverse
+                        .drawBehind {
+                            val outer = lerp(
+                                Color(0xFFFFA726),
+                                Color(0xFFFF7043),
+                                outerProgress
+                            )
+                            val inner = lerp(
+                                Color(0xFFFF7043),
+                                Color(0xFFD84315),
+                                innerProgress
+                            )
+                            drawRect(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(outer, inner),
+                                    center = Offset(size.width / 2f, size.height / 2f),
+                                    radius = size.minDimension * 0.8f
                                 )
                             )
-                            val innerProgress by infinite.animateFloat(
-                                initialValue = 0f,
-                                targetValue = 1f,
-                                animationSpec = infiniteRepeatable(
-                                    tween(1000),
-                                    repeatMode = RepeatMode.Reverse
-                                )
-                            )
-                            drawBehind {
-                                val outer = lerp(
-                                    Color(0xFFFFA726),
-                                    Color(0xFFFF7043),
-                                    outerProgress
-                                )
-                                val inner = lerp(
-                                    Color(0xFFFF7043),
-                                    Color(0xFFD84315),
-                                    innerProgress
-                                )
-                                drawRect(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(outer, inner),
-                                        center = Offset(size.width / 2f, size.height / 2f),
-                                        radius = size.minDimension * 0.8f
-                                    )
-                                )
-                            }
                         }
                         .clickable { onSegmentClick(MedallionSegment.MAGMA) },
                     contentAlignment = Alignment.Center
