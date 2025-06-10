@@ -196,6 +196,8 @@ fun Medallion(
                 }
             }
         }
+    }
+}
 /** Simple screen displaying the [Medallion] in the center. */
 @Composable
 fun MedallionScreen() {
