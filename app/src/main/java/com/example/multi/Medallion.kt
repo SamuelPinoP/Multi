@@ -2,7 +2,6 @@ package com.example.multi
 
 import android.content.Intent
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateColor
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -19,9 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
@@ -153,20 +150,22 @@ fun Medallion(
                         .fillMaxSize()
                         .drawBehind {
                             val infinite = rememberInfiniteTransition()
-                            val outer by infinite.animateColor(
-                                initialValue = Color(0xFFFFA726),
-                                targetValue = Color(0xFFFF7043),
+                            val outerProgress by infinite.animateFloat(
+                                initialValue = 0f,
+                                targetValue = 1f,
                                 animationSpec = infiniteRepeatable(tween(1000), repeatMode = RepeatMode.Reverse)
                             )
-                            val inner by infinite.animateColor(
-                                initialValue = Color(0xFFFF7043),
-                                targetValue = Color(0xFFD84315),
+                            val innerProgress by infinite.animateFloat(
+                                initialValue = 0f,
+                                targetValue = 1f,
                                 animationSpec = infiniteRepeatable(tween(1000), repeatMode = RepeatMode.Reverse)
                             )
+                            val outer = lerp(Color(0xFFFFA726), Color(0xFFFF7043), outerProgress)
+                            val inner = lerp(Color(0xFFFF7043), Color(0xFFD84315), innerProgress)
                             drawRect(
                                 brush = Brush.radialGradient(
                                     colors = listOf(outer, inner),
-                                    center = Offset(size.width/2f, size.height/2f),
+                                    center = Offset(size.width / 2f, size.height / 2f),
                                     radius = size.minDimension * 0.8f
                                 )
                             )
