@@ -45,6 +45,7 @@ class CalendarActivity : SegmentActivity("Calendar")
 class EventsActivity : SegmentActivity("Events")
 class WorkoutActivity : SegmentActivity("Workout")
 class NotesActivity : SegmentActivity("Notes")
+class WeeklyGoalsActivity : SegmentActivity("Weekly Goals")
 
 @Composable
 fun SegmentScreen(title: String, onBack: () -> Unit, onClose: () -> Unit) {
