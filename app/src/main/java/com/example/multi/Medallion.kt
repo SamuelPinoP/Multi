@@ -17,18 +17,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 
 /** Enum describing each clickable segment of the medallion. */
-enum class MedallionSegment { STONE, IRON, WOOD, MAGMA }
+enum class MedallionSegment { WEEKLY_GOALS, STONE, IRON, WOOD, MAGMA }
 
 @Composable
 private fun SegmentButton(
     label: String,
     color: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    square: Boolean = true
 ) {
+    val boxModifier = if (square) {
+        modifier.aspectRatio(1f)
+    } else {
+        modifier
+    }
     Box(
-        modifier = modifier
-            .aspectRatio(1f)
+        modifier = boxModifier
             .clip(RoundedCornerShape(12.dp))
             .background(color)
             .clickable(onClick = onClick),
@@ -54,9 +59,18 @@ fun Medallion(
 ) {
     Column(
         modifier = modifier
-            .size(350.dp),
+            .width(350.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        SegmentButton(
+            label = "Weekly Goals",
+            color = Color(0xFFE1BEE7),
+            onClick = { onSegmentClick(MedallionSegment.WEEKLY_GOALS) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            square = false
+        )
         Row(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -101,6 +115,7 @@ fun MedallionScreen() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Medallion { segment ->
             val cls = when (segment) {
+                MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
                 MedallionSegment.STONE -> CalendarActivity::class.java
                 MedallionSegment.IRON -> EventsActivity::class.java
                 MedallionSegment.WOOD -> WorkoutActivity::class.java
