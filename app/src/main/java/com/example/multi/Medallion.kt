@@ -59,7 +59,7 @@ fun Medallion(
 ) {
     Column(
         modifier = modifier
-            .width(350.dp),
+            .size(350.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         SegmentButton(
@@ -68,9 +68,10 @@ fun Medallion(
             onClick = { onSegmentClick(MedallionSegment.WEEKLY_GOALS) },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
+                .height(70.dp),
             square = false
         )
+        Spacer(modifier = Modifier.height(80.dp))
         Row(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -88,6 +89,7 @@ fun Medallion(
                 modifier = Modifier.weight(1f)
             )
         }
+        Spacer(modifier = Modifier.height(270.dp))
         Row(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
