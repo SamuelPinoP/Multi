@@ -13,14 +13,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.Text
+import androidx.compose.material.FloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import com.example.multi.ui.theme.MultiTheme
@@ -55,7 +58,29 @@ class CalendarActivity : SegmentActivity("Calendar") {
         CalendarView()
     }
 }
-class EventsActivity : SegmentActivity("Events")
+class EventsActivity : SegmentActivity("Events") {
+    @Composable
+    override fun SegmentContent() {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.align(Alignment.Center)) {
+                super.SegmentContent()
+            }
+            FloatingActionButton(
+                onClick = { /* TODO: create event action */ },
+                backgroundColor = Color(0xFF4CAF50),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Create Event",
+                    tint = Color.White
+                )
+            }
+        }
+    }
+}
 class WorkoutActivity : SegmentActivity("Workout")
 class NotesActivity : SegmentActivity("Notes")
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals")
