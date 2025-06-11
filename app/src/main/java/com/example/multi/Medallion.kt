@@ -22,7 +22,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
 
 /** Enum describing each clickable segment of the medallion. */
-enum class MedallionSegment { WEEKLY_GOALS, STONE, IRON, WOOD, MAGMA }
+enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, WORKOUT, NOTES }
 
 @Composable
 private fun SegmentButton(
@@ -96,13 +96,13 @@ fun Medallion(
             SegmentButton(
                 label = stringResource(R.string.label_calendar),
                 color = Color(0xFFBBDEFB),
-                onClick = { onSegmentClick(MedallionSegment.STONE) },
+                onClick = { onSegmentClick(MedallionSegment.CALENDAR) },
                 modifier = Modifier.weight(1f)
             )
             SegmentButton(
                 label = stringResource(R.string.label_events),
                 color = Color(0xFFC8E6C9),
-                onClick = { onSegmentClick(MedallionSegment.IRON) },
+                onClick = { onSegmentClick(MedallionSegment.EVENTS) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -114,13 +114,13 @@ fun Medallion(
             SegmentButton(
                 label = stringResource(R.string.label_workout),
                 color = Color(0xFFFFF9C4),
-                onClick = { onSegmentClick(MedallionSegment.WOOD) },
+                onClick = { onSegmentClick(MedallionSegment.WORKOUT) },
                 modifier = Modifier.weight(1f)
             )
             SegmentButton(
                 label = stringResource(R.string.label_notes),
                 color = Color(0xFFFFCCBC),
-                onClick = { onSegmentClick(MedallionSegment.MAGMA) },
+                onClick = { onSegmentClick(MedallionSegment.NOTES) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -135,10 +135,10 @@ fun MedallionScreen() {
         Medallion { segment ->
             val cls = when (segment) {
                 MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                MedallionSegment.STONE -> CalendarActivity::class.java
-                MedallionSegment.IRON -> EventsActivity::class.java
-                MedallionSegment.WOOD -> WorkoutActivity::class.java
-                MedallionSegment.MAGMA -> NotesActivity::class.java
+                MedallionSegment.CALENDAR -> CalendarActivity::class.java
+                MedallionSegment.EVENTS -> EventsActivity::class.java
+                MedallionSegment.WORKOUT -> WorkoutActivity::class.java
+                MedallionSegment.NOTES -> NotesActivity::class.java
             }
             context.startActivity(Intent(context, cls))
         }
