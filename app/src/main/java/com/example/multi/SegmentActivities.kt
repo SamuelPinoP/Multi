@@ -2,6 +2,19 @@ package com.example.multi
 
 import android.os.Bundle
 import android.content.Intent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.listSaver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -67,27 +80,123 @@ class CalendarActivity : SegmentActivity("Calendar") {
 class EventsActivity : SegmentActivity("Events") {
     @Composable
     override fun SegmentContent() {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.align(Alignment.Center)) {
-                super.SegmentContent()
+        EventsScreen()
+    }
+}
+
+data class Event(var title: String, var description: String)
+
+@Composable
+private fun EventsScreen() {
+    val listSaver = listSaver<Event, String>(
+        save = { list -> list.flatMap { listOf(it.title, it.description) } },
+        restore = { items ->
+            items.chunked(2).map { Event(it[0], it[1]) }.toMutableStateList()
+        }
+    )
+    val events = rememberSaveable(stateSaver = listSaver) { mutableStateListOf<Event>() }
+    var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            itemsIndexed(events) { index, event ->
+                Card(
+                    elevation = CardDefaults.cardElevation(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { editingIndex = index }
+                ) {
+                    Text(
+                        text = event.title,
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
-            FloatingActionButton(
-                onClick = {
-                    startActivity(Intent(this@EventsActivity, CreateEventActivity::class.java))
+        }
+
+        FloatingActionButton(
+            onClick = { editingIndex = -1 },
+            backgroundColor = Color(0xFF4CAF50),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 68.dp, end = 16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
+        }
+
+        val index = editingIndex
+        if (index != null) {
+            val isNew = index < 0
+            val event = if (isNew) Event("", "") else events[index]
+            EventDialog(
+                initial = event,
+                onDismiss = { editingIndex = null },
+                onSave = { title, desc ->
+                    if (isNew) {
+                        events.add(Event(title, desc))
+                    } else {
+                        events[index] = Event(title, desc)
+                    }
+                    editingIndex = null
                 },
-                backgroundColor = Color(0xFF4CAF50),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 68.dp, end = 16.dp)
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Create Event",
-                    tint = Color.White
+                onDelete = if (isNew) null else {
+                    {
+                        events.removeAt(index)
+                        editingIndex = null
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun EventDialog(
+    initial: Event,
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit,
+    onDelete: (() -> Unit)? = null
+) {
+    var title by remember { mutableStateOf(initial.title) }
+    var description by remember { mutableStateOf(initial.description) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(onClick = { onSave(title, description) }) { Text("Save") }
+        },
+        dismissButton = {
+            Row {
+                onDelete?.let { del ->
+                    TextButton(onClick = del) { Text("Delete") }
+                }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
+        },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
-    }
+    )
 }
 class WorkoutActivity : SegmentActivity("Workout") {
     @Composable
