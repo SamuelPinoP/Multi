@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -93,13 +94,13 @@ fun Medallion(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SegmentButton(
-                label = "Calendar",
+                label = stringResource(R.string.label_calendar),
                 color = Color(0xFFBBDEFB),
                 onClick = { onSegmentClick(MedallionSegment.STONE) },
                 modifier = Modifier.weight(1f)
             )
             SegmentButton(
-                label = "Events",
+                label = stringResource(R.string.label_events),
                 color = Color(0xFFC8E6C9),
                 onClick = { onSegmentClick(MedallionSegment.IRON) },
                 modifier = Modifier.weight(1f)
@@ -111,13 +112,13 @@ fun Medallion(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SegmentButton(
-                label = "Workout",
+                label = stringResource(R.string.label_workout),
                 color = Color(0xFFFFF9C4),
                 onClick = { onSegmentClick(MedallionSegment.WOOD) },
                 modifier = Modifier.weight(1f)
             )
             SegmentButton(
-                label = "Notes",
+                label = stringResource(R.string.label_notes),
                 color = Color(0xFFFFCCBC),
                 onClick = { onSegmentClick(MedallionSegment.MAGMA) },
                 modifier = Modifier.weight(1f)
