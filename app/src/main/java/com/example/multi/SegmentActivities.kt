@@ -13,11 +13,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
-import androidx.compose.material.TopAppBar
-import androidx.compose.material.Text
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,7 +43,7 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
 }
 
 class CalendarActivity : SegmentActivity("Calendar")
-class EventsActivity : SegmentActivity("Events")
+class EventsActivity : SegmentActivity("All Events")
 class WorkoutActivity : SegmentActivity("Workout")
 class NotesActivity : SegmentActivity("Notes")
 
@@ -50,33 +51,42 @@ class NotesActivity : SegmentActivity("Notes")
 fun SegmentScreen(title: String, onBack: () -> Unit, onClose: () -> Unit) {
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 modifier = Modifier.height(80.dp),
-                title = { Text(title) },
+                title = {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.onPrimary, CircleShape)
                     ) {
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = onClose,
-                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.onPrimary, CircleShape)
                     ) {
                         Icon(
                             Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             )
         }
     ) { innerPadding ->
