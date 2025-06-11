@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { WEEKLY_GOALS, STONE, IRON, WOOD, MAGMA }
@@ -73,7 +74,7 @@ fun Medallion(
                 withStyle(style = SpanStyle(color = Color(0xFF4FC3F7))) { append("t") }
                 withStyle(style = SpanStyle(color = Color(0xFF81C784))) { append("i") }
             },
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 34.sp),
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
