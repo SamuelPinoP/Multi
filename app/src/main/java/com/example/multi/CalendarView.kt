@@ -14,6 +14,9 @@ import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
+/** Returns the zero-based offset used by the calendar grid for this day. */
+internal fun DayOfWeek.toCalendarOffset(): Int = (this.value + 6) % 7
+
 /**
  * Simple visual calendar for the given [date]. Displays the month, year,
  * days of the week and the days of the month in a grid. No interaction
@@ -43,7 +46,7 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
                 )
             }
         }
-        val firstDayOffset = firstDayOfMonth.dayOfWeek.value % 7
+        val firstDayOffset = firstDayOfMonth.dayOfWeek.toCalendarOffset()
         var currentDay = 1
         val totalCells = firstDayOffset + daysInMonth
         val rows = (totalCells + 6) / 7

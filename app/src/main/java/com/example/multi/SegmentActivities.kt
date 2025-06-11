@@ -1,6 +1,7 @@
 package com.example.multi
 
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -66,7 +69,9 @@ class EventsActivity : SegmentActivity("Events") {
                 super.SegmentContent()
             }
             FloatingActionButton(
-                onClick = { /* TODO: create event action */ },
+                onClick = {
+                    startActivity(Intent(this@EventsActivity, CreateEventActivity::class.java))
+                },
                 backgroundColor = Color(0xFF4CAF50),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -81,9 +86,38 @@ class EventsActivity : SegmentActivity("Events") {
         }
     }
 }
-class WorkoutActivity : SegmentActivity("Workout")
-class NotesActivity : SegmentActivity("Notes")
-class WeeklyGoalsActivity : SegmentActivity("Weekly Goals")
+class WorkoutActivity : SegmentActivity("Workout") {
+    @Composable
+    override fun SegmentContent() {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Today's workout", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("\u2022 Push-ups\n\u2022 Sit-ups\n\u2022 Squats")
+        }
+    }
+}
+
+class NotesActivity : SegmentActivity("Notes") {
+    @Composable
+    override fun SegmentContent() {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Notes", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("This is where your notes will appear.")
+        }
+    }
+}
+
+class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
+    @Composable
+    override fun SegmentContent() {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("This week's goals", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("\u2022 Goal 1\n\u2022 Goal 2\n\u2022 Goal 3")
+        }
+    }
+}
 
 @Composable
 fun SegmentScreen(

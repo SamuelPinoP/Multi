@@ -1,0 +1,72 @@
+package com.example.multi
+
+import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.Icon
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.example.multi.ui.theme.MultiTheme
+
+class CreateEventActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            MultiTheme {
+                CreateEventScreen { finishAfterSave() }
+            }
+        }
+    }
+
+    private fun finishAfterSave() {
+        Toast.makeText(this, "Event saved", Toast.LENGTH_SHORT).show()
+        finish()
+    }
+}
+
+@Composable
+private fun CreateEventScreen(onSave: () -> Unit) {
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+
+    androidx.compose.material.Scaffold(
+        topBar = { TopAppBar(title = { Text("New Event") }) },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onSave) {
+                Icon(Icons.Default.Check, contentDescription = "Save")
+            }
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Title") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
