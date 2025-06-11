@@ -26,6 +26,12 @@ import androidx.compose.material3.MaterialTheme
 import com.example.multi.ui.theme.MultiTheme
 
 open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
+    /** Content displayed inside the [SegmentScreen]. */
+    @Composable
+    open fun SegmentContent() {
+        Text(segmentTitle)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -35,20 +41,32 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
                     title = segmentTitle,
                     onBack = { finish() },
                     onClose = { finishAffinity() }
-                )
+                ) {
+                    SegmentContent()
+                }
             }
         }
     }
 }
 
-class CalendarActivity : SegmentActivity("Calendar")
+class CalendarActivity : SegmentActivity("Calendar") {
+    @Composable
+    override fun SegmentContent() {
+        CalendarView()
+    }
+}
 class EventsActivity : SegmentActivity("Events")
 class WorkoutActivity : SegmentActivity("Workout")
 class NotesActivity : SegmentActivity("Notes")
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals")
 
 @Composable
-fun SegmentScreen(title: String, onBack: () -> Unit, onClose: () -> Unit) {
+fun SegmentScreen(
+    title: String,
+    onBack: () -> Unit,
+    onClose: () -> Unit,
+    content: @Composable () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,7 +105,7 @@ fun SegmentScreen(title: String, onBack: () -> Unit, onClose: () -> Unit) {
                 .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text(title)
+            content()
         }
     }
 }
