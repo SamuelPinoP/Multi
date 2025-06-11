@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.border
@@ -21,6 +22,8 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import com.example.multi.ui.theme.MultiTheme
@@ -42,18 +45,43 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
 }
 
 class CalendarActivity : SegmentActivity("Calendar")
-class EventsActivity : SegmentActivity("Events")
+class EventsActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            MultiTheme {
+                EventsScreen(
+                    onBack = { finish() },
+                    onClose = { finishAffinity() }
+                )
+            }
+        }
+    }
+}
 class WorkoutActivity : SegmentActivity("Workout")
 class NotesActivity : SegmentActivity("Notes")
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals")
 
 @Composable
-fun SegmentScreen(title: String, onBack: () -> Unit, onClose: () -> Unit) {
+fun SegmentScreen(
+    title: String,
+    onBack: () -> Unit,
+    onClose: () -> Unit,
+    centerTitle: Boolean = false,
+    titleTextStyle: TextStyle = MaterialTheme.typography.bodyLarge
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 modifier = Modifier.height(80.dp),
-                title = { Text(title) },
+                title = {
+                    val textModifier = if (centerTitle) Modifier.fillMaxWidth() else Modifier
+                    val alignment = if (centerTitle) Alignment.Center else Alignment.CenterStart
+                    Box(modifier = textModifier, contentAlignment = alignment) {
+                        Text(title, style = titleTextStyle, textAlign = if (centerTitle) TextAlign.Center else TextAlign.Start)
+                    }
+                },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
@@ -90,4 +118,15 @@ fun SegmentScreen(title: String, onBack: () -> Unit, onClose: () -> Unit) {
             Text(title)
         }
     }
+}
+
+@Composable
+fun EventsScreen(onBack: () -> Unit, onClose: () -> Unit) {
+    SegmentScreen(
+        title = "All Events",
+        onBack = onBack,
+        onClose = onClose,
+        centerTitle = true,
+        titleTextStyle = MaterialTheme.typography.titleLarge
+    )
 }
