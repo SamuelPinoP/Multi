@@ -15,6 +15,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.toMutableStateList
+import kotlin.collections.buildList
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -89,7 +92,14 @@ data class Event(var title: String, var description: String)
 @Composable
 private fun EventsScreen() {
     val listSaver = listSaver<Event, String>(
-        save = { list -> list.flatMap { listOf(it.title, it.description) } },
+        save = { list ->
+            buildList<String> {
+                list.forEach { event ->
+                    add(event.title)
+                    add(event.description)
+                }
+            }
+        },
         restore = { items ->
             items.chunked(2).map { Event(it[0], it[1]) }.toMutableStateList()
         }
