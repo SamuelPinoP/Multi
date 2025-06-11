@@ -131,7 +131,12 @@ fun Medallion(
 @Composable
 fun MedallionScreen() {
     val context = LocalContext.current
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
         Medallion { segment ->
             val cls = when (segment) {
                 MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java

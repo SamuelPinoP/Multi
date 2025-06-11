@@ -95,7 +95,7 @@ fun SegmentScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                modifier = Modifier.height(80.dp),
+                modifier = Modifier.height(135.dp),
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(
