@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -23,12 +24,14 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.Text
 import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.style.TextAlign
 import com.example.multi.ui.theme.MultiTheme
 
 open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
@@ -74,8 +77,8 @@ class EventsActivity : SegmentActivity("Events") {
                 },
                 backgroundColor = Color(0xFF4CAF50),
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 68.dp, end = 16.dp)
             ) {
                 Icon(
                     Icons.Default.Add,
@@ -130,14 +133,21 @@ fun SegmentScreen(
         topBar = {
             TopAppBar(
                 modifier = Modifier.height(135.dp),
-                title = { Text(title) },
+                title = {
+                    Text(
+                        text = title,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
                         modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     ) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = MaterialTheme.colorScheme.primary
                         )
