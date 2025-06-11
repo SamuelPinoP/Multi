@@ -65,7 +65,7 @@ fun Medallion(
     Column(
         modifier = modifier
             .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
             buildAnnotatedString {
@@ -90,7 +90,6 @@ fun Medallion(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Row(
-            modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SegmentButton(
@@ -108,7 +107,6 @@ fun Medallion(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Row(
-            modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SegmentButton(
@@ -135,7 +133,7 @@ fun MedallionScreen() {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        contentAlignment = Alignment.TopCenter
+        contentAlignment = Alignment.Center
     ) {
         Medallion { segment ->
             val cls = when (segment) {
