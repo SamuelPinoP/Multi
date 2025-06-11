@@ -91,7 +91,7 @@ data class Event(var title: String, var description: String)
 
 @Composable
 private fun EventsScreen() {
-    val listSaver = listSaver<Event, String>(
+    val listSaver = listSaver<MutableList<Event>, String>(
         save = { list ->
             buildList<String> {
                 list.forEach { event ->
@@ -104,7 +104,7 @@ private fun EventsScreen() {
             items.chunked(2).map { Event(it[0], it[1]) }.toMutableStateList()
         }
     )
-    val events = rememberSaveable(stateSaver = listSaver) { mutableStateListOf<Event>() }
+    val events = rememberSaveable(saver = listSaver) { mutableStateListOf<Event>() }
     var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
