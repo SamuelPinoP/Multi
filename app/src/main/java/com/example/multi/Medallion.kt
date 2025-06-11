@@ -64,7 +64,8 @@ fun Medallion(
 ) {
     Column(
         modifier = modifier
-            .size(450.dp),
+            .fillMaxWidth()
+            .aspectRatio(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
