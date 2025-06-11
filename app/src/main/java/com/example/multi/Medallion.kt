@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { WEEKLY_GOALS, STONE, IRON, WOOD, MAGMA }
@@ -61,8 +62,8 @@ fun Medallion(
 ) {
     Column(
         modifier = modifier
-            .size(350.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .size(450.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
             buildAnnotatedString {
@@ -103,7 +104,7 @@ fun Medallion(
                 modifier = Modifier.weight(1f)
             )
         }
-        Spacer(modifier = Modifier.height(270.dp))
+        Spacer(modifier = Modifier.height(140.dp))
         Row(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
