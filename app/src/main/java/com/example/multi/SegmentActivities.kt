@@ -356,23 +356,14 @@ private fun WeeklyGoalsScreen() {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = goal.header,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                Text(
-                                    text = "${goal.frequency}/7",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
-                            IconButton(onClick = { goals.removeAt(index) }) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
+                            Text(
+                                text = goal.header,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = "${goal.frequency}/7",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
                         }
                     }
                 }
