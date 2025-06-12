@@ -122,7 +122,7 @@ private fun EventsScreen() {
                         .clickable { editingIndex = index }
                 ) {
                     Text(
-                        text = event.title,
+                        text = "${index + 1} - ${event.title}",
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyLarge
                     )
