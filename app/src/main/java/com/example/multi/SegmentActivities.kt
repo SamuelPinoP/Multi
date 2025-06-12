@@ -15,9 +15,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -393,10 +390,7 @@ private fun WeeklyGoalDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Frequency", style = MaterialTheme.typography.bodySmall)
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
+                Box {
                     val frequencyText = frequency?.let { i ->
                         when (i) {
                             1 -> "once a week-1/7"
@@ -410,15 +404,19 @@ private fun WeeklyGoalDialog(
                         value = frequencyText,
                         onValueChange = {},
                         trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+                            Icon(
+                                Icons.Default.ArrowDropDown,
+                                contentDescription = null
+                            )
                         },
                         modifier = Modifier
-                            .menuAnchor()
                             .fillMaxWidth()
+                            .clickable { expanded = !expanded }
                     )
-                    ExposedDropdownMenu(
+                    DropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         for (i in 1..7) {
                             val text = when (i) {
