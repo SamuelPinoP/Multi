@@ -36,6 +36,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
@@ -288,7 +289,7 @@ private fun WeeklyGoalsScreen() {
     )
 
     val goals = rememberSaveable(saver = listSaver) { mutableStateListOf<WeeklyGoal>() }
-    var showDialog by rememberSaveable { mutableStateOf(false) }
+    var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -314,7 +315,7 @@ private fun WeeklyGoalsScreen() {
                     Text("Historial", color = Color.White, fontSize = 20.sp)
                 }
                 Button(
-                    onClick = { showDialog = true },
+                    onClick = { editingIndex = -1 },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFBA68C8)),
                     modifier = Modifier
                         .weight(1f)
@@ -341,10 +342,12 @@ private fun WeeklyGoalsScreen() {
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                itemsIndexed(goals) { _, goal ->
+                itemsIndexed(goals) { index, goal ->
                     Card(
                         elevation = CardDefaults.cardElevation(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { editingIndex = index }
                     ) {
                         Row(
                             modifier = Modifier
@@ -353,26 +356,49 @@ private fun WeeklyGoalsScreen() {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = goal.header,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = "${goal.frequency}/7",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = goal.header,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = "${goal.frequency}/7",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                            IconButton(onClick = { goals.removeAt(index) }) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        if (showDialog) {
+        val index = editingIndex
+        if (index != null) {
+            val isNew = index < 0
+            val goal = if (isNew) WeeklyGoal("", 1) else goals[index]
             WeeklyGoalDialog(
-                onDismiss = { showDialog = false },
+                initial = goal,
+                onDismiss = { editingIndex = null },
                 onSave = { header, freq ->
-                    goals.add(WeeklyGoal(header, freq))
-                    showDialog = false
+                    if (isNew) {
+                        goals.add(WeeklyGoal(header, freq))
+                    } else {
+                        goals[index] = WeeklyGoal(header, freq)
+                    }
+                    editingIndex = null
+                },
+                onDelete = if (isNew) null else {
+                    {
+                        goals.removeAt(index)
+                        editingIndex = null
+                    }
                 }
             )
         }
@@ -381,11 +407,13 @@ private fun WeeklyGoalsScreen() {
 
 @Composable
 private fun WeeklyGoalDialog(
+    initial: WeeklyGoal,
     onDismiss: () -> Unit,
-    onSave: (String, Int) -> Unit
+    onSave: (String, Int) -> Unit,
+    onDelete: (() -> Unit)? = null
 ) {
-    var header by remember { mutableStateOf("") }
-    var frequency by remember { mutableStateOf<Int?>(null) }
+    var header by remember { mutableStateOf(initial.header) }
+    var frequency by remember { mutableStateOf<Int?>(initial.frequency) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -396,7 +424,12 @@ private fun WeeklyGoalDialog(
             ) { Text("Save") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            Row {
+                onDelete?.let { del ->
+                    TextButton(onClick = del) { Text("Delete") }
+                }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
         },
         title = { Text("Custom your Weekly Routine!") },
         text = {
