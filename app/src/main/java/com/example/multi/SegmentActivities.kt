@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import com.example.multi.ui.theme.MultiTheme
 
 open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
@@ -238,30 +239,36 @@ class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
             Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(16.dp)
+                    .padding(12.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp), // optional: add space from top
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
                         onClick = { /* TODO: Historial action */ },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp) // taller button
+                            .padding(end = 8.dp) // space between
                     ) {
-                        Text("Historial", color = Color.White)
+                        Text("Historial", color = Color.White, fontSize = 20.sp)
                     }
                     Button(
                         onClick = { /* TODO: Edit action */ },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFBA68C8))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFBA68C8)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                            .padding(start = 8.dp)
                     ) {
-                        Text("Edit", color = Color.White)
+                        Text("Edit", color = Color.White, fontSize = 20.sp)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("This week's goals", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("\u2022 Goal 1\n\u2022 Goal 2\n\u2022 Goal 3")
             }
         }
     }
