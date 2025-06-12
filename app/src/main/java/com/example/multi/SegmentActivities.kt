@@ -15,6 +15,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.menuAnchor
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -410,6 +411,7 @@ private fun WeeklyGoalDialog(
                             )
                         },
                         modifier = Modifier
+                            .menuAnchor()
                             .fillMaxWidth()
                             .clickable { expanded = !expanded }
                     )
