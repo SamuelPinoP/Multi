@@ -17,7 +17,6 @@ import com.example.multi.ui.theme.MultiTheme
    It will happen whenever a New Event is added or a New Weekly activity is added.
    It will say New Event added or New Weekly Activity added.
 */
-// Fix dropdown issue in edit!
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
