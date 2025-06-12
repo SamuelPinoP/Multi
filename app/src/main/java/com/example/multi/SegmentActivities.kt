@@ -396,10 +396,10 @@ private fun WeeklyGoalDialog(
                 ) {
                     for (i in 1..7) {
                         val text = when (i) {
-                            1 -> "once a week-1/7"
-                            2 -> "twice a week-2/7"
-                            7 -> "every day-7/7"
-                            else -> "$i times a week-$i/7"
+                            1 -> "Once a Week"
+                            2 -> "Twice a Week"
+                            7 -> "Every Day"
+                            else -> "$i Times a Week"
                         }
                         val selected = frequency == i
                         val selectedColor = MaterialTheme.colorScheme.primary
