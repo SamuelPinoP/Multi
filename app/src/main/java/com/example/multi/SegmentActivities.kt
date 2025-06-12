@@ -327,6 +327,16 @@ private fun WeeklyGoalsScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            Text(
+                text = "Today",
+                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
