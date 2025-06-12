@@ -147,7 +147,10 @@ private fun EventsScreen() {
             }
             ClickableText(
                 text = annotated,
-                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = Color.Gray,
+                    fontSize = 18.sp
+                ),
                 modifier = Modifier.align(Alignment.Center),
                 onClick = { offset ->
                     annotated.getStringAnnotations("ADD", offset, offset)
