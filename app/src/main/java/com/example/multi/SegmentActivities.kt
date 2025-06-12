@@ -391,9 +391,17 @@ private fun WeeklyGoalDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Frequency", style = MaterialTheme.typography.bodySmall)
                 Box {
+                    val frequencyText = frequency?.let { i ->
+                        when (i) {
+                            1 -> "once a week-1/7"
+                            2 -> "twice a week-2/7"
+                            7 -> "every day-7/7"
+                            else -> "$i times a week-$i/7"
+                        }
+                    } ?: ""
                     OutlinedTextField(
                         readOnly = true,
-                        value = frequency?.let { "$it/7" } ?: "",
+                        value = frequencyText,
                         onValueChange = {},
                         trailingIcon = {
                             Icon(
@@ -414,6 +422,7 @@ private fun WeeklyGoalDialog(
                             val text = when (i) {
                                 1 -> "once a week-1/7"
                                 2 -> "twice a week-2/7"
+                                7 -> "every day-7/7"
                                 else -> "$i times a week-$i/7"
                             }
                             DropdownMenuItem(
