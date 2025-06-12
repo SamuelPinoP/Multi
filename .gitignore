@@ -13,6 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Ignore downloaded command line tools
+android-commandlinetools.zip
 # Ignore IDE and Kotlin related directories
 .idea/
 .kotlin/
