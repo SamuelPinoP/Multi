@@ -398,7 +398,7 @@ private fun WeeklyGoalDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
         },
-        title = { Text("Add to your Weekly routine!") },
+        title = { Text("Custom your Weekly Routine!") },
         text = {
             Column {
                 Text("Header", style = MaterialTheme.typography.bodySmall)
