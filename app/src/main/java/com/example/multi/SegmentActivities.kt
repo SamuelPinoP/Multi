@@ -402,13 +402,15 @@ private fun WeeklyGoalDialog(
                             else -> "$i times a week-$i/7"
                         }
                         val selected = frequency == i
+                        val selectedColor = MaterialTheme.colorScheme.primary
+                        val unselectedColor = MaterialTheme.colorScheme.surfaceVariant
+
                         Button(
                             onClick = { frequency = i },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (selected) MaterialTheme.colorScheme.primary else ButtonDefaults.buttonColors().containerColor(enabled = true).value
+                                containerColor = if (selected) selectedColor else unselectedColor
                             ),
-                            modifier = Modifier
-                                .padding(end = 8.dp)
+                            modifier = Modifier.padding(end = 8.dp)
                         ) {
                             Text(text)
                         }
