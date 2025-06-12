@@ -15,6 +15,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -390,30 +393,38 @@ private fun WeeklyGoalDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Frequency", style = MaterialTheme.typography.bodySmall)
-                Box {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    val frequencyText = frequency?.let { i ->
+                        when (i) {
+                            1 -> "once a week-1/7"
+                            2 -> "twice a week-2/7"
+                            7 -> "every day-7/7"
+                            else -> "$i times a week-$i/7"
+                        }
+                    } ?: ""
                     OutlinedTextField(
                         readOnly = true,
-                        value = frequency?.let { "$it/7" } ?: "",
+                        value = frequencyText,
                         onValueChange = {},
                         trailingIcon = {
-                            Icon(
-                                Icons.Default.ArrowDropDown,
-                                contentDescription = null
-                            )
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded)
                         },
                         modifier = Modifier
+                            .menuAnchor()
                             .fillMaxWidth()
-                            .clickable { expanded = !expanded }
                     )
-                    DropdownMenu(
+                    ExposedDropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                        modifier = Modifier.fillMaxWidth()
+                        onDismissRequest = { expanded = false }
                     ) {
                         for (i in 1..7) {
                             val text = when (i) {
                                 1 -> "once a week-1/7"
                                 2 -> "twice a week-2/7"
+                                7 -> "every day-7/7"
                                 else -> "$i times a week-$i/7"
                             }
                             DropdownMenuItem(
