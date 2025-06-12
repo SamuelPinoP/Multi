@@ -336,11 +336,22 @@ private fun WeeklyGoalsScreen() {
                         elevation = CardDefaults.cardElevation(),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "${goal.header}-${goal.frequency}/7",
-                            modifier = Modifier.padding(16.dp),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = goal.header,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = "${goal.frequency}/7",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
                 }
             }
