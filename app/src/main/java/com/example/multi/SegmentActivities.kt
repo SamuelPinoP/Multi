@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
@@ -13,8 +15,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,7 +36,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
@@ -365,7 +364,6 @@ private fun WeeklyGoalDialog(
     onSave: (String, Int) -> Unit
 ) {
     var header by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
     var frequency by remember { mutableStateOf<Int?>(null) }
 
     AlertDialog(
@@ -390,48 +388,29 @@ private fun WeeklyGoalDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Frequency", style = MaterialTheme.typography.bodySmall)
-                Box {
-                    val frequencyText = frequency?.let { i ->
-                        when (i) {
+                val scrollState = rememberScrollState()
+                Row(
+                    modifier = Modifier
+                        .horizontalScroll(scrollState)
+                        .fillMaxWidth()
+                ) {
+                    for (i in 1..7) {
+                        val text = when (i) {
                             1 -> "once a week-1/7"
                             2 -> "twice a week-2/7"
                             7 -> "every day-7/7"
                             else -> "$i times a week-$i/7"
                         }
-                    } ?: ""
-                    OutlinedTextField(
-                        readOnly = true,
-                        value = frequencyText,
-                        onValueChange = {},
-                        trailingIcon = {
-                            Icon(
-                                Icons.Default.ArrowDropDown,
-                                contentDescription = null
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { expanded = !expanded }
-                    )
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        for (i in 1..7) {
-                            val text = when (i) {
-                                1 -> "once a week-1/7"
-                                2 -> "twice a week-2/7"
-                                7 -> "every day-7/7"
-                                else -> "$i times a week-$i/7"
-                            }
-                            DropdownMenuItem(
-                                text = { Text(text) },
-                                onClick = {
-                                    frequency = i
-                                    expanded = false
-                                }
-                            )
+                        val selected = frequency == i
+                        Button(
+                            onClick = { frequency = i },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (selected) MaterialTheme.colorScheme.primary else ButtonDefaults.buttonColors().containerColor(enabled = true).value
+                            ),
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                        ) {
+                            Text(text)
                         }
                     }
                 }
