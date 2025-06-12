@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -233,10 +234,35 @@ class NotesActivity : SegmentActivity("Notes") {
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     @Composable
     override fun SegmentContent() {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("This week's goals", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("\u2022 Goal 1\n\u2022 Goal 2\n\u2022 Goal 3")
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = { /* TODO: Historial action */ },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373))
+                    ) {
+                        Text("Historial", color = Color.White)
+                    }
+                    Button(
+                        onClick = { /* TODO: Edit action */ },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFBA68C8))
+                    ) {
+                        Text("Edit", color = Color.White)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("This week's goals", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("\u2022 Goal 1\n\u2022 Goal 2\n\u2022 Goal 3")
+            }
         }
     }
 }
