@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -47,7 +48,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
 import com.example.multi.ui.theme.MultiTheme
 
 open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
@@ -128,6 +133,27 @@ private fun EventsScreen() {
                     )
                 }
             }
+        }
+
+        if (events.isEmpty()) {
+            val annotated = buildAnnotatedString {
+                append("No events, ")
+                pushStringAnnotation(tag = "ADD", annotation = "add")
+                withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                    append("add")
+                }
+                pop()
+                append(" some!")
+            }
+            ClickableText(
+                text = annotated,
+                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                modifier = Modifier.align(Alignment.Center),
+                onClick = { offset ->
+                    annotated.getStringAnnotations("ADD", offset, offset)
+                        .firstOrNull()?.let { editingIndex = -1 }
+                }
+            )
         }
 
         FloatingActionButton(
