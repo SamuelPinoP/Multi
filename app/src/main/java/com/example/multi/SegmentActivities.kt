@@ -36,7 +36,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
@@ -366,13 +365,6 @@ private fun WeeklyGoalsScreen() {
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                             }
-                            IconButton(onClick = { goals.removeAt(index) }) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
                         }
                     }
                 }
@@ -449,12 +441,7 @@ private fun WeeklyGoalDialog(
                         .fillMaxWidth()
                 ) {
                     for (i in 1..7) {
-                        val text = when (i) {
-                            1 -> "Once a Week"
-                            2 -> "Twice a Week"
-                            7 -> "Every Day"
-                            else -> "$i Times a Week"
-                        }
+                        val text = "$i/7"
                         val selected = frequency == i
                         val selectedColor = MaterialTheme.colorScheme.primary
                         val unselectedColor = MaterialTheme.colorScheme.surfaceVariant
