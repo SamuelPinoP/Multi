@@ -57,6 +57,9 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import com.example.multi.ui.theme.MultiTheme
+import com.alamkanak.weekview.compose.WeekView
+import com.alamkanak.weekview.compose.rememberWeekViewState
+import java.time.LocalDate
 
 open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
     /** Content displayed inside the [SegmentScreen]. */
@@ -290,6 +293,7 @@ private fun WeeklyGoalsScreen() {
 
     val goals = rememberSaveable(saver = listSaver) { mutableStateListOf<WeeklyGoal>() }
     var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    var showHistory by rememberSaveable { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -305,7 +309,7 @@ private fun WeeklyGoalsScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = { /* TODO: Historial action */ },
+                    onClick = { showHistory = true },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
                     modifier = Modifier
                         .weight(1f)
@@ -393,6 +397,10 @@ private fun WeeklyGoalsScreen() {
                 }
             )
         }
+
+        if (showHistory) {
+            WeekHistoryDialog(onDismiss = { showHistory = false })
+        }
     }
 }
 
@@ -464,6 +472,26 @@ private fun WeeklyGoalDialog(
             }
         }
     )
+}
+
+@Composable
+private fun WeekHistoryDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+        text = { WeekHistoryView() }
+    )
+}
+
+@Composable
+private fun WeekHistoryView() {
+    val state = rememberWeekViewState(
+        initialDate = LocalDate.of(2025, 1, 1),
+        numberOfVisibleDays = 7
+    )
+    WeekView(state = state)
 }
 
 @Composable
