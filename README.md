@@ -29,3 +29,12 @@ To run unit tests:
 ./gradlew test
 ```
 
+
+To install the Android SDK and run the unit tests from the command line you can use the `setup.sh` script provided in the project root:
+
+```bash
+./setup.sh
+```
+
+This script extracts the included command line tools, installs the required SDK packages and then executes the Gradle tests.
+
