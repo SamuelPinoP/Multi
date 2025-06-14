@@ -220,7 +220,9 @@ private fun EventsScreen() {
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 124.dp) // move it 64dp higher, adjust as needed
         )
     }
 }
@@ -435,7 +437,9 @@ private fun WeeklyGoalsScreen() {
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 64.dp) // move it 64dp higher, adjust as needed
         )
     }
 }
