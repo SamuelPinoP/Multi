@@ -33,6 +33,11 @@ private val LightColorScheme = lightColorScheme(
     */
 )
 
+/**
+ * Applies the application's color scheme and typography to [content].
+ *
+ * When available, dynamic colors from the system are used.
+ */
 @Composable
 fun MultiTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

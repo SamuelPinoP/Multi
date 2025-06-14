@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.ui.theme.MultiTheme
 
+/**
+ * Activity that allows the user to create a new calendar event.
+ */
 class CreateEventActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +39,9 @@ class CreateEventActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Displays a brief confirmation and closes the screen after saving.
+     */
     private fun finishAfterSave() {
         Toast.makeText(this, "Event saved", Toast.LENGTH_SHORT).show()
         finish()
@@ -43,6 +49,9 @@ class CreateEventActivity : ComponentActivity() {
 }
 
 @Composable
+/**
+ * Form used to capture a new event from the user.
+ */
 private fun CreateEventScreen(onSave: () -> Unit) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
