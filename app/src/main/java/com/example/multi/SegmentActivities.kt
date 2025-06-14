@@ -310,6 +310,7 @@ private fun WeeklyGoalsScreen() {
 
     val goals = rememberSaveable(saver = listSaver) { mutableStateListOf<WeeklyGoal>() }
     var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    var showGoalAdded by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -400,6 +401,7 @@ private fun WeeklyGoalsScreen() {
                 onSave = { header, freq ->
                     if (isNew) {
                         goals.add(WeeklyGoal(header, freq))
+                        showGoalAdded = true
                     } else {
                         goals[index] = WeeklyGoal(header, freq)
                     }
@@ -411,6 +413,18 @@ private fun WeeklyGoalsScreen() {
                         editingIndex = null
                     }
                 }
+            )
+        }
+
+        if (showGoalAdded) {
+            AlertDialog(
+                onDismissRequest = { showGoalAdded = false },
+                confirmButton = {
+                    TextButton(onClick = { showGoalAdded = false }) {
+                        Text("OK")
+                    }
+                },
+                title = { Text("New Weekly Activity added") }
             )
         }
     }

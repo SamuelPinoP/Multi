@@ -1,7 +1,8 @@
 package com.example.multi
 
 import android.os.Bundle
-import android.widget.Toast
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -40,10 +41,9 @@ class CreateEventActivity : ComponentActivity() {
     }
 
     /**
-     * Displays a brief confirmation and closes the screen after saving.
+     * Closes the screen after saving.
      */
     private fun finishAfterSave() {
-        Toast.makeText(this, "Event saved", Toast.LENGTH_SHORT).show()
         finish()
     }
 }
@@ -55,6 +55,7 @@ class CreateEventActivity : ComponentActivity() {
 private fun CreateEventScreen(onSave: () -> Unit) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var showDialog by remember { mutableStateOf(false) }
 
     androidx.compose.material.Scaffold(
     topBar = {
@@ -73,7 +74,7 @@ private fun CreateEventScreen(onSave: () -> Unit) {
     },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onSave,
+                onClick = { showDialog = true },
                 modifier = Modifier.padding(bottom = 48.dp)
             ) {
                 Icon(Icons.Default.Check, contentDescription = "Save")
@@ -95,5 +96,17 @@ private fun CreateEventScreen(onSave: () -> Unit) {
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false; onSave() },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false; onSave() }) {
+                    Text("OK")
+                }
+            },
+            title = { Text("New Event added") }
+        )
     }
 }
