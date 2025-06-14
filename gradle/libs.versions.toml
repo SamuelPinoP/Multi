@@ -26,7 +26,7 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-material = { group = "androidx.compose.material", name = "material" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
-weekview-compose = { group = "com.github.thellmund", name = "Android-Week-View-Compose", version = "7.2.0" }
+weekview-compose = { group = "com.github.thellmund", name = "weekview-compose", version = "7.2.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
