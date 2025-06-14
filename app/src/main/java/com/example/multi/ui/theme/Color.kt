@@ -1,5 +1,9 @@
 package com.example.multi.ui.theme
 
+/**
+ * Color palette used by the application when dynamic colors are not available.
+ */
+
 import androidx.compose.ui.graphics.Color
 
 val Purple80 = Color(0xFFD0BCFF)

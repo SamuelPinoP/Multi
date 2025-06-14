@@ -24,6 +24,9 @@ import androidx.compose.ui.unit.sp
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, WORKOUT, NOTES }
 
+/**
+ * Basic button used by [Medallion] segments.
+ */
 @Composable
 private fun SegmentButton(
     label: String,

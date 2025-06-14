@@ -58,6 +58,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import com.example.multi.ui.theme.MultiTheme
 
+/**
+ * Base activity used for each feature segment of the application.
+ *
+ * It provides a standard layout with a title bar and hosts the composable
+ * returned from [SegmentContent].
+ */
 open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
     /** Content displayed inside the [SegmentScreen]. */
     @Composable
@@ -82,12 +88,14 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
     }
 }
 
+/** Activity hosting the [CalendarView]. */
 class CalendarActivity : SegmentActivity("Calendar") {
     @Composable
     override fun SegmentContent() {
         CalendarView()
     }
 }
+/** Activity displaying the list of user events. */
 class EventsActivity : SegmentActivity("Events") {
     @Composable
     override fun SegmentContent() {
@@ -95,9 +103,13 @@ class EventsActivity : SegmentActivity("Events") {
     }
 }
 
+/** Model representing a single event entry. */
 data class Event(var title: String, var description: String)
 
 
+/**
+ * Screen that displays a list of events and allows creating or editing them.
+ */
 @Composable
 private fun EventsScreen() {
     val listSaver = listSaver<MutableList<Event>, String>(
@@ -199,6 +211,9 @@ private fun EventsScreen() {
     }
 }
 
+/**
+ * Dialog used for creating or editing an [Event].
+ */
 @Composable
 private fun EventDialog(
     initial: Event,
@@ -263,6 +278,7 @@ class NotesActivity : SegmentActivity("Notes") {
     }
 }
 
+/** Activity presenting the weekly goals feature. */
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     @Composable
     override fun SegmentContent() {
@@ -270,8 +286,12 @@ class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     }
 }
 
+/** Model representing a user's recurring weekly goal. */
 data class WeeklyGoal(var header: String, var frequency: Int)
 
+/**
+ * Screen that manages and displays the user's weekly goals.
+ */
 @Composable
 private fun WeeklyGoalsScreen() {
     val listSaver = listSaver<MutableList<WeeklyGoal>, String>(
@@ -396,6 +416,9 @@ private fun WeeklyGoalsScreen() {
     }
 }
 
+/**
+ * Dialog used for creating or editing a [WeeklyGoal].
+ */
 @Composable
 private fun WeeklyGoalDialog(
     initial: WeeklyGoal,
@@ -466,6 +489,9 @@ private fun WeeklyGoalDialog(
     )
 }
 
+/**
+ * Common scaffold used by the segment activities for consistent layout.
+ */
 @Composable
 fun SegmentScreen(
     title: String,
