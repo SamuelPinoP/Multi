@@ -51,6 +51,7 @@ private fun CreateEventScreen(onSave: () -> Unit) {
     topBar = {
         TopAppBar(
             modifier = Modifier.height(135.dp),
+            backgroundColor = MaterialTheme.colorScheme.primary,
             title = {
                 Text(
                     text = "New Event",

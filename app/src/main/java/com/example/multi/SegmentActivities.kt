@@ -477,6 +477,7 @@ fun SegmentScreen(
         topBar = {
             TopAppBar(
                 modifier = Modifier.height(135.dp),
+                backgroundColor = MaterialTheme.colorScheme.primary,
                 title = {
                     Text(
                         text = title,
