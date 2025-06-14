@@ -57,6 +57,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import com.example.multi.ui.theme.MultiTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * Base activity used for each feature segment of the application.
@@ -127,6 +131,8 @@ private fun EventsScreen() {
     )
     val events = rememberSaveable(saver = listSaver) { mutableStateListOf<Event>() }
     var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -195,6 +201,9 @@ private fun EventsScreen() {
                 onSave = { title, desc ->
                     if (isNew) {
                         events.add(Event(title, desc))
+                        scope.launch {
+                            snackbarHostState.showSnackbar("New Event added")
+                        }
                     } else {
                         events[index] = Event(title, desc)
                     }
@@ -208,6 +217,11 @@ private fun EventsScreen() {
                 }
             )
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
@@ -310,6 +324,8 @@ private fun WeeklyGoalsScreen() {
 
     val goals = rememberSaveable(saver = listSaver) { mutableStateListOf<WeeklyGoal>() }
     var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -400,6 +416,9 @@ private fun WeeklyGoalsScreen() {
                 onSave = { header, freq ->
                     if (isNew) {
                         goals.add(WeeklyGoal(header, freq))
+                        scope.launch {
+                            snackbarHostState.showSnackbar("New Weekly Activity added")
+                        }
                     } else {
                         goals[index] = WeeklyGoal(header, freq)
                     }
@@ -413,6 +432,11 @@ private fun WeeklyGoalsScreen() {
                 }
             )
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
