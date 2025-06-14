@@ -57,6 +57,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import com.example.multi.ui.theme.MultiTheme
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 
 open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
     /** Content displayed inside the [SegmentScreen]. */
@@ -314,8 +316,13 @@ private fun WeeklyGoalsScreen() {
                 ) {
                     Text("Historial", color = Color.White, fontSize = 20.sp)
                 }
+                val context = LocalContext.current
                 Button(
-                    onClick = { editingIndex = -1 },
+                    onClick = {
+                        context.startActivity(
+                            Intent(context, WeeklyGoalsCalendarActivity::class.java)
+                        )
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFBA68C8)),
                     modifier = Modifier
                         .weight(1f)
