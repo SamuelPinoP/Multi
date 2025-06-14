@@ -57,6 +57,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import com.example.multi.ui.theme.MultiTheme
+import androidx.compose.ui.viewinterop.AndroidView
+import com.alamkanak.weekview.WeekView
 
 open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
     /** Content displayed inside the [SegmentScreen]. */
@@ -273,6 +275,18 @@ class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
 data class WeeklyGoal(var header: String, var frequency: Int)
 
 @Composable
+private fun WeekGoalsCalendar(modifier: Modifier = Modifier) {
+    AndroidView(
+        factory = { context ->
+            WeekView<Any>(context)
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(300.dp)
+    )
+}
+
+@Composable
 private fun WeeklyGoalsScreen() {
     val listSaver = listSaver<MutableList<WeeklyGoal>, String>(
         save = { list ->
@@ -461,6 +475,8 @@ private fun WeeklyGoalDialog(
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                WeekGoalsCalendar()
             }
         }
     )
