@@ -2,6 +2,9 @@
 
 This is a simple Android application using Jetpack Compose.
 
+It now integrates the [MaterialCalendarView](https://github.com/prolificinteractive/material-calendarview)
+library to display calendar events.
+
 ## Prerequisites
 
 - Android Studio Hedgehog or later with the Android SDK configured
