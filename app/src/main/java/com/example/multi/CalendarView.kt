@@ -8,6 +8,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.annotation.RequiresApi
+import android.os.Build
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -23,6 +25,7 @@ internal fun DayOfWeek.toCalendarOffset(): Int = (this.value + 6) % 7
  * is provided.
  */
 @Composable
+@RequiresApi(Build.VERSION_CODES.O)
 fun CalendarView(date: LocalDate = LocalDate.now()) {
     val yearMonth = YearMonth.from(date)
     val firstDayOfMonth = yearMonth.atDay(1)
