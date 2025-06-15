@@ -1,6 +1,7 @@
 # Multi
 
-This is a simple Android application using Jetpack Compose.
+This is a simple Android application using Jetpack Compose. The calendar
+screen integrates the `MaterialCalendarView` library to display events.
 
 ## Prerequisites
 
