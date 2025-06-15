@@ -96,7 +96,11 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
 class CalendarActivity : SegmentActivity("Calendar") {
     @Composable
     override fun SegmentContent() {
-        CalendarView()
+        val sampleEvents = listOf(
+            java.time.LocalDate.now(),
+            java.time.LocalDate.now().plusDays(2)
+        )
+        CalendarView(events = sampleEvents)
     }
 }
 /** Activity displaying the list of user events. */
