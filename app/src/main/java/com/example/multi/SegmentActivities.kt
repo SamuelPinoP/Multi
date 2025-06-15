@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.ClickableText
@@ -263,18 +264,28 @@ private fun EventDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(onClick = { onSave(title, description, selectedDate) }) { Text("Save") }
-        },
-        dismissButton = {
-            Row {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(onClick = { onSave(title, description, selectedDate) }) {
+                    Text("Save")
+                }
+                selectedDate?.let {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(it)
+                }
+                Spacer(modifier = Modifier.weight(1f))
                 TextButton(onClick = { showPicker = true }) { Text("Date") }
-                selectedDate?.let { Text(it, modifier = Modifier.alignByBaseline()) }
                 onDelete?.let { del ->
                     TextButton(onClick = del) { Text("Delete") }
                 }
                 TextButton(onClick = onDismiss) { Text("Cancel") }
             }
         },
+        dismissButton = {},
         text = {
             Column {
                 OutlinedTextField(
