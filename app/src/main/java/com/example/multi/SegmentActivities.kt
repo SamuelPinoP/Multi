@@ -266,14 +266,7 @@ private fun EventDialog(
             Button(onClick = { onSave(title, description, selectedDate) }) { Text("Save") }
         },
         dismissButton = {
-            Row {
-                TextButton(onClick = { showPicker = true }) { Text("Date") }
-                selectedDate?.let { Text(it, modifier = Modifier.alignByBaseline()) }
-                onDelete?.let { del ->
-                    TextButton(onClick = del) { Text("Delete") }
-                }
-                TextButton(onClick = onDismiss) { Text("Cancel") }
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         },
         text = {
             Column {
@@ -291,10 +284,13 @@ private fun EventDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    CalendarView()
-                } else {
-                    Text("Calendar requires Android O or higher")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { showPicker = true }) { Text("Date") }
+                    selectedDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                    Spacer(modifier = Modifier.weight(1f))
+                    onDelete?.let { del ->
+                        TextButton(onClick = del) { Text("Delete") }
+                    }
                 }
             }
         }
