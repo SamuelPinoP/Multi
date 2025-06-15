@@ -100,7 +100,11 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
 class CalendarActivity : SegmentActivity("Calendar") {
     @Composable
     override fun SegmentContent() {
-        CalendarView()
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            CalendarView()
+        } else {
+            Text("Calendar requires Android O or higher")
+        }
     }
 }
 /** Activity displaying the list of user events. */
@@ -277,7 +281,11 @@ private fun EventDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                CalendarView()
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    CalendarView()
+                } else {
+                    Text("Calendar requires Android O or higher")
+                }
             }
         }
     )

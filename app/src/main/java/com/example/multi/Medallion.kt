@@ -30,6 +30,10 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
+import android.os.Build
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, WORKOUT, NOTES }
@@ -153,10 +157,16 @@ fun MedallionScreen() {
                 TextButton(onClick = {
                     showPicker = false
                     pickerState.selectedDateMillis?.let { millis ->
-                        val date = java.time.Instant.ofEpochMilli(millis)
-                            .atZone(java.time.ZoneId.systemDefault())
-                            .toLocalDate()
-                        Toast.makeText(context, "Selected: $date", Toast.LENGTH_SHORT).show()
+                        val text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            val date = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                            date.toString()
+                        } else {
+                            val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                            fmt.format(Date(millis))
+                        }
+                        Toast.makeText(context, "Selected: $text", Toast.LENGTH_SHORT).show()
                     }
                 }) { Text("OK") }
             },
