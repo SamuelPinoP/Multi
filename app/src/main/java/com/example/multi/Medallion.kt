@@ -1,13 +1,23 @@
 package com.example.multi
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -130,8 +140,36 @@ fun Medallion(
 
 /** Simple screen displaying the [Medallion] in the center. */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun MedallionScreen() {
     val context = LocalContext.current
+    var showPicker by remember { mutableStateOf(false) }
+    val pickerState = rememberDatePickerState()
+
+    if (showPicker) {
+        DatePickerDialog(
+            onDismissRequest = { showPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    showPicker = false
+                    pickerState.selectedDateMillis?.let { millis ->
+                        // Use java.util.Date to avoid requiring newer java.time APIs
+                        val formatted = java.text.SimpleDateFormat(
+                            "yyyy-MM-dd",
+                            java.util.Locale.getDefault()
+                        ).format(java.util.Date(millis))
+                        Toast.makeText(context, "Selected: $formatted", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -139,14 +177,18 @@ fun MedallionScreen() {
         contentAlignment = Alignment.Center
     ) {
         Medallion { segment ->
-            val cls = when (segment) {
-                MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                MedallionSegment.CALENDAR -> CalendarActivity::class.java
-                MedallionSegment.EVENTS -> EventsActivity::class.java
-                MedallionSegment.WORKOUT -> WorkoutActivity::class.java
-                MedallionSegment.NOTES -> NotesActivity::class.java
+            if (segment == MedallionSegment.CALENDAR) {
+                showPicker = true
+            } else {
+                val cls = when (segment) {
+                    MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+                    MedallionSegment.EVENTS -> EventsActivity::class.java
+                    MedallionSegment.WORKOUT -> WorkoutActivity::class.java
+                    MedallionSegment.NOTES -> NotesActivity::class.java
+                    else -> CalendarActivity::class.java
+                }
+                context.startActivity(Intent(context, cls))
             }
-            context.startActivity(Intent(context, cls))
         }
     }
 }
