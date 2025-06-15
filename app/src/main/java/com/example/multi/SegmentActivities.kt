@@ -239,6 +239,7 @@ private fun EventDialog(
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
+    var showCalendar by remember { mutableStateOf(onDelete == null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -247,6 +248,7 @@ private fun EventDialog(
         },
         dismissButton = {
             Row {
+                TextButton(onClick = { showCalendar = !showCalendar }) { Text("Date") }
                 onDelete?.let { del ->
                     TextButton(onClick = del) { Text("Delete") }
                 }
@@ -268,6 +270,10 @@ private fun EventDialog(
                     label = { Text("Description") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (showCalendar) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    CalendarView()
+                }
             }
         }
     )
