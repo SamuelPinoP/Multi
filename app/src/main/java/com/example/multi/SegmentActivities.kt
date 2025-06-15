@@ -64,6 +64,10 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberDatePickerState
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
 
 /**
  * Base activity used for each feature segment of the application.
@@ -356,6 +360,13 @@ class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
 /** Model representing a user's recurring weekly goal. */
 data class WeeklyGoal(var header: String, var frequency: Int)
 
+/** Returns the number of days left before this week ends. */
+private fun daysRemainingInWeek(): Int {
+    val today = LocalDate.now()
+    val nextSunday = today.with(TemporalAdjusters.next(DayOfWeek.SUNDAY))
+    return ChronoUnit.DAYS.between(today, nextSunday).toInt() - 1
+}
+
 /**
  * Screen that manages and displays the user's weekly goals.
  */
@@ -414,6 +425,17 @@ private fun WeeklyGoalsScreen() {
                     Text("Edit", color = Color.White, fontSize = 20.sp)
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val remaining = daysRemainingInWeek()
+            Text(
+                text = "$remaining days remaining",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
