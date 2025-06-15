@@ -60,6 +60,10 @@ import com.example.multi.ui.theme.MultiTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberDatePickerState
 import kotlinx.coroutines.launch
 
 /**
@@ -230,6 +234,7 @@ private fun EventsScreen() {
 /**
  * Dialog used for creating or editing an [Event].
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventDialog(
     initial: Event,
@@ -239,6 +244,8 @@ private fun EventDialog(
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
+    var showPicker by remember { mutableStateOf(false) }
+    val pickerState = rememberDatePickerState()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -247,6 +254,7 @@ private fun EventDialog(
         },
         dismissButton = {
             Row {
+                TextButton(onClick = { showPicker = true }) { Text("Date") }
                 onDelete?.let { del ->
                     TextButton(onClick = del) { Text("Delete") }
                 }
@@ -268,9 +276,25 @@ private fun EventDialog(
                     label = { Text("Description") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+                CalendarView()
             }
         }
     )
+
+    if (showPicker) {
+        DatePickerDialog(
+            onDismissRequest = { showPicker = false },
+            confirmButton = {
+                TextButton(onClick = { showPicker = false }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
 }
 class WorkoutActivity : SegmentActivity("Workout") {
     @Composable
