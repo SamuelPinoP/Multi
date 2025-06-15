@@ -2,6 +2,14 @@
 
 This is a simple Android application using Jetpack Compose.
 
+The home screen now shows a Material Design date picker dialog when the
+Calendar segment is tapped. Ensure your Gradle configuration includes the
+Compose Material 3 dependency:
+
+```kotlin
+implementation("androidx.compose.material3:material3")
+```
+
 ## Prerequisites
 
 - Android Studio Hedgehog or later with the Android SDK configured
