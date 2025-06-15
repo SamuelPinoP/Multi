@@ -1,79 +1,75 @@
 package com.example.multi
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
-import java.time.DayOfWeek
+import androidx.compose.ui.viewinterop.AndroidView
+import com.prolificinteractive.materialcalendarview.CalendarDay
+import com.prolificinteractive.materialcalendarview.DayViewDecorator
+import com.prolificinteractive.materialcalendarview.DayViewFacade
+import com.prolificinteractive.materialcalendarview.MaterialCalendarView
+import com.prolificinteractive.materialcalendarview.spans.DotSpan
 import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.TextStyle
-import java.util.Locale
+import java.util.HashSet
 
-/** Returns the zero-based offset used by the calendar grid for this day. */
-internal fun DayOfWeek.toCalendarOffset(): Int = (this.value + 6) % 7
+private class EventDecorator(
+    private val dates: HashSet<CalendarDay>,
+    private val color: Int
+) : DayViewDecorator {
+    override fun shouldDecorate(day: CalendarDay): Boolean = dates.contains(day)
+    override fun decorate(view: DayViewFacade) {
+        view.addSpan(DotSpan(8f, color))
+    }
+}
 
-/**
- * Simple visual calendar for the given [date]. Displays the month, year,
- * days of the week and the days of the month in a grid. No interaction
- * is provided.
- */
 @Composable
-fun CalendarView(date: LocalDate = LocalDate.now()) {
-    val yearMonth = YearMonth.from(date)
-    val firstDayOfMonth = yearMonth.atDay(1)
-    val daysInMonth = yearMonth.lengthOfMonth()
-    val daysOfWeek = DayOfWeek.values()
-    val locale = Locale.getDefault()
+fun CalendarView(
+    events: Map<LocalDate, String> = mapOf(
+        LocalDate.now() to "Sample Event",
+        LocalDate.now().plusDays(2) to "Another Event"
+    )
+) {
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    val eventDates = remember(events) {
+        events.keys.map { CalendarDay.from(it.year, it.monthValue, it.dayOfMonth) }.toHashSet()
+    }
+    val color = MaterialTheme.colorScheme.primary.toArgb()
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "${yearMonth.month.getDisplayName(TextStyle.FULL, locale)} ${yearMonth.year}",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(vertical = 16.dp)
-        )
-        Row(modifier = Modifier.fillMaxWidth()) {
-            for (day in daysOfWeek) {
-                Text(
-                    text = day.getDisplayName(TextStyle.SHORT, locale),
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
-        val firstDayOffset = firstDayOfMonth.dayOfWeek.toCalendarOffset()
-        var currentDay = 1
-        val totalCells = firstDayOffset + daysInMonth
-        val rows = (totalCells + 6) / 7
-        Column {
-            for (row in 0 until rows) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    for (col in 0 until 7) {
-                        val cellIndex = row * 7 + col
-                        if (cellIndex < firstDayOffset || currentDay > daysInMonth) {
-                            Box(modifier = Modifier.weight(1f).aspectRatio(1f))
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .aspectRatio(1f),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = currentDay.toString(),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            currentDay++
-                        }
+        AndroidView(
+            factory = { context ->
+                MaterialCalendarView(context).apply {
+                    addDecorators(EventDecorator(eventDates, color))
+                    setOnDateChangedListener { _, date, _ ->
+                        selectedDate = LocalDate.of(date.year, date.month, date.day)
                     }
                 }
-            }
+            },
+            update = { view ->
+                view.setOnDateChangedListener { _, date, _ ->
+                    selectedDate = LocalDate.of(date.year, date.month, date.day)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        selectedDate?.let { date ->
+            Text(
+                text = events[date] ?: "No events",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(top = 16.dp)
+            )
         }
     }
 }
