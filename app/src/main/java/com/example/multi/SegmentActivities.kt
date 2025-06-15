@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.alignByBaseline
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -115,8 +116,12 @@ class EventsActivity : SegmentActivity("Events") {
     }
 }
 
-/** Model representing a single event entry. */
-data class Event(var title: String, var description: String)
+/** Model representing a single event entry with an optional date. */
+data class Event(
+    var title: String,
+    var description: String,
+    var date: String? = null
+)
 
 
 /**
@@ -130,11 +135,13 @@ private fun EventsScreen() {
                 list.forEach { event ->
                     add(event.title)
                     add(event.description)
+                    add(event.date ?: "")
                 }
             }
         },
         restore = { items ->
-            items.chunked(2).map { Event(it[0], it[1]) }.toMutableStateList()
+            items.chunked(3).map { Event(it[0], it[1], it[2].ifBlank { null }) }
+                .toMutableStateList()
         }
     )
     val events = rememberSaveable(saver = listSaver) { mutableStateListOf<Event>() }
@@ -157,7 +164,10 @@ private fun EventsScreen() {
                         .clickable { editingIndex = index }
                 ) {
                     Text(
-                        text = "${index + 1} - ${event.title}",
+                        text = buildString {
+                            append("${index + 1} - ${event.title}")
+                            event.date?.let { append("  Date: $it") }
+                        },
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -202,18 +212,18 @@ private fun EventsScreen() {
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
-            val event = if (isNew) Event("", "") else events[index]
+            val event = if (isNew) Event("", "", null) else events[index]
             EventDialog(
                 initial = event,
                 onDismiss = { editingIndex = null },
-                onSave = { title, desc ->
+                onSave = { title, desc, date ->
                     if (isNew) {
-                        events.add(Event(title, desc))
+                        events.add(Event(title, desc, date))
                         scope.launch {
                             snackbarHostState.showSnackbar("New Event added")
                         }
                     } else {
-                        events[index] = Event(title, desc)
+                        events[index] = Event(title, desc, date)
                     }
                     editingIndex = null
                 },
@@ -243,22 +253,24 @@ private fun EventsScreen() {
 private fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit,
+    onSave: (String, String, String?) -> Unit,
     onDelete: (() -> Unit)? = null
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
+    var selectedDate by remember { mutableStateOf(initial.date) }
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
 
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(onClick = { onSave(title, description) }) { Text("Save") }
+            Button(onClick = { onSave(title, description, selectedDate) }) { Text("Save") }
         },
         dismissButton = {
             Row {
                 TextButton(onClick = { showPicker = true }) { Text("Date") }
+                selectedDate?.let { Text(it, modifier = Modifier.alignByBaseline()) }
                 onDelete?.let { del ->
                     TextButton(onClick = del) { Text("Delete") }
                 }
@@ -294,7 +306,20 @@ private fun EventDialog(
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {
-                TextButton(onClick = { showPicker = false }) { Text("OK") }
+                TextButton(onClick = {
+                    showPicker = false
+                    pickerState.selectedDateMillis?.let { millis ->
+                        selectedDate = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                                .toString()
+                        } else {
+                            val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                            fmt.format(java.util.Date(millis))
+                        }
+                    }
+                }) { Text("OK") }
             },
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) { Text("Cancel") }
