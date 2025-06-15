@@ -61,6 +61,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 /**
  * Base activity used for each feature segment of the application.
@@ -96,7 +97,13 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
 class CalendarActivity : SegmentActivity("Calendar") {
     @Composable
     override fun SegmentContent() {
-        CalendarView()
+        val events = remember {
+            setOf(
+                LocalDate.now().minusDays(1),
+                LocalDate.now().plusDays(2)
+            )
+        }
+        CalendarView(eventDates = events)
     }
 }
 /** Activity displaying the list of user events. */
