@@ -26,6 +26,7 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-material = { group = "androidx.compose.material", name = "material" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+material-calendarview = { group = "com.prolificinteractive", name = "material-calendarview", version = "1.4.3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
