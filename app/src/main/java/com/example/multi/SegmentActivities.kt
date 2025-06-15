@@ -309,7 +309,7 @@ private fun EventDialog(
                     pickerState.selectedDateMillis?.let { millis ->
                         selectedDate = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                             java.time.Instant.ofEpochMilli(millis)
-                                .atZone(java.time.ZoneId.systemDefault())
+                                .atZone(java.time.ZoneOffset.UTC)
                                 .toLocalDate()
                                 .toString()
                         } else {

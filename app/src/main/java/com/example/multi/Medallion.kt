@@ -159,7 +159,7 @@ fun MedallionScreen() {
                     pickerState.selectedDateMillis?.let { millis ->
                         val text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             val date = java.time.Instant.ofEpochMilli(millis)
-                                .atZone(java.time.ZoneId.systemDefault())
+                                .atZone(java.time.ZoneOffset.UTC)
                                 .toLocalDate()
                             date.toString()
                         } else {
