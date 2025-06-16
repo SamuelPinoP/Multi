@@ -59,6 +59,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.ui.theme.DarkGreen
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -700,6 +701,8 @@ fun SegmentScreen(
         topBar = {
             TopAppBar(
                 modifier = Modifier.height(135.dp),
+                backgroundColor = DarkGreen,
+                contentColor = Color.White,
                 title = {
                     Text(
                         text = title,

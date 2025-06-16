@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.ui.theme.DarkGreen
 
 /**
  * Activity that allows the user to create a new calendar event.
@@ -60,6 +61,8 @@ private fun CreateEventScreen(onSave: () -> Unit) {
     topBar = {
         TopAppBar(
             modifier = Modifier.height(135.dp),
+            backgroundColor = DarkGreen,
+            contentColor = androidx.compose.ui.graphics.Color.White,
             title = {
                 Text(
                     text = "New Event",
