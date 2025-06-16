@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -261,13 +262,30 @@ private fun EventDialog(
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
     var selectedDate by remember { mutableStateOf(initial.date) }
+    var repeatOption by remember { mutableStateOf<String?>(null) }
+    var selectedDays by remember { mutableStateOf(setOf<DayOfWeek>()) }
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
 
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(onClick = { onSave(title, description, selectedDate) }) { Text("Save") }
+            Button(onClick = {
+                val finalDate = if (selectedDays.isNotEmpty() && repeatOption != null) {
+                    val days = DayOfWeek.values().filter { it in selectedDays }.sortedBy { it.value % 7 }
+                    val names = days.map { it.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault()) }
+                    val joined = when (names.size) {
+                        1 -> names[0]
+                        2 -> names.joinToString(" and ")
+                        else -> names.dropLast(1).joinToString(", ") + " and " + names.last()
+                    }
+                    val prefix = if (repeatOption == "Every") "Every" else "Every Other"
+                    "$prefix $joined"
+                } else {
+                    selectedDate
+                }
+                onSave(title, description, finalDate)
+            }) { Text("Save") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
@@ -294,6 +312,45 @@ private fun EventDialog(
                     Spacer(modifier = Modifier.weight(1f))
                     onDelete?.let { del ->
                         TextButton(onClick = del) { Text("Delete") }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    val selectedColor = MaterialTheme.colorScheme.primary
+                    val unselected = MaterialTheme.colorScheme.surfaceVariant
+                    Button(
+                        onClick = { repeatOption = "Every" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (repeatOption == "Every") selectedColor else unselected
+                        )
+                    ) { Text("Every") }
+                    Button(
+                        onClick = { repeatOption = "Every Other" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (repeatOption == "Every Other") selectedColor else unselected
+                        )
+                    ) { Text("Every Other") }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DayOfWeek.values().forEach { day ->
+                        val checked = day in selectedDays
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(day.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault()).substring(0,1))
+                            Checkbox(
+                                checked = checked,
+                                onCheckedChange = { isChecked ->
+                                    selectedDays = if (isChecked) selectedDays + day else selectedDays - day
+                                }
+                            )
+                        }
                     }
                 }
             }
