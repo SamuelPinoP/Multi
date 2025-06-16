@@ -19,7 +19,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.toMutableStateList
 import kotlin.collections.buildList
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -50,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.style.TextAlign
@@ -59,6 +59,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.data.Event
+import com.example.multi.data.EventDatabase
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -121,35 +123,14 @@ class EventsActivity : SegmentActivity("Events") {
     }
 }
 
-/** Model representing a single event entry with an optional date. */
-data class Event(
-    var title: String,
-    var description: String,
-    var date: String? = null
-)
-
-
 /**
  * Screen that displays a list of events and allows creating or editing them.
  */
 @Composable
 private fun EventsScreen() {
-    val listSaver = listSaver<MutableList<Event>, String>(
-        save = { list ->
-            buildList<String> {
-                list.forEach { event ->
-                    add(event.title)
-                    add(event.description)
-                    add(event.date ?: "")
-                }
-            }
-        },
-        restore = { items ->
-            items.chunked(3).map { Event(it[0], it[1], it[2].ifBlank { null }) }
-                .toMutableStateList()
-        }
-    )
-    val events = rememberSaveable(saver = listSaver) { mutableStateListOf<Event>() }
+    val context = LocalContext.current
+    val dao = remember { EventDatabase.get(context).eventDao() }
+    val events by dao.getEvents().collectAsState(initial = emptyList())
     var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -223,18 +204,21 @@ private fun EventsScreen() {
                 onDismiss = { editingIndex = null },
                 onSave = { title, desc, date ->
                     if (isNew) {
-                        events.add(Event(title, desc, date))
                         scope.launch {
+                            dao.insert(Event(title = title, description = desc, date = date))
                             snackbarHostState.showSnackbar("New Event added")
                         }
                     } else {
-                        events[index] = Event(title, desc, date)
+                        val current = events[index]
+                        scope.launch {
+                            dao.update(current.copy(title = title, description = desc, date = date))
+                        }
                     }
                     editingIndex = null
                 },
                 onDelete = if (isNew) null else {
                     {
-                        events.removeAt(index)
+                        scope.launch { dao.delete(events[index]) }
                         editingIndex = null
                     }
                 }
