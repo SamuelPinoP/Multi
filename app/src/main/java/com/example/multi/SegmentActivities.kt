@@ -21,6 +21,13 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.toMutableStateList
 import kotlin.collections.buildList
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toEntity
+import com.example.multi.data.toModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -121,12 +128,7 @@ class EventsActivity : SegmentActivity("Events") {
     }
 }
 
-/** Model representing a single event entry with an optional date. */
-data class Event(
-    var title: String,
-    var description: String,
-    var date: String? = null
-)
+
 
 
 /**
@@ -134,25 +136,18 @@ data class Event(
  */
 @Composable
 private fun EventsScreen() {
-    val listSaver = listSaver<MutableList<Event>, String>(
-        save = { list ->
-            buildList<String> {
-                list.forEach { event ->
-                    add(event.title)
-                    add(event.description)
-                    add(event.date ?: "")
-                }
-            }
-        },
-        restore = { items ->
-            items.chunked(3).map { Event(it[0], it[1], it[2].ifBlank { null }) }
-                .toMutableStateList()
-        }
-    )
-    val events = rememberSaveable(saver = listSaver) { mutableStateListOf<Event>() }
-    var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    val context = LocalContext.current
+    val events = remember { mutableStateListOf<Event>() }
+    var editingIndex by remember { mutableStateOf<Int?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        val dao = EventDatabase.getInstance(context).eventDao()
+        val stored = withContext(Dispatchers.IO) { dao.getEvents() }
+        events.clear()
+        events.addAll(stored.map { it.toModel() })
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -217,25 +212,35 @@ private fun EventsScreen() {
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
-            val event = if (isNew) Event("", "", null) else events[index]
+            val event = if (isNew) Event(0L, "", "", null) else events[index]
             EventDialog(
                 initial = event,
                 onDismiss = { editingIndex = null },
                 onSave = { title, desc, date ->
-                    if (isNew) {
-                        events.add(Event(title, desc, date))
-                        scope.launch {
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).eventDao()
+                        if (isNew) {
+                            val id = withContext(Dispatchers.IO) {
+                                dao.insert(Event(title = title, description = desc, date = date).toEntity())
+                            }
+                            events.add(Event(id, title, desc, date))
                             snackbarHostState.showSnackbar("New Event added")
+                        } else {
+                            val updated = Event(event.id, title, desc, date)
+                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                            events[index] = updated
                         }
-                    } else {
-                        events[index] = Event(title, desc, date)
+                        editingIndex = null
                     }
-                    editingIndex = null
                 },
                 onDelete = if (isNew) null else {
                     {
-                        events.removeAt(index)
-                        editingIndex = null
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).eventDao()
+                            withContext(Dispatchers.IO) { dao.delete(event.toEntity()) }
+                            events.removeAt(index)
+                            editingIndex = null
+                        }
                     }
                 }
             )
