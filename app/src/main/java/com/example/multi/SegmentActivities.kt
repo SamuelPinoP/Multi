@@ -297,11 +297,10 @@ private fun EventDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(
-                onClick = {
-                    val daysFull = listOf(
-                        "Sunday",
-                        "Monday",
+            Button(onClick = {
+                val daysFull = listOf(
+                    "Sunday",
+                    "Monday",
                     "Tuesday",
                     "Wednesday",
                     "Thursday",
@@ -321,10 +320,8 @@ private fun EventDialog(
                 } else {
                     selectedDate
                 }
-                    onSave(title, description, finalDate)
-                },
-                enabled = title.isNotBlank()
-            ) { Text("Save") }
+                onSave(title, description, finalDate)
+            }) { Text("Save") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
@@ -371,12 +368,9 @@ private fun EventDialog(
                     ) { Text("Every Other") }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                val scrollState = rememberScrollState()
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(scrollState),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     val letters = listOf("S", "M", "T", "W", "T", "F", "S")
                     for (i in 0..6) {

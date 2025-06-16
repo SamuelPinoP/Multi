@@ -73,7 +73,7 @@ private fun CreateEventScreen(onSave: () -> Unit) {
     },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { if (title.isNotBlank()) onSave() },
+                onClick = onSave,
                 modifier = Modifier.padding(bottom = 48.dp)
             ) {
                 Icon(Icons.Default.Check, contentDescription = "Save")
