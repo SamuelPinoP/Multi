@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.os.Build
 import android.os.Bundle
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import kotlin.collections.buildList
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -446,6 +448,7 @@ class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
 data class WeeklyGoal(var header: String, var frequency: Int)
 
 /** Returns the number of days left before this week ends. */
+@RequiresApi(Build.VERSION_CODES.O)
 private fun daysRemainingInWeek(): Int {
     val today = LocalDate.now()
     val nextSunday = today.with(TemporalAdjusters.next(DayOfWeek.SUNDAY))
