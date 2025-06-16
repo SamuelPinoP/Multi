@@ -297,7 +297,8 @@ private fun EventDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(onClick = {
+            Button(
+                onClick = {
                 val daysFull = listOf(
                     "Sunday",
                     "Monday",
@@ -321,7 +322,9 @@ private fun EventDialog(
                     selectedDate
                 }
                 onSave(title, description, finalDate)
-            }) { Text("Save") }
+                },
+                enabled = title.isNotBlank()
+            ) { Text("Save") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
@@ -368,13 +371,19 @@ private fun EventDialog(
                     ) { Text("Every Other") }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
+                val scrollState = rememberScrollState()
                 Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(scrollState)
                 ) {
                     val letters = listOf("S", "M", "T", "W", "T", "F", "S")
                     for (i in 0..6) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
                             Checkbox(
                                 checked = dayChecks[i],
                                 onCheckedChange = { dayChecks[i] = it }

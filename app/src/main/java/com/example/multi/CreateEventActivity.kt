@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -56,6 +57,8 @@ private fun CreateEventScreen(onSave: () -> Unit) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
 
+    val context = LocalContext.current
+
     androidx.compose.material.Scaffold(
     topBar = {
         TopAppBar(
@@ -73,7 +76,13 @@ private fun CreateEventScreen(onSave: () -> Unit) {
     },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onSave,
+                onClick = {
+                    if (title.isNotBlank()) {
+                        onSave()
+                    } else {
+                        Toast.makeText(context, "Title required", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 modifier = Modifier.padding(bottom = 48.dp)
             ) {
                 Icon(Icons.Default.Check, contentDescription = "Save")
