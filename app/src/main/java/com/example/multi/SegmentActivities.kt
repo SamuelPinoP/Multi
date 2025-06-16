@@ -444,6 +444,7 @@ class NotesActivity : SegmentActivity("Notes") {
 
 /** Activity presenting the weekly goals feature. */
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
+    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     override fun SegmentContent() {
         WeeklyGoalsScreen()
@@ -464,6 +465,7 @@ private fun daysRemainingInWeek(): Int {
 /**
  * Screen that manages and displays the user's weekly goals.
  */
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun WeeklyGoalsScreen() {
     val listSaver = listSaver<MutableList<WeeklyGoal>, String>(
