@@ -489,7 +489,7 @@ private fun WeeklyGoalsScreen() {
         }
     )
 
-    val goals = rememberSaveable(saver = listSaver) { mutableStateListOf<WeeklyGoal>() }
+    val goals = rememberSaveable(stateSaver = listSaver) { mutableStateListOf<WeeklyGoal>() }
     var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
