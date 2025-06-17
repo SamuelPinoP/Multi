@@ -1,7 +1,8 @@
 /*
     There is a lot of work to do now!
-1-
-
+1- Debug any errors
+2- Supervise remaining days algorithm were the days remaining need to be working as intended
+3- Supervise the Record displaying the correct info.
 
 */
 
