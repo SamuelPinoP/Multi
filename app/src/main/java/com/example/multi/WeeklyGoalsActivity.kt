@@ -97,14 +97,14 @@ private fun WeeklyGoalsScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = { /* TODO: Historial action */ },
+                    onClick = { /* TODO: Record action */ },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
                     modifier = Modifier
                         .weight(1f)
                         .height(46.dp)
                         .padding(end = 8.dp)
                 ) {
-                    androidx.compose.material.Text("Historial", color = Color.White, fontSize = 20.sp)
+                    androidx.compose.material.Text("Record", color = Color.White, fontSize = 20.sp)
                 }
                 Button(
                     onClick = { editingIndex = -1 },
