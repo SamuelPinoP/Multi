@@ -22,13 +22,12 @@ import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.toMutableStateList
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,13 +40,13 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.collections.buildList
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toEntity
+import com.example.multi.data.toModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-import java.time.temporal.TemporalAdjusters
-import java.time.temporal.IsoFields
 
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -57,64 +56,29 @@ class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     }
 }
 
-data class WeeklyGoal(
-    var header: String,
-    var frequency: Int,
-    var remaining: Int = frequency,
-    var lastCheckedDate: String? = null,
-    var weekNumber: Int = currentWeek()
-)
-
-@RequiresApi(Build.VERSION_CODES.O)
-private fun currentWeek(): Int = LocalDate.now().get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)
-
-@RequiresApi(Build.VERSION_CODES.O)
-private fun daysRemainingInWeek(): Int {
-    val today = LocalDate.now()
-    val nextSunday = today.with(TemporalAdjusters.next(DayOfWeek.SUNDAY))
-    return ChronoUnit.DAYS.between(today, nextSunday).toInt() - 1
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun WeeklyGoalsScreen() {
-    val listSaver = listSaver<MutableList<WeeklyGoal>, String>(
-        save = { list ->
-            buildList {
-                list.forEach { goal ->
-                    add(goal.header)
-                    add(goal.frequency.toString())
-                    add(goal.remaining.toString())
-                    add(goal.lastCheckedDate ?: "")
-                    add(goal.weekNumber.toString())
-                }
-            }
-        },
-        restore = { items ->
-            items.chunked(5).map {
-                WeeklyGoal(
-                    it[0],
-                    it[1].toInt(),
-                    it[2].toInt(),
-                    it[3].ifBlank { null },
-                    it[4].toInt()
-                )
-            }.toMutableStateList()
-        }
-    )
-
-    val goals = rememberSaveable(saver = listSaver) { mutableStateListOf<WeeklyGoal>() }
-    var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    val context = LocalContext.current
+    val goals = remember { mutableStateListOf<WeeklyGoal>() }
+    var editingIndex by remember { mutableStateOf<Int?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    val currentWeek = currentWeek()
-    goals.forEach { goal ->
-        if (goal.weekNumber != currentWeek) {
-            goal.remaining = goal.frequency
-            goal.weekNumber = currentWeek
-            goal.lastCheckedDate = null
+    LaunchedEffect(Unit) {
+        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+        val stored = withContext(Dispatchers.IO) { dao.getGoals() }
+        val week = currentWeek()
+        val list = stored.map { entity ->
+            var model = entity.toModel()
+            if (model.weekNumber != week) {
+                model = model.copy(remaining = model.frequency, weekNumber = week, lastCheckedDate = null)
+                withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
+            }
+            model
         }
+        goals.clear()
+        goals.addAll(list)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -227,6 +191,10 @@ private fun WeeklyGoalsScreen() {
                                                             lastCheckedDate = today
                                                         )
                                                         goals[index] = updated
+                                                        scope.launch {
+                                                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                                        }
                                                     }
                                                 }
                                         )
@@ -247,28 +215,42 @@ private fun WeeklyGoalsScreen() {
                 initial = goal,
                 onDismiss = { editingIndex = null },
                 onSave = { header, freq ->
-                    val newGoal = WeeklyGoal(header, freq)
-                    if (isNew) {
-                        goals.add(newGoal)
-                        scope.launch {
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                        if (isNew) {
+                            val id = withContext(Dispatchers.IO) {
+                                dao.insert(WeeklyGoal(header = header, frequency = freq).toEntity())
+                            }
+                            goals.add(WeeklyGoal(id, header, freq))
                             snackbarHostState.showSnackbar("New Weekly Activity added")
+                        } else {
+                            val updated = WeeklyGoal(goal.id, header, freq)
+                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                            goals[index] = updated
                         }
-                    } else {
-                        goals[index] = newGoal
+                        editingIndex = null
                     }
-                    editingIndex = null
                 },
                 onDelete = if (isNew) null else {
                     {
-                        goals.removeAt(index)
-                        editingIndex = null
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                            withContext(Dispatchers.IO) { dao.delete(goal.toEntity()) }
+                            goals.removeAt(index)
+                            editingIndex = null
+                        }
                     }
                 },
                 onProgress = if (isNew) null else {
                     {
                         val g = goals[index]
                         if (g.remaining > 0) {
-                            goals[index] = g.copy(remaining = g.remaining - 1)
+                            val updated = g.copy(remaining = g.remaining - 1)
+                            goals[index] = updated
+                            scope.launch {
+                                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                            }
                         }
                     }
                 }
