@@ -186,40 +186,51 @@ private fun WeeklyGoalsScreen() {
                             .fillMaxWidth()
                             .clickable { editingIndex = index }
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            androidx.compose.material.Text(
-                                text = goal.header,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)) {
+                            if (goal.remaining == 0) {
                                 androidx.compose.material.Text(
-                                    text = "${goal.remaining}/${goal.frequency}",
+                                    text = "Completed",
+                                    color = Color.Green,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                androidx.compose.material.Text(
+                                    text = goal.header,
                                     style = MaterialTheme.typography.bodyLarge
                                 )
-                                val today = LocalDate.now().toString()
-                                if (goal.lastCheckedDate != today && goal.remaining > 0) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = "Complete",
-                                        tint = Color.Green,
-                                        modifier = Modifier
-                                            .padding(start = 8.dp)
-                                            .clickable {
-                                                if (goal.remaining > 0) {
-                                                    val updated = goal.copy(
-                                                        remaining = goal.remaining - 1,
-                                                        lastCheckedDate = today
-                                                    )
-                                                    goals[index] = updated
-                                                }
-                                            }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    androidx.compose.material.Text(
+                                        text = "${goal.remaining}/${goal.frequency}",
+                                        style = MaterialTheme.typography.bodyLarge
                                     )
+                                    val today = LocalDate.now().toString()
+                                    if (goal.lastCheckedDate != today && goal.remaining > 0) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = "Complete",
+                                            tint = Color.Green,
+                                            modifier = Modifier
+                                                .padding(start = 8.dp)
+                                                .clickable {
+                                                    if (goal.remaining > 0) {
+                                                        val updated = goal.copy(
+                                                            remaining = goal.remaining - 1,
+                                                            lastCheckedDate = today
+                                                        )
+                                                        goals[index] = updated
+                                                    }
+                                                }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -255,13 +266,9 @@ private fun WeeklyGoalsScreen() {
                 },
                 onProgress = if (isNew) null else {
                     {
-                        val today = LocalDate.now().toString()
                         val g = goals[index]
-                        if (g.lastCheckedDate != today && g.remaining > 0) {
-                            goals[index] = g.copy(
-                                remaining = g.remaining - 1,
-                                lastCheckedDate = today
-                            )
+                        if (g.remaining > 0) {
+                            goals[index] = g.copy(remaining = g.remaining - 1)
                         }
                     }
                 }
@@ -300,7 +307,10 @@ private fun WeeklyGoalDialog(
             Row {
                 onProgress?.let { prog ->
                     Button(
-                        onClick = prog,
+                        onClick = {
+                            prog()
+                            onDismiss()
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                         modifier = Modifier.padding(end = 8.dp)
                     ) { androidx.compose.material.Text("Progress") }
