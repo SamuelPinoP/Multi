@@ -307,32 +307,37 @@ private fun EventDialog(
                     val daysFull = listOf(
                         "Sunday",
                         "Monday",
-                    "Tuesday",
-                    "Wednesday",
-                    "Thursday",
-                    "Friday",
-                    "Saturday"
-                )
-                val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-                val finalDate = if (selectedNames.isNotEmpty()) {
-                    val prefix = if (repeatOption == "Every") "Every" else "Every other"
-                    val dayString = when (selectedNames.size) {
-                        1 -> selectedNames.first()
-                        2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                        else ->
-                            selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
+                        "Tuesday",
+                        "Wednesday",
+                        "Thursday",
+                        "Friday",
+                        "Saturday"
+                    )
+                    val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
+                    val finalDate = if (selectedNames.isNotEmpty()) {
+                        val prefix = if (repeatOption == "Every") "Every" else "Every other"
+                        val dayString = when (selectedNames.size) {
+                            1 -> selectedNames.first()
+                            2 -> "${'$'}{selectedNames[0]} and ${'$'}{selectedNames[1]}"
+                            else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
+                        }
+                        "$prefix $dayString"
+                    } else {
+                        selectedDate
                     }
-                    "$prefix $dayString"
-                } else {
-                    selectedDate
-                }
                     onSave(title, description, finalDate)
+                    onDismiss()
                 },
                 enabled = title.isNotBlank()
             ) { Text("Save") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            Row {
+                onDelete?.let { del ->
+                    TextButton(onClick = del) { Text("Delete") }
+                }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
         },
         text = {
             Column {
@@ -353,10 +358,6 @@ private fun EventDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
-                    Spacer(modifier = Modifier.weight(1f))
-                    onDelete?.let { del ->
-                        TextButton(onClick = del) { Text("Delete") }
-                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
