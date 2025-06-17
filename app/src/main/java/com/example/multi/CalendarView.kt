@@ -30,7 +30,7 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
     val yearMonth = YearMonth.from(date)
     val firstDayOfMonth = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
-    val daysOfWeek = DayOfWeek.values()
+    val daysOfWeek = DayOfWeek.entries.toTypedArray()
     val locale = Locale.getDefault()
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
