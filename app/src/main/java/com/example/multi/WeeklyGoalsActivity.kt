@@ -13,14 +13,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,7 +56,28 @@ class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     }
 }
 
-data class WeeklyGoal(var header: String, var frequency: Int)
+data class WeeklyGoal(
+    var header: String,
+    var frequency: Int,
+    var remaining: Int = frequency,
+    var weekStart: LocalDate = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)),
+    var lastCheck: LocalDate? = null
+)
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun startOfCurrentWeek(): LocalDate {
+    return LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun refreshGoalForWeek(goal: WeeklyGoal) {
+    val currentStart = startOfCurrentWeek()
+    if (goal.weekStart != currentStart) {
+        goal.weekStart = currentStart
+        goal.remaining = goal.frequency
+        goal.lastCheck = null
+    }
+}
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun daysRemainingInWeek(): Int {
@@ -73,11 +95,20 @@ private fun WeeklyGoalsScreen() {
                 list.forEach { goal ->
                     add(goal.header)
                     add(goal.frequency.toString())
+                    add(goal.remaining.toString())
+                    add(goal.weekStart.toString())
+                    add(goal.lastCheck?.toString() ?: "")
                 }
             }
         },
         restore = { items ->
-            items.chunked(2).map { WeeklyGoal(it[0], it[1].toInt()) }.toMutableStateList()
+            items.chunked(5).map {
+                WeeklyGoal(it[0], it[1].toInt()).apply {
+                    remaining = it[2].toInt()
+                    weekStart = LocalDate.parse(it[3])
+                    lastCheck = it[4].takeIf { s -> s.isNotEmpty() }?.let(LocalDate::parse)
+                }
+            }.toMutableStateList()
         }
     )
 
@@ -162,14 +193,33 @@ private fun WeeklyGoalsScreen() {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            refreshGoalForWeek(goal)
+
                             androidx.compose.material.Text(
                                 text = goal.header,
                                 style = MaterialTheme.typography.bodyLarge
                             )
-                            androidx.compose.material.Text(
-                                text = "${goal.frequency}/7",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                androidx.compose.material.Text(
+                                    text = "${goal.remaining}/${goal.frequency}",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                if (goal.lastCheck != LocalDate.now() && goal.remaining > 0) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Button(
+                                        onClick = {
+                                            goal.remaining--
+                                            goal.lastCheck = LocalDate.now()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                        contentPadding = PaddingValues(0.dp),
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(Icons.Default.Check, contentDescription = "Done", tint = Color.White)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -199,6 +249,13 @@ private fun WeeklyGoalsScreen() {
                         goals.removeAt(index)
                         editingIndex = null
                     }
+                },
+                onProgress = {
+                    if (goal.remaining > 0) {
+                        goal.remaining--
+                        goal.lastCheck = LocalDate.now()
+                    }
+                    editingIndex = null
                 }
             )
         }
@@ -217,7 +274,8 @@ private fun WeeklyGoalDialog(
     initial: WeeklyGoal,
     onDismiss: () -> Unit,
     onSave: (String, Int) -> Unit,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    onProgress: (() -> Unit)? = null
 ) {
     var header by remember { mutableStateOf(initial.header) }
     var frequency by remember { mutableStateOf<Int?>(initial.frequency) }
@@ -232,6 +290,15 @@ private fun WeeklyGoalDialog(
         },
         dismissButton = {
             Row {
+                onProgress?.let { prog ->
+                    Button(
+                        onClick = prog,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        androidx.compose.material.Text("Progress", color = Color.White)
+                    }
+                }
                 onDelete?.let { del ->
                     TextButton(onClick = del) { androidx.compose.material.Text("Delete") }
                 }
