@@ -217,6 +217,8 @@ private fun EventsScreen() {
                 initial = event,
                 onDismiss = { editingIndex = null },
                 onSave = { title, desc, date ->
+                    // Close the dialog immediately then save in the background
+                    editingIndex = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
@@ -230,7 +232,6 @@ private fun EventsScreen() {
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                             events[index] = updated
                         }
-                        editingIndex = null
                     }
                 },
                 onDelete = if (isNew) null else {
@@ -332,7 +333,12 @@ private fun EventDialog(
             ) { Text("Save") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            Row {
+                onDelete?.let { del ->
+                    TextButton(onClick = del) { Text("Delete") }
+                }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
         },
         text = {
             Column {
@@ -353,10 +359,6 @@ private fun EventDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
-                    Spacer(modifier = Modifier.weight(1f))
-                    onDelete?.let { del ->
-                        TextButton(onClick = del) { Text("Delete") }
-                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
