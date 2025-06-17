@@ -40,6 +40,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import kotlin.collections.buildList
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -55,7 +57,12 @@ class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     }
 }
 
-data class WeeklyGoal(var header: String, var frequency: Int)
+data class WeeklyGoal(
+    var header: String,
+    var frequency: Int,
+    var remaining: Int = frequency,
+    var lastCheckedDate: LocalDate? = null
+)
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun daysRemainingInWeek(): Int {
@@ -73,11 +80,20 @@ private fun WeeklyGoalsScreen() {
                 list.forEach { goal ->
                     add(goal.header)
                     add(goal.frequency.toString())
+                    add(goal.remaining.toString())
+                    add(goal.lastCheckedDate?.toString() ?: "")
                 }
             }
         },
         restore = { items ->
-            items.chunked(2).map { WeeklyGoal(it[0], it[1].toInt()) }.toMutableStateList()
+            items.chunked(4).map {
+                WeeklyGoal(
+                    it[0],
+                    it[1].toInt(),
+                    it[2].toInt(),
+                    if (it[3].isNotEmpty()) LocalDate.parse(it[3]) else null
+                )
+            }.toMutableStateList()
         }
     )
 
@@ -85,6 +101,21 @@ private fun WeeklyGoalsScreen() {
     var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    // Reset progress when a new week starts
+    LaunchedEffect(Unit) {
+        val today = LocalDate.now()
+        val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+        goals.forEach { goal ->
+            goal.lastCheckedDate?.let { last ->
+                val goalWeek = last.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+                if (goalWeek.isBefore(weekStart)) {
+                    goal.remaining = goal.frequency
+                    goal.lastCheckedDate = null
+                }
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -166,10 +197,25 @@ private fun WeeklyGoalsScreen() {
                                 text = goal.header,
                                 style = MaterialTheme.typography.bodyLarge
                             )
-                            androidx.compose.material.Text(
-                                text = "${goal.frequency}/7",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                androidx.compose.material.Text(
+                                    text = "${goal.remaining}/${goal.frequency}",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                if (goal.lastCheckedDate != LocalDate.now() && goal.remaining > 0) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Button(
+                                        onClick = {
+                                            goal.remaining--
+                                            goal.lastCheckedDate = LocalDate.now()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(Icons.Default.Check, contentDescription = "Done", tint = Color.White)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -199,6 +245,15 @@ private fun WeeklyGoalsScreen() {
                         goals.removeAt(index)
                         editingIndex = null
                     }
+                },
+                onProgress = if (isNew) null else {
+                    {
+                        val g = goals[index]
+                        if (g.remaining > 0 && g.lastCheckedDate != LocalDate.now()) {
+                            g.remaining--
+                            g.lastCheckedDate = LocalDate.now()
+                        }
+                    }
                 }
             )
         }
@@ -217,7 +272,8 @@ private fun WeeklyGoalDialog(
     initial: WeeklyGoal,
     onDismiss: () -> Unit,
     onSave: (String, Int) -> Unit,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    onProgress: (() -> Unit)? = null
 ) {
     var header by remember { mutableStateOf(initial.header) }
     var frequency by remember { mutableStateOf<Int?>(initial.frequency) }
@@ -232,6 +288,13 @@ private fun WeeklyGoalDialog(
         },
         dismissButton = {
             Row {
+                onProgress?.let { prog ->
+                    Button(
+                        onClick = prog,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) { androidx.compose.material.Text("Progress") }
+                }
                 onDelete?.let { del ->
                     TextButton(onClick = del) { androidx.compose.material.Text("Delete") }
                 }
