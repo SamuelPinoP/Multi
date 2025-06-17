@@ -15,8 +15,8 @@ fun currentWeek(): Int = LocalDate.now().get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)
 @RequiresApi(Build.VERSION_CODES.O)
 fun daysRemainingInWeek(): Int {
     val today = LocalDate.now()
-    val nextSunday = today.with(TemporalAdjusters.next(DayOfWeek.SUNDAY))
-    return ChronoUnit.DAYS.between(today, nextSunday).toInt() - 1
+    val nextMonday = today.with(TemporalAdjusters.next(DayOfWeek.MONDAY))
+    return ChronoUnit.DAYS.between(today, nextMonday).toInt()
 }
 
 data class WeeklyGoal(

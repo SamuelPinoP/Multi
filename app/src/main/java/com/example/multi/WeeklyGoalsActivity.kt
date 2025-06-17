@@ -313,7 +313,7 @@ private fun WeeklyGoalDialog(
                 TextButton(onClick = onDismiss) { androidx.compose.material.Text("Cancel") }
             }
         },
-        title = { androidx.compose.material.Text("Custom your Weekly Routine!") },
+        title = { androidx.compose.material.Text("Customize your Weekly Routine!") },
         text = {
             Column {
                 androidx.compose.material.Text("Header", style = MaterialTheme.typography.bodySmall)
