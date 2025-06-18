@@ -62,6 +62,7 @@ fun RecordScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.height(135.dp),
                 backgroundColor = Color.White,
                 elevation = 4.dp,
                 title = {
@@ -81,6 +82,9 @@ fun RecordScreen(onBack: () -> Unit) {
                             tint = Color.Black
                         )
                     }
+                },
+                actions = {
+                    Spacer(modifier = Modifier.width(48.dp))
                 }
             )
         }
