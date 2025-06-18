@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.border
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
@@ -117,7 +118,9 @@ fun RecordScreen(onBack: () -> Unit) {
                             text = "$month - Week $weekOfMonth - ${start.format(dateFormatter)} - ${end.format(dateFormatter)}",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 8.dp)
+                                .border(1.dp, Color.Black)
+                                .padding(4.dp),
                             textAlign = TextAlign.Center,
                             style = androidx.compose.material3.MaterialTheme.typography.titleMedium
                         )
