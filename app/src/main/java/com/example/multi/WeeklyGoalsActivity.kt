@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.WeeklyRecord
+import com.example.multi.RecordActivity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,19 +66,30 @@ private fun WeeklyGoalsScreen() {
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-        val stored = withContext(Dispatchers.IO) { dao.getGoals() }
+        val db = EventDatabase.getInstance(context)
+        val goalDao = db.weeklyGoalDao()
+        val recordDao = db.weeklyRecordDao()
+        val stored = withContext(Dispatchers.IO) { goalDao.getGoals() }
         val currentWeek = currentWeek()
         goals.clear()
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
-                model = model.copy(
-                    remaining = model.frequency,
-                    weekNumber = currentWeek,
-                    lastCheckedDate = null
-                )
-                withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
+                val done = model.frequency - model.remaining
+                val start = java.time.LocalDate.now().with(java.time.DayOfWeek.MONDAY).minusWeeks(1)
+                val end = start.plusDays(6)
+                val record = WeeklyRecord(0L, model.header, model.frequency, done, start.toString(), end.toString())
+                withContext(Dispatchers.IO) {
+                    recordDao.insert(record.toEntity())
+                    goalDao.update(
+                        model.copy(
+                            remaining = model.frequency,
+                            weekNumber = currentWeek,
+                            lastCheckedDate = null
+                        ).toEntity()
+                    )
+                }
+                model = model.copy(remaining = model.frequency, weekNumber = currentWeek, lastCheckedDate = null)
             }
             goals.add(model)
         }
@@ -97,7 +110,10 @@ private fun WeeklyGoalsScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = { /* TODO: Record action */ },
+                    onClick = {
+                        val intent = android.content.Intent(context, RecordActivity::class.java)
+                        context.startActivity(intent)
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
                     modifier = Modifier
                         .weight(1f)
