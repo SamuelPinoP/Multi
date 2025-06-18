@@ -97,7 +97,11 @@ private fun WeeklyGoalsScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = { /* TODO: Record action */ },
+                    onClick = {
+                        context.startActivity(
+                            android.content.Intent(context, RecordActivity::class.java)
+                        )
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
                     modifier = Modifier
                         .weight(1f)
