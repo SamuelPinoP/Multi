@@ -119,7 +119,7 @@ fun RecordScreen(onBack: () -> Unit) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp)
-                                .border(1.dp, Color.Black)
+                                .border(1.dp, Color.Green)
                                 .padding(4.dp),
                             textAlign = TextAlign.Center,
                             style = androidx.compose.material3.MaterialTheme.typography.titleMedium
