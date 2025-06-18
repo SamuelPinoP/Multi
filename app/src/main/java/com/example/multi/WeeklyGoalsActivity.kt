@@ -114,7 +114,7 @@ private fun WeeklyGoalsScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.Center
             ) {
                 Button(
                     onClick = {
@@ -128,7 +128,7 @@ private fun WeeklyGoalsScreen() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             val remaining = daysRemainingInWeek()
             androidx.compose.material.Text(
