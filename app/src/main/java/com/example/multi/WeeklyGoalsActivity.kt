@@ -42,7 +42,6 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
-import com.example.multi.WeeklyGoalRecord
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -122,7 +121,10 @@ private fun WeeklyGoalsScreen() {
                             android.content.Intent(context, RecordActivity::class.java)
                         )
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
+                    modifier = Modifier
+                        .height(50.dp)
+                        .defaultMinSize(minWidth = 170.dp)
                 ) {
                     androidx.compose.material.Text("Record", color = Color.White, fontSize = 18.sp)
                 }
