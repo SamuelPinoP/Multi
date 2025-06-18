@@ -126,7 +126,8 @@ fun RecordScreen(onBack: () -> Unit) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             val done = rec.completed >= rec.frequency
                             Text(
