@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
@@ -64,13 +65,28 @@ private fun WeeklyGoalsScreen() {
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+        val db = EventDatabase.getInstance(context)
+        val dao = db.weeklyGoalDao()
+        val recordDao = db.weeklyGoalRecordDao()
         val stored = withContext(Dispatchers.IO) { dao.getGoals() }
         val currentWeek = currentWeek()
         goals.clear()
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
+                val weeksAgo = currentWeek - model.weekNumber
+                val startOfWeek = LocalDate.now()
+                    .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.SUNDAY))
+                    .minusWeeks(weeksAgo.toLong())
+                val record = WeeklyGoalRecord(
+                    header = model.header,
+                    frequency = model.frequency,
+                    completed = model.frequency - model.remaining,
+                    weekStart = startOfWeek.toString()
+                )
+                withContext(Dispatchers.IO) {
+                    recordDao.insert(record.toEntity())
+                }
                 model = model.copy(
                     remaining = model.frequency,
                     weekNumber = currentWeek,
@@ -97,7 +113,9 @@ private fun WeeklyGoalsScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = { /* TODO: Record action */ },
+                    onClick = {
+                        context.startActivity(Intent(context, RecordActivity::class.java))
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
                     modifier = Modifier
                         .weight(1f)

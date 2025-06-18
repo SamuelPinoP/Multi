@@ -27,3 +27,11 @@ data class WeeklyGoal(
     var lastCheckedDate: String? = null,
     var weekNumber: Int = currentWeek()
 )
+
+data class WeeklyGoalRecord(
+    var id: Long = 0L,
+    var header: String,
+    var frequency: Int,
+    var completed: Int,
+    var weekStart: String
+)
