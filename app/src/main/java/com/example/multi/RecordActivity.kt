@@ -7,14 +7,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.border
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -26,6 +24,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
@@ -62,17 +67,11 @@ fun RecordScreen(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                modifier = Modifier.height(135.dp),
-                backgroundColor = Color.White,
-                elevation = 4.dp,
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
                         text = "Record",
-                        color = Color.Black,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
                     )
                 },
                 navigationIcon = {
@@ -80,12 +79,9 @@ fun RecordScreen(onBack: () -> Unit) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.Black
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
-                },
-                actions = {
-                    Spacer(modifier = Modifier.width(48.dp))
                 }
             )
         }
@@ -107,6 +103,8 @@ fun RecordScreen(onBack: () -> Unit) {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 grouped.forEach { (range, list) ->
                     item {
@@ -118,33 +116,37 @@ fun RecordScreen(onBack: () -> Unit) {
                             text = "$month - Week $weekOfMonth - ${start.format(dateFormatter)} - ${end.format(dateFormatter)}",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                                .border(1.dp, Color.Green)
-                                .padding(4.dp),
+                                .padding(vertical = 4.dp),
                             textAlign = TextAlign.Center,
-                            style = androidx.compose.material3.MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium
                         )
                     }
                     items(list) { rec ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        val done = rec.completed >= rec.frequency
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
-                            val done = rec.completed >= rec.frequency
-                            Text(
-                                text = if (done) "Completed" else "Uncomplete",
-                                color = if (done) Color.Green else Color.Red,
-                                style = androidx.compose.material3.MaterialTheme.typography.bodySmall
-                            )
-                            Text(
-                                text = "${rec.header} ${rec.completed}/${rec.frequency}",
-                                style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(rec.header, style = MaterialTheme.typography.bodyLarge)
+                                    Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                }
+                                Icon(
+                                    imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,
+                                    contentDescription = null,
+                                    tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
-                    item { Spacer(modifier = Modifier.height(12.dp)) }
                 }
             }
         }
