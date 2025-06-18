@@ -18,9 +18,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -105,14 +108,13 @@ private fun WeeklyGoalsScreen() {
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(12.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.End
             ) {
                 Button(
                     onClick = {
@@ -120,23 +122,9 @@ private fun WeeklyGoalsScreen() {
                             android.content.Intent(context, RecordActivity::class.java)
                         )
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(46.dp)
-                        .padding(end = 8.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373))
                 ) {
-                    androidx.compose.material.Text("Record", color = Color.White, fontSize = 20.sp)
-                }
-                Button(
-                    onClick = { editingIndex = -1 },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFBA68C8)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(46.dp)
-                        .padding(start = 8.dp)
-                ) {
-                    androidx.compose.material.Text("Edit", color = Color.White, fontSize = 20.sp)
+                    androidx.compose.material.Text("Record", color = Color.White, fontSize = 18.sp)
                 }
             }
 
@@ -164,7 +152,7 @@ private fun WeeklyGoalsScreen() {
             Spacer(modifier = Modifier.height(16.dp))
 
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(goals) { index, goal ->
@@ -197,7 +185,7 @@ private fun WeeklyGoalsScreen() {
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     androidx.compose.material.Text(
-                                        text = "${goal.remaining}/${goal.frequency}",
+                                        text = "${goal.frequency - goal.remaining}/${goal.frequency}",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                     val today = LocalDate.now().toString()
@@ -225,10 +213,28 @@ private fun WeeklyGoalsScreen() {
                                     }
                                 }
                             }
+                            val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
+                            LinearProgressIndicator(
+                                progress = progress,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp)
+                            )
                         }
                     }
                 }
             }
+        }
+
+        FloatingActionButton(
+            onClick = { editingIndex = -1 },
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 80.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add")
         }
 
         val index = editingIndex
