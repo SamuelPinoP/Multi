@@ -13,6 +13,7 @@ import androidx.room.Update
 import androidx.room.Delete
 import com.example.multi.Event
 import com.example.multi.WeeklyGoal
+import com.example.multi.WeeklyRecord
 
 @Entity(tableName = "events")
 data class EventEntity(
@@ -30,6 +31,16 @@ data class WeeklyGoalEntity(
     val remaining: Int,
     val lastCheckedDate: String?,
     val weekNumber: Int
+)
+
+@Entity(tableName = "weekly_records")
+data class WeeklyRecordEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val header: String,
+    val frequency: Int,
+    val completed: Int,
+    val weekStart: String,
+    val weekEnd: String
 )
 
 @Dao
@@ -62,10 +73,26 @@ interface WeeklyGoalDao {
     suspend fun delete(goal: WeeklyGoalEntity)
 }
 
-@Database(entities = [EventEntity::class, WeeklyGoalEntity::class], version = 2)
+@Dao
+interface WeeklyRecordDao {
+    @Query("SELECT * FROM weekly_records ORDER BY weekStart DESC")
+    suspend fun getRecords(): List<WeeklyRecordEntity>
+
+    @Insert
+    suspend fun insert(record: WeeklyRecordEntity): Long
+
+    @Query("DELETE FROM weekly_records")
+    suspend fun clear()
+}
+
+@Database(
+    entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyRecordEntity::class],
+    version = 3
+)
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
     abstract fun weeklyGoalDao(): WeeklyGoalDao
+    abstract fun weeklyRecordDao(): WeeklyRecordDao
 
     companion object {
         @Volatile
@@ -92,3 +119,9 @@ fun Event.toEntity() = EventEntity(id, title, description, date)
 
 fun WeeklyGoalEntity.toModel() = WeeklyGoal(id, header, frequency, remaining, lastCheckedDate, weekNumber)
 fun WeeklyGoal.toEntity() = WeeklyGoalEntity(id, header, frequency, remaining, lastCheckedDate, weekNumber)
+
+fun WeeklyRecordEntity.toModel() =
+    WeeklyRecord(id, header, frequency, completed, weekStart, weekEnd)
+
+fun WeeklyRecord.toEntity() =
+    WeeklyRecordEntity(id, header, frequency, completed, weekStart, weekEnd)

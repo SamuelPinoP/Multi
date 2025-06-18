@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.WeeklyRecord
+import com.example.multi.lastWeekRange
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,13 +66,26 @@ private fun WeeklyGoalsScreen() {
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+        val db = EventDatabase.getInstance(context)
+        val dao = db.weeklyGoalDao()
+        val recordDao = db.weeklyRecordDao()
         val stored = withContext(Dispatchers.IO) { dao.getGoals() }
         val currentWeek = currentWeek()
         goals.clear()
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
+                val (start, end) = lastWeekRange()
+                val record = WeeklyRecord(
+                    header = model.header,
+                    frequency = model.frequency,
+                    completed = model.frequency - model.remaining,
+                    weekStart = start.toString(),
+                    weekEnd = end.toString()
+                )
+                withContext(Dispatchers.IO) {
+                    recordDao.insert(record.toEntity())
+                }
                 model = model.copy(
                     remaining = model.frequency,
                     weekNumber = currentWeek,
@@ -97,7 +112,11 @@ private fun WeeklyGoalsScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = { /* TODO: Record action */ },
+                    onClick = {
+                        context.startActivity(
+                            android.content.Intent(context, RecordActivity::class.java)
+                        )
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
                     modifier = Modifier
                         .weight(1f)
