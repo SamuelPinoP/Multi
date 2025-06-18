@@ -62,16 +62,20 @@ fun RecordScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.height(135.dp),
                 backgroundColor = Color.White,
                 elevation = 4.dp,
                 title = {
-                    Text(
-                        text = "Record",
-                        color = Color.Black,
+                    Box(
                         modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
-                    )
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Record",
+                            color = Color.Black,
+                            style = androidx.compose.material3.MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
