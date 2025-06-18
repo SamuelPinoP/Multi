@@ -6,15 +6,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.border
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -62,30 +64,22 @@ fun RecordScreen(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                modifier = Modifier.height(135.dp),
-                backgroundColor = Color.White,
-                elevation = 4.dp,
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
                         text = "Record",
-                        color = Color.Black,
+                        style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
+                        textAlign = TextAlign.Center
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.Black
+                            contentDescription = "Back"
                         )
                     }
-                },
-                actions = {
-                    Spacer(modifier = Modifier.width(48.dp))
                 }
             )
         }
@@ -114,37 +108,48 @@ fun RecordScreen(onBack: () -> Unit) {
                         val end = LocalDate.parse(range.second)
                         val month = start.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
                         val weekOfMonth = (start.dayOfMonth - 1) / 7 + 1
-                        Text(
-                            text = "$month - Week $weekOfMonth - ${start.format(dateFormatter)} - ${end.format(dateFormatter)}",
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                                .border(1.dp, Color.Green)
-                                .padding(4.dp),
-                            textAlign = TextAlign.Center,
-                            style = androidx.compose.material3.MaterialTheme.typography.titleMedium
-                        )
-                    }
-                    items(list) { rec ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            elevation = CardDefaults.cardElevation()
                         ) {
-                            val done = rec.completed >= rec.frequency
-                            Text(
-                                text = if (done) "Completed" else "Uncomplete",
-                                color = if (done) Color.Green else Color.Red,
-                                style = androidx.compose.material3.MaterialTheme.typography.bodySmall
-                            )
-                            Text(
-                                text = "${rec.header} ${rec.completed}/${rec.frequency}",
-                                style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
-                            )
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "$month - Week $weekOfMonth - ${start.format(dateFormatter)} - ${end.format(dateFormatter)}",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                list.forEach { rec ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(rec.header, style = MaterialTheme.typography.bodyLarge)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = "${rec.completed}/${rec.frequency}",
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                            if (rec.completed >= rec.frequency) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFF4CAF50),
+                                                    modifier = Modifier.padding(start = 4.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                    item { Spacer(modifier = Modifier.height(12.dp)) }
                 }
             }
         }
