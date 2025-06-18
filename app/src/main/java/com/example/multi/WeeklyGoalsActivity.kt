@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
@@ -39,6 +40,9 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.lastWeekRange
+import com.example.multi.data.WeeklyGoalRecordEntity
+import com.example.multi.RecordActivity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,19 +68,32 @@ private fun WeeklyGoalsScreen() {
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-        val stored = withContext(Dispatchers.IO) { dao.getGoals() }
+        val db = EventDatabase.getInstance(context)
+        val goalDao = db.weeklyGoalDao()
+        val recordDao = db.weeklyGoalRecordDao()
+        val stored = withContext(Dispatchers.IO) { goalDao.getGoals() }
         val currentWeek = currentWeek()
         goals.clear()
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
+                val completed = model.frequency - model.remaining
+                val range = lastWeekRange()
+                val record = WeeklyGoalRecordEntity(
+                    header = model.header,
+                    frequency = model.frequency,
+                    completed = completed,
+                    startDate = range.first.toString(),
+                    endDate = range.second.toString()
+                )
+                withContext(Dispatchers.IO) { recordDao.insert(record) }
+
                 model = model.copy(
                     remaining = model.frequency,
                     weekNumber = currentWeek,
                     lastCheckedDate = null
                 )
-                withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
+                withContext(Dispatchers.IO) { goalDao.update(model.toEntity()) }
             }
             goals.add(model)
         }
@@ -97,7 +114,9 @@ private fun WeeklyGoalsScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = { /* TODO: Record action */ },
+                    onClick = {
+                        context.startActivity(Intent(context, RecordActivity::class.java))
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
                     modifier = Modifier
                         .weight(1f)

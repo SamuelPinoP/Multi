@@ -32,6 +32,16 @@ data class WeeklyGoalEntity(
     val weekNumber: Int
 )
 
+@Entity(tableName = "weekly_goal_records")
+data class WeeklyGoalRecordEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val header: String,
+    val frequency: Int,
+    val completed: Int,
+    val startDate: String,
+    val endDate: String
+)
+
 @Dao
 interface EventDao {
     @Query("SELECT * FROM events")
@@ -62,10 +72,23 @@ interface WeeklyGoalDao {
     suspend fun delete(goal: WeeklyGoalEntity)
 }
 
-@Database(entities = [EventEntity::class, WeeklyGoalEntity::class], version = 2)
+@Dao
+interface WeeklyGoalRecordDao {
+    @Query("SELECT * FROM weekly_goal_records ORDER BY startDate DESC")
+    suspend fun getRecords(): List<WeeklyGoalRecordEntity>
+
+    @Insert
+    suspend fun insert(record: WeeklyGoalRecordEntity): Long
+}
+
+@Database(
+    entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class],
+    version = 3
+)
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
     abstract fun weeklyGoalDao(): WeeklyGoalDao
+    abstract fun weeklyGoalRecordDao(): WeeklyGoalRecordDao
 
     companion object {
         @Volatile
@@ -92,3 +115,9 @@ fun Event.toEntity() = EventEntity(id, title, description, date)
 
 fun WeeklyGoalEntity.toModel() = WeeklyGoal(id, header, frequency, remaining, lastCheckedDate, weekNumber)
 fun WeeklyGoal.toEntity() = WeeklyGoalEntity(id, header, frequency, remaining, lastCheckedDate, weekNumber)
+
+fun WeeklyGoalRecordEntity.toModel() =
+    WeeklyGoalRecord(id, header, frequency, completed, startDate, endDate)
+
+fun WeeklyGoalRecord.toEntity() =
+    WeeklyGoalRecordEntity(id, header, frequency, completed, startDate, endDate)

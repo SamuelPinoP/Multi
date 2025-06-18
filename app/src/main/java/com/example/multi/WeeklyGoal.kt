@@ -19,6 +19,23 @@ fun daysRemainingInWeek(): Int {
     return ChronoUnit.DAYS.between(today, nextMonday).toInt() - 1
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
+fun lastWeekRange(): Pair<LocalDate, LocalDate> {
+    val currentMonday = LocalDate.now().with(DayOfWeek.MONDAY)
+    val start = currentMonday.minusWeeks(1)
+    val end = start.plusDays(6)
+    return start to end
+}
+
+data class WeeklyGoalRecord(
+    val id: Long = 0L,
+    val header: String,
+    val frequency: Int,
+    val completed: Int,
+    val startDate: String,
+    val endDate: String
+)
+
 data class WeeklyGoal(
     var id: Long = 0L,
     var header: String,
