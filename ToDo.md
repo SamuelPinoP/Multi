@@ -1,6 +1,9 @@
 /*
     There is a lot of work to do now!
 
+0- The current count for weekly tasks is imperfect 7/7 and if the user does make progress then it
+decreases to 6/7. It should be the other way around. It should be set to 0/7 and if the user makes
+progress it goes up to 1/7. And like that it improves.
 1- Debug any errors
 2- Supervise remaining days algorithm were the days remaining need to be working as intended
 3- Supervise the Record displaying the correct info.
