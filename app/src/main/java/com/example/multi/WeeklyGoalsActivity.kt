@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.WeeklyGoalRecord
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,13 +65,30 @@ private fun WeeklyGoalsScreen() {
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+        val db = EventDatabase.getInstance(context)
+        val dao = db.weeklyGoalDao()
+        val recordDao = db.weeklyGoalRecordDao()
         val stored = withContext(Dispatchers.IO) { dao.getGoals() }
         val currentWeek = currentWeek()
+        val today = java.time.LocalDate.now()
+        val startCurrent = today.minusDays((today.dayOfWeek.value % 7).toLong())
+        val prevStart = startCurrent.minusDays(7)
+        val prevEnd = startCurrent.minusDays(1)
+        val prevStartStr = prevStart.toString()
+        val prevEndStr = prevEnd.toString()
         goals.clear()
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
+                val completed = model.frequency - model.remaining
+                val record = WeeklyGoalRecord(
+                    header = model.header,
+                    completed = completed,
+                    frequency = model.frequency,
+                    weekStart = prevStartStr,
+                    weekEnd = prevEndStr
+                )
+                withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
                     remaining = model.frequency,
                     weekNumber = currentWeek,
