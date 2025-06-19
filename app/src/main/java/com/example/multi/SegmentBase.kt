@@ -23,7 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import com.example.multi.ui.theme.MultiTheme
 
-open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
+open class SegmentActivity(
+    private val segmentTitle: String,
+    private val showBackButton: Boolean = true,
+    private val showCloseButton: Boolean = true
+) : ComponentActivity() {
     @Composable
     open fun SegmentContent() {
         Text(segmentTitle)
@@ -37,7 +41,9 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
                 SegmentScreen(
                     title = segmentTitle,
                     onBack = { finish() },
-                    onClose = { finishAffinity() }
+                    onClose = { finishAffinity() },
+                    showBackButton = showBackButton,
+                    showCloseButton = showCloseButton
                 ) {
                     SegmentContent()
                 }
@@ -51,6 +57,8 @@ fun SegmentScreen(
     title: String,
     onBack: () -> Unit,
     onClose: () -> Unit,
+    showBackButton: Boolean = true,
+    showCloseButton: Boolean = true,
     content: @Composable () -> Unit
 ) {
     Scaffold(
@@ -66,27 +74,31 @@ fun SegmentScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    if (showBackButton) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = onClose,
-                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    ) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    if (showCloseButton) {
+                        IconButton(
+                            onClick = onClose,
+                            modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Close",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             )
