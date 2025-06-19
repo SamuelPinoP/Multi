@@ -20,6 +20,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -36,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,6 +50,8 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
+    override val showBack = false
+    override val showClose = false
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     override fun SegmentContent() {
@@ -121,12 +125,13 @@ private fun WeeklyGoalsScreen() {
                             android.content.Intent(context, RecordActivity::class.java)
                         )
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier
-                        .height(50.dp)
-                        .defaultMinSize(minWidth = 170.dp)
+                        .height(48.dp)
+                        .defaultMinSize(minWidth = 160.dp)
                 ) {
-                    androidx.compose.material.Text("Record", color = Color.White, fontSize = 18.sp)
+                    M3Text("Record", color = MaterialTheme.colorScheme.onPrimary, fontSize = 18.sp)
                 }
             }
 
@@ -159,7 +164,9 @@ private fun WeeklyGoalsScreen() {
             ) {
                 itemsIndexed(goals) { index, goal ->
                     Card(
-                        elevation = CardDefaults.cardElevation(),
+                        elevation = CardDefaults.elevatedCardElevation(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { editingIndex = index }
@@ -218,6 +225,8 @@ private fun WeeklyGoalsScreen() {
                             val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
                             LinearProgressIndicator(
                                 progress = progress,
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 8.dp)
@@ -311,6 +320,7 @@ private fun WeeklyGoalDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(16.dp),
         confirmButton = {
             Button(
                 onClick = { frequency?.let { onSave(header, it) } },
@@ -325,7 +335,7 @@ private fun WeeklyGoalDialog(
                             prog()
                             onDismiss()
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.padding(end = 8.dp)
                     ) { androidx.compose.material.Text("Progress") }
                 }

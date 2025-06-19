@@ -4,26 +4,28 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.MaterialTheme
 import com.example.multi.ui.theme.MultiTheme
 
 open class SegmentActivity(private val segmentTitle: String) : ComponentActivity() {
+    open val showBack: Boolean = true
+    open val showClose: Boolean = true
+
     @Composable
     open fun SegmentContent() {
         Text(segmentTitle)
@@ -36,8 +38,8 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
             MultiTheme {
                 SegmentScreen(
                     title = segmentTitle,
-                    onBack = { finish() },
-                    onClose = { finishAffinity() }
+                    onBack = if (showBack) { { finish() } } else null,
+                    onClose = if (showClose) { { finishAffinity() } } else null
                 ) {
                     SegmentContent()
                 }
@@ -47,46 +49,40 @@ open class SegmentActivity(private val segmentTitle: String) : ComponentActivity
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun SegmentScreen(
     title: String,
-    onBack: () -> Unit,
-    onClose: () -> Unit,
+    onBack: (() -> Unit)?,
+    onClose: (() -> Unit)?,
     content: @Composable () -> Unit
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                modifier = Modifier.height(135.dp),
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
                         text = title,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    onBack?.let {
+                        IconButton(onClick = it) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = onClose,
-                        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    ) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    onClose?.let {
+                        IconButton(onClick = it) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Close"
+                            )
+                        }
                     }
                 }
             )
