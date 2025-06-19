@@ -138,6 +138,7 @@ private fun EventsScreen() {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 68.dp, end = 16.dp)
+                .height(72.dp)
         )
 
         val index = editingIndex
