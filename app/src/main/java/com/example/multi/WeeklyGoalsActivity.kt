@@ -121,7 +121,7 @@ private fun WeeklyGoalsScreen() {
                             android.content.Intent(context, RecordActivity::class.java)
                         )
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                     modifier = Modifier
                         .height(50.dp)
                         .defaultMinSize(minWidth = 170.dp)
