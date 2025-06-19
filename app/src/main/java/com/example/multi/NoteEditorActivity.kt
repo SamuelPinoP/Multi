@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,16 +27,29 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class NoteEditorActivity : SegmentActivity("New Note") {
+const val EXTRA_NOTE_ID = "extra_note_id"
+const val EXTRA_NOTE_CONTENT = "extra_note_content"
+const val EXTRA_NOTE_CREATED = "extra_note_created"
+
+class NoteEditorActivity : SegmentActivity("Note") {
+    private var noteId: Long = 0L
+    private var noteCreated: Long = System.currentTimeMillis()
     private var currentText: String = ""
     private var saved = false
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
+        noteCreated = intent.getLongExtra(EXTRA_NOTE_CREATED, noteCreated)
+        currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        super.onCreate(savedInstanceState)
+    }
 
     @Composable
     override fun SegmentContent() {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val textState = remember { mutableStateOf("") }
+            val textState = remember { mutableStateOf(currentText) }
 
             Box(modifier = Modifier
                 .fillMaxSize()
@@ -68,8 +82,12 @@ class NoteEditorActivity : SegmentActivity("New Note") {
                         currentText = text
                         scope.launch(Dispatchers.IO) {
                             if (text.isNotEmpty()) {
-                                EventDatabase.getInstance(context).noteDao()
-                                    .insert(Note(content = text).toEntity())
+                                val dao = EventDatabase.getInstance(context).noteDao()
+                                if (noteId == 0L) {
+                                    noteId = dao.insert(Note(content = text, created = noteCreated).toEntity())
+                                } else {
+                                    dao.update(Note(id = noteId, content = text, created = noteCreated).toEntity())
+                                }
                             }
                         }
                         (context as? android.app.Activity)?.finish()
@@ -82,6 +100,26 @@ class NoteEditorActivity : SegmentActivity("New Note") {
                         .align(androidx.compose.ui.Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 80.dp)
                 )
+
+                if (noteId != 0L) {
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            saved = true
+                            scope.launch(Dispatchers.IO) {
+                                EventDatabase.getInstance(context).noteDao()
+                                    .delete(Note(id = noteId, content = currentText, created = noteCreated).toEntity())
+                            }
+                            (context as? android.app.Activity)?.finish()
+                        },
+                        icon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                        text = { Text("Delete") },
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier
+                            .align(androidx.compose.ui.Alignment.BottomStart)
+                            .padding(start = 16.dp, bottom = 80.dp)
+                    )
+                }
             }
         }
     }
@@ -92,8 +130,12 @@ class NoteEditorActivity : SegmentActivity("New Note") {
         if (!saved && text.isNotEmpty()) {
             saved = true
             lifecycleScope.launch(Dispatchers.IO) {
-                EventDatabase.getInstance(applicationContext).noteDao()
-                    .insert(Note(content = text).toEntity())
+                val dao = EventDatabase.getInstance(applicationContext).noteDao()
+                if (noteId == 0L) {
+                    dao.insert(Note(content = text, created = noteCreated).toEntity())
+                } else {
+                    dao.update(Note(id = noteId, content = text, created = noteCreated).toEntity())
+                }
             }
         }
     }

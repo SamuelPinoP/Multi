@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Text
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
+import com.example.multi.EXTRA_NOTE_ID
+import com.example.multi.EXTRA_NOTE_CONTENT
+import com.example.multi.EXTRA_NOTE_CREATED
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -63,10 +69,24 @@ class NotesActivity : SegmentActivity(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(notes) { note ->
-                        Text(
-                            note.content,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
-                        )
+                        ElevatedCard(
+                            elevation = CardDefaults.elevatedCardElevation(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val intent = Intent(context, NoteEditorActivity::class.java)
+                                    intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                    intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                    intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                    context.startActivity(intent)
+                                }
+                        ) {
+                            Text(
+                                note.content,
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
                     }
                 }
             }
