@@ -49,15 +49,19 @@ import kotlinx.coroutines.withContext
 class EventsActivity : SegmentActivity("Events") {
     @Composable
     override fun SegmentContent() {
-        EventsScreen()
+        val preselectDate = intent.getStringExtra("preselectDate")
+        val quickAdd = intent.getBooleanExtra("quickAdd", false)
+        EventsScreen(preselectDate, quickAdd)
     }
 }
 
 @Composable
-private fun EventsScreen() {
+private fun EventsScreen(preselectDate: String? = null, quickAdd: Boolean = false) {
     val context = LocalContext.current
     val events = remember { mutableStateListOf<Event>() }
-    var editingIndex by remember { mutableStateOf<Int?>(null) }
+    val newEventDate = remember { mutableStateOf(preselectDate) }
+    var editingIndex by remember { mutableStateOf<Int?>(if (preselectDate != null) -1 else null) }
+    var quickAddFlag by remember { mutableStateOf(quickAdd) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -143,12 +147,21 @@ private fun EventsScreen() {
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
-            val event = if (isNew) Event(0L, "", "", null) else events[index]
+            val event = if (isNew) {
+                val e = Event(0L, "", "", newEventDate.value)
+                newEventDate.value = null
+                e
+            } else events[index]
             EventDialog(
                 initial = event,
-                onDismiss = { editingIndex = null },
+                showDetails = !(quickAddFlag && isNew),
+                onDismiss = {
+                    editingIndex = null
+                    quickAddFlag = false
+                },
                 onSave = { title, desc, date ->
                     editingIndex = null
+                    quickAddFlag = false
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
@@ -192,7 +205,8 @@ private fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
     onSave: (String, String, String?) -> Unit,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    showDetails: Boolean = true
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
@@ -255,7 +269,7 @@ private fun EventDialog(
                     }
                     onSave(title, description, finalDate)
                 },
-                enabled = title.isNotBlank()
+                enabled = title.isNotBlank() || !showDetails
             ) { Text("Save") }
         },
         dismissButton = {
@@ -268,20 +282,22 @@ private fun EventDialog(
         },
         text = {
             Column {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                if (showDetails) {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Title") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Description") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }

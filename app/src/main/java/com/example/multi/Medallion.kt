@@ -1,7 +1,6 @@
 package com.example.multi
 
 import android.content.Intent
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -179,7 +178,12 @@ fun MedallionScreen() {
                             val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                             fmt.format(Date(millis))
                         }
-                        Toast.makeText(context, "Selected: $text", Toast.LENGTH_SHORT).show()
+                        context.startActivity(
+                            Intent(context, EventsActivity::class.java).apply {
+                                putExtra("preselectDate", text)
+                                putExtra("quickAdd", true)
+                            }
+                        )
                     }
                 }) { Text("OK") }
             },
