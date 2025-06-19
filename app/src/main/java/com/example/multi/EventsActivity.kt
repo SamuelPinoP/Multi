@@ -138,6 +138,7 @@ private fun EventsScreen() {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 68.dp, end = 16.dp)
+                .size(72.dp)
         )
 
         val index = editingIndex
@@ -188,7 +189,7 @@ private fun EventsScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EventDialog(
+fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
     onSave: (String, String, String?) -> Unit,
