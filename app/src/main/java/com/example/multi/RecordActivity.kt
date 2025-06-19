@@ -7,8 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -27,10 +27,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
@@ -68,7 +72,17 @@ fun RecordScreen(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
+            val shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
             CenterAlignedTopAppBar(
+                modifier = Modifier
+                    .height(72.dp)
+                    .clip(shape)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, shape),
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
                 title = {
                     Text(
                         text = "Record",
@@ -79,8 +93,7 @@ fun RecordScreen(onBack: () -> Unit) {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onBackground
+                            contentDescription = "Back"
                         )
                     }
                 }

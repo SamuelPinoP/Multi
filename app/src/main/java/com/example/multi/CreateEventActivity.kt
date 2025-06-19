@@ -10,16 +10,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.Icon
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.TopAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,21 +61,28 @@ private fun CreateEventScreen(onSave: () -> Unit) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
 
-    androidx.compose.material.Scaffold(
-    topBar = {
-        TopAppBar(
-            modifier = Modifier.height(135.dp),
-            title = {
-                Text(
-                    text = "New Event",
-                    color = androidx.compose.ui.graphics.Color.White,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
-                )
-            }
-        )
-    },
+    androidx.compose.material3.Scaffold(
+        topBar = {
+            val shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
+            CenterAlignedTopAppBar(
+                modifier = Modifier
+                    .height(72.dp)
+                    .clip(shape)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, shape),
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                title = {
+                    Text(
+                        text = "New Event",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
+                    )
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { if (title.isNotBlank()) onSave() },
