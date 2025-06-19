@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material.Text
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -65,7 +66,12 @@ class NotesActivity : SegmentActivity(
                     items(notes) { note ->
                         Text(
                             note.content,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                            modifier = Modifier.clickable {
+                                val intent = Intent(context, NoteEditorActivity::class.java)
+                                intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                context.startActivity(intent)
+                            }
                         )
                     }
                 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -22,13 +23,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
+import com.example.multi.data.NoteEntity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class NoteEditorActivity : SegmentActivity("New Note") {
+const val EXTRA_NOTE_ID = "extra_note_id"
+
+class NoteEditorActivity : SegmentActivity("Note") {
+    private var noteId: Long = -1L
+    private var created: Long = System.currentTimeMillis()
     private var currentText: String = ""
+    private var originalText: String = ""
     private var saved = false
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        noteId = intent.getLongExtra(EXTRA_NOTE_ID, -1L)
+        super.onCreate(savedInstanceState)
+    }
 
     @Composable
     override fun SegmentContent() {
@@ -37,9 +50,24 @@ class NoteEditorActivity : SegmentActivity("New Note") {
             val scope = rememberCoroutineScope()
             val textState = remember { mutableStateOf("") }
 
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)) {
+            LaunchedEffect(Unit) {
+                if (noteId >= 0) {
+                    val dao = EventDatabase.getInstance(context).noteDao()
+                    val entity = withContext(Dispatchers.IO) { dao.get(noteId) }
+                    entity?.let {
+                        textState.value = it.content
+                        currentText = it.content
+                        originalText = it.content
+                        created = it.created
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
                 if (textState.value.isEmpty()) {
                     Text(
                         text = "Start writing...",
@@ -67,9 +95,13 @@ class NoteEditorActivity : SegmentActivity("New Note") {
                         saved = true
                         currentText = text
                         scope.launch(Dispatchers.IO) {
-                            if (text.isNotEmpty()) {
-                                EventDatabase.getInstance(context).noteDao()
-                                    .insert(Note(content = text).toEntity())
+                            val dao = EventDatabase.getInstance(context).noteDao()
+                            if (noteId >= 0) {
+                                if (text.isNotEmpty() && text != originalText) {
+                                    dao.update(NoteEntity(noteId, text, created))
+                                }
+                            } else if (text.isNotEmpty()) {
+                                dao.insert(Note(content = text).toEntity())
                             }
                         }
                         (context as? android.app.Activity)?.finish()
@@ -82,6 +114,25 @@ class NoteEditorActivity : SegmentActivity("New Note") {
                         .align(androidx.compose.ui.Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 80.dp)
                 )
+
+                if (noteId >= 0) {
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            saved = true
+                            scope.launch(Dispatchers.IO) {
+                                EventDatabase.getInstance(context).noteDao().delete(noteId)
+                            }
+                            (context as? android.app.Activity)?.finish()
+                        },
+                        icon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                        text = { Text("Delete") },
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                        modifier = Modifier
+                            .align(androidx.compose.ui.Alignment.BottomStart)
+                            .padding(start = 16.dp, bottom = 80.dp)
+                    )
+                }
             }
         }
     }
@@ -92,8 +143,14 @@ class NoteEditorActivity : SegmentActivity("New Note") {
         if (!saved && text.isNotEmpty()) {
             saved = true
             lifecycleScope.launch(Dispatchers.IO) {
-                EventDatabase.getInstance(applicationContext).noteDao()
-                    .insert(Note(content = text).toEntity())
+                val dao = EventDatabase.getInstance(applicationContext).noteDao()
+                if (noteId >= 0) {
+                    if (text != originalText) {
+                        dao.update(NoteEntity(noteId, text, created))
+                    }
+                } else {
+                    dao.insert(Note(content = text).toEntity())
+                }
             }
         }
     }
