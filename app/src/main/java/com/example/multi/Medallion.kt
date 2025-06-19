@@ -1,7 +1,6 @@
 package com.example.multi
 
 import android.content.Intent
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -170,16 +169,18 @@ fun MedallionScreen() {
                 TextButton(onClick = {
                     showPicker = false
                     pickerState.selectedDateMillis?.let { millis ->
-                        val text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            val date = java.time.Instant.ofEpochMilli(millis)
+                        val dateStr = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            java.time.Instant.ofEpochMilli(millis)
                                 .atZone(java.time.ZoneOffset.UTC)
                                 .toLocalDate()
-                            date.toString()
+                                .toString()
                         } else {
                             val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                             fmt.format(Date(millis))
                         }
-                        Toast.makeText(context, "Selected: $text", Toast.LENGTH_SHORT).show()
+                        val intent = Intent(context, EventsActivity::class.java)
+                        intent.putExtra(EXTRA_DATE, dateStr)
+                        context.startActivity(intent)
                     }
                 }) { Text("OK") }
             },

@@ -1,5 +1,7 @@
 package com.example.multi
 
+import android.os.Bundle
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -45,19 +47,30 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+const val EXTRA_DATE = "extra_date"
+
 /** Activity displaying the list of user events. */
 class EventsActivity : SegmentActivity("Events") {
+    private var initialDate: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        initialDate = intent.getStringExtra(EXTRA_DATE)
+        super.onCreate(savedInstanceState)
+    }
+
     @Composable
     override fun SegmentContent() {
-        EventsScreen()
+        EventsScreen(initialDate)
+        initialDate = null
     }
 }
 
 @Composable
-private fun EventsScreen() {
+private fun EventsScreen(initialDate: String? = null) {
     val context = LocalContext.current
     val events = remember { mutableStateListOf<Event>() }
-    var editingIndex by remember { mutableStateOf<Int?>(null) }
+    var editingIndex by remember { mutableStateOf<Int?>(if (initialDate != null) -1 else null) }
+    var newDate by remember { mutableStateOf(initialDate) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -124,13 +137,19 @@ private fun EventsScreen() {
                 modifier = Modifier.align(Alignment.Center),
                 onClick = { offset ->
                     annotated.getStringAnnotations("ADD", offset, offset)
-                        .firstOrNull()?.let { editingIndex = -1 }
+                        .firstOrNull()?.let {
+                            newDate = null
+                            editingIndex = -1
+                        }
                 }
             )
         }
 
         ExtendedFloatingActionButton(
-            onClick = { editingIndex = -1 },
+            onClick = {
+                newDate = null
+                editingIndex = -1
+            },
             icon = { Icon(Icons.Default.Add, contentDescription = null) },
             text = { Text("Add Event") },
             containerColor = MaterialTheme.colorScheme.primary,
@@ -143,12 +162,16 @@ private fun EventsScreen() {
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
-            val event = if (isNew) Event(0L, "", "", null) else events[index]
+            val event = if (isNew) Event(0L, "", "", newDate) else events[index]
             EventDialog(
                 initial = event,
-                onDismiss = { editingIndex = null },
+                onDismiss = {
+                    editingIndex = null
+                    newDate = null
+                },
                 onSave = { title, desc, date ->
                     editingIndex = null
+                    newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
@@ -171,6 +194,7 @@ private fun EventsScreen() {
                             withContext(Dispatchers.IO) { dao.delete(event.toEntity()) }
                             events.removeAt(index)
                             editingIndex = null
+                            newDate = null
                         }
                     }
                 }
