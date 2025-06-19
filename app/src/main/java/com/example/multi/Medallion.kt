@@ -2,10 +2,17 @@ package com.example.multi
 
 import android.content.Intent
 import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.SpanStyle
@@ -39,34 +47,42 @@ import java.util.Locale
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, WORKOUT, NOTES }
 
 /**
- * Basic button used by [Medallion] segments.
+ * Card styled segment used by [Medallion] options.
  */
 @Composable
-private fun SegmentButton(
+private fun SegmentCard(
+    icon: ImageVector,
     label: String,
     color: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    square: Boolean = true
+    modifier: Modifier = Modifier
 ) {
-    val boxModifier = if (square) {
-        modifier.aspectRatio(1f)
-    } else {
-        modifier
-    }
-    Box(
-        modifier = boxModifier
+    ElevatedCard(
+        onClick = onClick,
+        colors = CardDefaults.elevatedCardColors(containerColor = color),
+        modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(color)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
     ) {
-        Text(
-            label,
-            color = MaterialTheme.colorScheme.onBackground,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                label,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
@@ -96,28 +112,30 @@ fun Medallion(
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
-        SegmentButton(
+        SegmentCard(
+            icon = Icons.Default.CheckCircle,
             label = "Weekly Goals",
-            color = Color(0xFFE1BEE7),
+            color = MaterialTheme.colorScheme.primaryContainer,
             onClick = { onSegmentClick(MedallionSegment.WEEKLY_GOALS) },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(70.dp),
-            square = false
+                .height(70.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SegmentButton(
+            SegmentCard(
+                icon = Icons.Default.CalendarMonth,
                 label = stringResource(R.string.label_calendar),
-                color = Color(0xFFBBDEFB),
+                color = MaterialTheme.colorScheme.secondaryContainer,
                 onClick = { onSegmentClick(MedallionSegment.CALENDAR) },
                 modifier = Modifier.weight(1f)
             )
-            SegmentButton(
+            SegmentCard(
+                icon = Icons.Default.Event,
                 label = stringResource(R.string.label_events),
-                color = Color(0xFFC8E6C9),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
                 onClick = { onSegmentClick(MedallionSegment.EVENTS) },
                 modifier = Modifier.weight(1f)
             )
@@ -126,15 +144,17 @@ fun Medallion(
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SegmentButton(
+            SegmentCard(
+                icon = Icons.Default.FitnessCenter,
                 label = stringResource(R.string.label_workout),
-                color = Color(0xFFFFF9C4),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
                 onClick = { onSegmentClick(MedallionSegment.WORKOUT) },
                 modifier = Modifier.weight(1f)
             )
-            SegmentButton(
+            SegmentCard(
+                icon = Icons.Default.EditNote,
                 label = stringResource(R.string.label_notes),
-                color = Color(0xFFFFCCBC),
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
                 onClick = { onSegmentClick(MedallionSegment.NOTES) },
                 modifier = Modifier.weight(1f)
             )
