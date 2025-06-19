@@ -2,17 +2,26 @@ package com.example.multi
 
 import android.content.Intent
 import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Note
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,13 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.sp
 import android.os.Build
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -44,29 +48,39 @@ enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, WORKOUT, NOTES }
 @Composable
 private fun SegmentButton(
     label: String,
-    color: Color,
+    icon: ImageVector,
+    containerColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     square: Boolean = true
 ) {
-    val boxModifier = if (square) {
+    val cardModifier = if (square) {
         modifier.aspectRatio(1f)
     } else {
         modifier
     }
-    Box(
-        modifier = boxModifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(color)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+    val contentColor = contentColorFor(containerColor)
+    ElevatedCard(
+        onClick = onClick,
+        colors = CardDefaults.elevatedCardColors(containerColor = containerColor, contentColor = contentColor),
+        shape = RoundedCornerShape(12.dp),
+        modifier = cardModifier
     ) {
-        Text(
-            label,
-            color = MaterialTheme.colorScheme.onBackground,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, contentDescription = null)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
@@ -82,59 +96,58 @@ fun Medallion(
     Column(
         modifier = modifier
             .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            buildAnnotatedString {
-                withStyle(style = SpanStyle(color = Color(0xFFE57373))) { append("M") }
-                withStyle(style = SpanStyle(color = Color(0xFFF06292))) { append("u") }
-                withStyle(style = SpanStyle(color = Color(0xFFBA68C8))) { append("l") }
-                withStyle(style = SpanStyle(color = Color(0xFF4FC3F7))) { append("t") }
-                withStyle(style = SpanStyle(color = Color(0xFF81C784))) { append("i") }
-            },
-            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 34.sp),
-            modifier = Modifier.fillMaxWidth(),
+            text = "Multi",
+            style = MaterialTheme.typography.headlineLarge,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             textAlign = TextAlign.Center
         )
         SegmentButton(
-            label = "Weekly Goals",
-            color = Color(0xFFE1BEE7),
+            label = stringResource(R.string.label_weekly_goals),
+            icon = Icons.Default.Flag,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
             onClick = { onSegmentClick(MedallionSegment.WEEKLY_GOALS) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(70.dp),
             square = false
         )
-        Spacer(modifier = Modifier.height(16.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SegmentButton(
                 label = stringResource(R.string.label_calendar),
-                color = Color(0xFFBBDEFB),
+                icon = Icons.Default.DateRange,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 onClick = { onSegmentClick(MedallionSegment.CALENDAR) },
                 modifier = Modifier.weight(1f)
             )
             SegmentButton(
                 label = stringResource(R.string.label_events),
-                color = Color(0xFFC8E6C9),
+                icon = Icons.Default.Event,
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 onClick = { onSegmentClick(MedallionSegment.EVENTS) },
                 modifier = Modifier.weight(1f)
             )
         }
-        Spacer(modifier = Modifier.height(16.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SegmentButton(
                 label = stringResource(R.string.label_workout),
-                color = Color(0xFFFFF9C4),
+                icon = Icons.Default.FitnessCenter,
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 onClick = { onSegmentClick(MedallionSegment.WORKOUT) },
                 modifier = Modifier.weight(1f)
             )
             SegmentButton(
                 label = stringResource(R.string.label_notes),
-                color = Color(0xFFFFCCBC),
+                icon = Icons.Default.Note,
+                containerColor = MaterialTheme.colorScheme.inversePrimary,
                 onClick = { onSegmentClick(MedallionSegment.NOTES) },
                 modifier = Modifier.weight(1f)
             )
