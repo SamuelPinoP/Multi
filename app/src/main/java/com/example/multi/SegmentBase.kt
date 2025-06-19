@@ -7,17 +7,21 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
@@ -63,8 +67,17 @@ fun SegmentScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                modifier = Modifier.height(135.dp),
+            CenterAlignedTopAppBar(
+                modifier = Modifier
+                    .height(80.dp)
+                    .shadow(4.dp, RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+                    .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
                 title = {
                     Text(
                         text = title,
@@ -77,12 +90,11 @@ fun SegmentScreen(
                     if (showBackButton) {
                         IconButton(
                             onClick = onBack,
-                            modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape)
                         ) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.primary
+                                contentDescription = "Back"
                             )
                         }
                     }
@@ -91,12 +103,11 @@ fun SegmentScreen(
                     if (showCloseButton) {
                         IconButton(
                             onClick = onClose,
-                            modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape)
                         ) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "Close",
-                                tint = MaterialTheme.colorScheme.primary
+                                contentDescription = "Close"
                             )
                         }
                     }
