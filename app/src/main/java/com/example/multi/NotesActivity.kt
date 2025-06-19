@@ -10,10 +10,20 @@ import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import com.example.multi.data.NoteDatabase
+import com.example.multi.data.toModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class NotesActivity : SegmentActivity(
     "Notes",
@@ -23,6 +33,15 @@ class NotesActivity : SegmentActivity(
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
+        val notes = remember { mutableStateListOf<Note>() }
+
+        LaunchedEffect(Unit) {
+            val dao = NoteDatabase.getInstance(context).noteDao()
+            val stored = withContext(Dispatchers.IO) { dao.getNotes() }
+            notes.clear()
+            notes.addAll(stored.map { it.toModel() })
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -31,7 +50,17 @@ class NotesActivity : SegmentActivity(
             ) {
                 Text("Notes", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("This is where your notes will appear.")
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().weight(1f, false)
+                ) {
+                    items(notes) { note ->
+                        Text(
+                            text = note.content,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
+                        )
+                    }
+                }
             }
 
             ExtendedFloatingActionButton(
