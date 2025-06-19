@@ -8,19 +8,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material.Icon
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Add
@@ -47,7 +49,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
-class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
+class WeeklyGoalsActivity : SegmentActivity(
+    "Weekly Goals",
+    showBackButton = false,
+    showCloseButton = false
+) {
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     override fun SegmentContent() {
@@ -115,25 +121,29 @@ private fun WeeklyGoalsScreen() {
                     .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Button(
+                ElevatedButton(
                     onClick = {
                         context.startActivity(
                             android.content.Intent(context, RecordActivity::class.java)
                         )
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                     modifier = Modifier
                         .height(50.dp)
                         .defaultMinSize(minWidth = 170.dp)
                 ) {
-                    androidx.compose.material.Text("Record", color = Color.White, fontSize = 18.sp)
+                    androidx.compose.material3.Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    androidx.compose.material3.Text("Record", fontSize = 18.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
             val remaining = daysRemainingInWeek()
-            androidx.compose.material.Text(
+            Text(
                 text = "$remaining days remaining",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
@@ -143,7 +153,7 @@ private fun WeeklyGoalsScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            androidx.compose.material.Text(
+            Text(
                 text = "Today's Goals",
                 style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
                 color = MaterialTheme.colorScheme.primary,
@@ -155,11 +165,11 @@ private fun WeeklyGoalsScreen() {
 
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 96.dp)
             ) {
                 itemsIndexed(goals) { index, goal ->
-                    Card(
-                        elevation = CardDefaults.cardElevation(),
+                    ElevatedCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { editingIndex = index }
@@ -168,7 +178,7 @@ private fun WeeklyGoalsScreen() {
                             .fillMaxWidth()
                             .padding(16.dp)) {
                             if (goal.remaining == 0) {
-                                androidx.compose.material.Text(
+                                Text(
                                     text = "Completed",
                                     color = Color.Green,
                                     style = MaterialTheme.typography.bodySmall,
@@ -181,12 +191,12 @@ private fun WeeklyGoalsScreen() {
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                androidx.compose.material.Text(
+                                Text(
                                     text = goal.header,
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    androidx.compose.material.Text(
+                                    Text(
                                         text = "${goal.frequency - goal.remaining}/${goal.frequency}",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
@@ -218,6 +228,8 @@ private fun WeeklyGoalsScreen() {
                             val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
                             LinearProgressIndicator(
                                 progress = progress,
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 8.dp)
@@ -228,16 +240,16 @@ private fun WeeklyGoalsScreen() {
             }
         }
 
-        FloatingActionButton(
+        ExtendedFloatingActionButton(
             onClick = { editingIndex = -1 },
+            icon = { Icon(Icons.Default.Add, contentDescription = null) },
+            text = { Text("Add Goal") },
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 80.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Add")
-        }
+        )
 
         val index = editingIndex
         if (index != null) {
@@ -315,7 +327,7 @@ private fun WeeklyGoalDialog(
             Button(
                 onClick = { frequency?.let { onSave(header, it) } },
                 enabled = header.isNotBlank() && frequency != null
-            ) { androidx.compose.material.Text("Save") }
+            ) { Text("Save") }
         },
         dismissButton = {
             Row {
@@ -325,27 +337,27 @@ private fun WeeklyGoalDialog(
                             prog()
                             onDismiss()
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                         modifier = Modifier.padding(end = 8.dp)
-                    ) { androidx.compose.material.Text("Progress") }
+                    ) { Text("Progress") }
                 }
                 onDelete?.let { del ->
-                    TextButton(onClick = del) { androidx.compose.material.Text("Delete") }
+                    TextButton(onClick = del) { Text("Delete") }
                 }
-                TextButton(onClick = onDismiss) { androidx.compose.material.Text("Cancel") }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
             }
         },
-        title = { androidx.compose.material.Text("Customize your Weekly Routine!") },
+        title = { Text("Customize your Weekly Routine!") },
         text = {
             Column {
-                androidx.compose.material.Text("Header", style = MaterialTheme.typography.bodySmall)
+                Text("Header", style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(
                     value = header,
                     onValueChange = { header = it },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                androidx.compose.material.Text("Frequency", style = MaterialTheme.typography.bodySmall)
+                Text("Frequency", style = MaterialTheme.typography.bodySmall)
                 val scrollState = rememberScrollState()
                 Row(
                     modifier = Modifier
@@ -370,7 +382,7 @@ private fun WeeklyGoalDialog(
                             ),
                             modifier = Modifier.padding(end = 8.dp)
                         ) {
-                            androidx.compose.material.Text(text)
+                            Text(text)
                         }
                     }
                 }
