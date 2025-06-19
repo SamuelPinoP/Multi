@@ -97,6 +97,12 @@ interface NoteDao {
 
     @Insert
     suspend fun insert(note: NoteEntity): Long
+
+    @Update
+    suspend fun update(note: NoteEntity)
+
+    @Delete
+    suspend fun delete(note: NoteEntity)
 }
 
 @Database(
