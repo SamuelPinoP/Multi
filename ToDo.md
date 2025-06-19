@@ -1,22 +1,28 @@
 /*
     There is a lot of work to do now!
 
-0- Improve the UI everywhere (Just tell Codex what piece of UI to improve)
-1- The add button in events doesn't respond interactively. It is hard to click sometimes.
+0- The note opened last is always displayed first.
+1- Implement the desired functionality for the Notes application.
+2- Make sure the notes application can copy and paste columns and rows as desired and also add
+highlighted text in different colors as well as adding divisions between lines and segments.
+3- Add notifications for the Events we have.
+4 Add feature of having a notification about daily activities. The user can click progress without 
+entering the app. As a Remainder, only for active users.
 
 */
 
 /* 
     There is a lot of work to do in the future!
 
-1- Add desired functionality to the Record Button.
-2- Implement the desired functionality for the Notes application.
-3- Launch the Notes app as a separate lightweight app.
-4- Implement the desired Calendar View API to the Weekly Goals Record.
-5- Have every date were weekly goals were achieved in the Record button.
-6- The Calendar will be able select a date and mark it to create a Remainder.
-7- Add notifications for the above remainders and also for the Events.
-8- Make sure the notes application can copy and paste columns and rows as desired and also add
-highlighted text in different colors as well as adding divisions between lines and segments. 
+1- Launch the Notes app as a separate lightweight app.
+2- Implement the desired Calendar View API to the Weekly Goals Record.
+3- Add a Calendar that has events marked in specific days. Add a Calendar view of when Weekly Goals
+were completed.
+4- Have AI create a workout routine based on physical goals such as losing weight. Gaining muscle. 
+Or even more. The user can create constraints such as only natural exercises. No legs workout, no 
+cardio, or only weight lifting. If the user is able to complete excercices with the given weight 
+easily then the AI increases weight for you.
+5- Maybe have a different AI instead.
+
 
 */
