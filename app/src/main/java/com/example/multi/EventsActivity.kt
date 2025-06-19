@@ -21,11 +21,12 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,23 +73,34 @@ private fun EventsScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(events) { index, event ->
-                Card(
-                    elevation = CardDefaults.cardElevation(),
+                ElevatedCard(
+                    elevation = CardDefaults.elevatedCardElevation(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { editingIndex = index }
                 ) {
-                    Text(
-                        text = buildString {
-                            append("${index + 1} - ${event.title}")
-                            event.date?.let { append("  Date: $it") }
-                        },
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "${index + 1}. ${event.title}",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        if (event.description.isNotBlank()) {
+                            Text(
+                                text = event.description,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        event.date?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -117,15 +129,16 @@ private fun EventsScreen() {
             )
         }
 
-        FloatingActionButton(
+        ExtendedFloatingActionButton(
             onClick = { editingIndex = -1 },
-            backgroundColor = Color(0xFF4CAF50),
+            icon = { Icon(Icons.Default.Add, contentDescription = null) },
+            text = { Text("Add Event") },
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 68.dp, end = 16.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
-        }
+        )
 
         val index = editingIndex
         if (index != null) {
