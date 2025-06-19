@@ -15,7 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,7 +29,6 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class NotesActivity : SegmentActivity(
@@ -35,12 +39,23 @@ class NotesActivity : SegmentActivity(
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
-        val scope = rememberCoroutineScope()
         val notes = remember { mutableStateListOf<Note>() }
+        var refreshKey by remember { mutableStateOf(0) }
+        val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
 
-        LaunchedEffect(Unit) {
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    refreshKey++
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        }
+
+        LaunchedEffect(refreshKey) {
             val dao = EventDatabase.getInstance(context).noteDao()
-            val stored = kotlinx.coroutines.withContext(Dispatchers.IO) { dao.getNotes() }
+            val stored = withContext(Dispatchers.IO) { dao.getNotes() }
             notes.clear(); notes.addAll(stored.map { it.toModel() })
         }
 
