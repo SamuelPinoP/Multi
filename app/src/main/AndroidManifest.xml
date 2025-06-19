@@ -40,6 +40,9 @@
             android:name=".NotesActivity"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".NewNoteActivity"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".WeeklyGoalsActivity"
             android:screenOrientation="portrait" />
         <activity
