@@ -2,6 +2,7 @@ package com.example.multi
 
 import android.content.Intent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Text
@@ -65,7 +66,14 @@ class NotesActivity : SegmentActivity(
                     items(notes) { note ->
                         Text(
                             note.content,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                            modifier = Modifier.clickable {
+                                context.startActivity(
+                                    Intent(context, NoteEditorActivity::class.java).apply {
+                                        putExtra("note_id", note.id)
+                                    }
+                                )
+                            }
                         )
                     }
                 }
