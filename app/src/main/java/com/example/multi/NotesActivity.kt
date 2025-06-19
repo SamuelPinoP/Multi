@@ -1,13 +1,18 @@
 package com.example.multi
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import android.content.Intent
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.contentColorFor
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
 class NotesActivity : SegmentActivity(
@@ -17,10 +22,26 @@ class NotesActivity : SegmentActivity(
 ) {
     @Composable
     override fun SegmentContent() {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Notes", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("This is where your notes will appear.")
+        val context = LocalContext.current
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Notes", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("This is where your notes will appear.")
+            }
+
+            ExtendedFloatingActionButton(
+                onClick = {
+                    context.startActivity(Intent(context, NoteEditActivity::class.java))
+                },
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("New Note") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = contentColorFor(MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 80.dp)
+            )
         }
     }
 }
