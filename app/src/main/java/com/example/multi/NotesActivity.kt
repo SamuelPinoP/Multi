@@ -12,10 +12,8 @@ import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,23 +24,28 @@ import com.example.multi.data.toModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.lifecycleScope
 
 class NotesActivity : SegmentActivity(
     "Notes",
     showBackButton = false,
     showCloseButton = false
 ) {
+    private val notes = mutableStateListOf<Note>()
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            val dao = EventDatabase.getInstance(this@NotesActivity).noteDao()
+            val stored = withContext(Dispatchers.IO) { dao.getNotes() }
+            notes.clear(); notes.addAll(stored.map { it.toModel() })
+        }
+    }
+
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
-        val scope = rememberCoroutineScope()
-        val notes = remember { mutableStateListOf<Note>() }
-
-        LaunchedEffect(Unit) {
-            val dao = EventDatabase.getInstance(context).noteDao()
-            val stored = kotlinx.coroutines.withContext(Dispatchers.IO) { dao.getNotes() }
-            notes.clear(); notes.addAll(stored.map { it.toModel() })
-        }
+        val notes = remember { this@NotesActivity.notes }
 
         Box(modifier = Modifier.fillMaxSize()) {
             if (notes.isEmpty()) {

@@ -22,10 +22,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class NoteEditorActivity : SegmentActivity("New Note") {
+    private var currentText: String = ""
+    private var saved = false
+
     @Composable
     override fun SegmentContent() {
         Surface(modifier = Modifier.fillMaxSize()) {
@@ -45,7 +49,11 @@ class NoteEditorActivity : SegmentActivity("New Note") {
                 }
                 BasicTextField(
                     value = textState.value,
-                    onValueChange = { textState.value = it },
+                    onValueChange = {
+                        textState.value = it
+                        currentText = it
+                        saved = false
+                    },
                     modifier = Modifier.fillMaxSize(),
                     textStyle = TextStyle(
                         color = MaterialTheme.colorScheme.onSurface,
@@ -56,6 +64,8 @@ class NoteEditorActivity : SegmentActivity("New Note") {
                 ExtendedFloatingActionButton(
                     onClick = {
                         val text = textState.value.trim()
+                        saved = true
+                        currentText = text
                         scope.launch(Dispatchers.IO) {
                             if (text.isNotEmpty()) {
                                 EventDatabase.getInstance(context).noteDao()
@@ -72,6 +82,18 @@ class NoteEditorActivity : SegmentActivity("New Note") {
                         .align(androidx.compose.ui.Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 80.dp)
                 )
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        val text = currentText.trim()
+        if (!saved && text.isNotEmpty()) {
+            saved = true
+            lifecycleScope.launch(Dispatchers.IO) {
+                EventDatabase.getInstance(applicationContext).noteDao()
+                    .insert(Note(content = text).toEntity())
             }
         }
     }
