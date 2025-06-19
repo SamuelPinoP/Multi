@@ -9,18 +9,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBarDefaults
 import com.example.multi.ui.theme.MultiTheme
 
 open class SegmentActivity(
@@ -53,6 +56,7 @@ open class SegmentActivity(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun SegmentScreen(
     title: String,
     onBack: () -> Unit,
@@ -63,8 +67,10 @@ fun SegmentScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                modifier = Modifier.height(135.dp),
+            CenterAlignedTopAppBar(
+                modifier = Modifier
+                    .height(72.dp)
+                    .shadow(4.dp),
                 title = {
                     Text(
                         text = title,
@@ -100,7 +106,10 @@ fun SegmentScreen(
                             )
                         }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { innerPadding ->
