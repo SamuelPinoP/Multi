@@ -14,7 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -24,13 +24,13 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class NoteEditorActivity : SegmentActivity("New Note") {
     @Composable
     override fun SegmentContent() {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
-            val scope = rememberCoroutineScope()
             val textState = remember { mutableStateOf("") }
 
             Box(modifier = Modifier
@@ -56,13 +56,18 @@ class NoteEditorActivity : SegmentActivity("New Note") {
                 ExtendedFloatingActionButton(
                     onClick = {
                         val text = textState.value.trim()
-                        scope.launch(Dispatchers.IO) {
-                            if (text.isNotEmpty()) {
-                                EventDatabase.getInstance(context).noteDao()
-                                    .insert(Note(content = text).toEntity())
+                        val activity = context as? androidx.activity.ComponentActivity
+                        if (activity != null) {
+                            activity.lifecycleScope.launch {
+                                if (text.isNotEmpty()) {
+                                    withContext(Dispatchers.IO) {
+                                        EventDatabase.getInstance(activity).noteDao()
+                                            .insert(Note(content = text).toEntity())
+                                    }
+                                }
+                                activity.finish()
                             }
                         }
-                        (context as? android.app.Activity)?.finish()
                     },
                     icon = { Icon(Icons.Default.Check, contentDescription = null) },
                     text = { Text("Save") },
