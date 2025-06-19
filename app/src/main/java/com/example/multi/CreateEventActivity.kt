@@ -12,18 +12,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.Icon
 import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.ui.theme.AppBarBlue
 
 /**
  * Activity that allows the user to create a new calendar event.
@@ -58,17 +62,22 @@ private fun CreateEventScreen(onSave: () -> Unit) {
 
     androidx.compose.material.Scaffold(
     topBar = {
-        TopAppBar(
-            modifier = Modifier.height(135.dp),
+        CenterAlignedTopAppBar(
+            modifier = Modifier
+                .height(72.dp)
+                .shadow(4.dp),
             title = {
                 Text(
                     text = "New Event",
-                    color = androidx.compose.ui.graphics.Color.White,
+                    color = Color.White,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
                 )
-            }
+            },
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = AppBarBlue
+            )
         )
     },
         floatingActionButton = {

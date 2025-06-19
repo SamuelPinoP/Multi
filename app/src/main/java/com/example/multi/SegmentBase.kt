@@ -11,7 +11,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -20,8 +19,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.ui.theme.AppBarBlue
 
 open class SegmentActivity(
     private val segmentTitle: String,
@@ -63,26 +67,32 @@ fun SegmentScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                modifier = Modifier.height(135.dp),
+            CenterAlignedTopAppBar(
+                modifier = Modifier
+                    .height(72.dp)
+                    .shadow(4.dp),
                 title = {
                     Text(
                         text = title,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White
                     )
                 },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = AppBarBlue
+                ),
                 navigationIcon = {
                     if (showBackButton) {
                         IconButton(
                             onClick = onBack,
-                            modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            modifier = Modifier.border(1.dp, Color.White, CircleShape)
                         ) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = Color.White
                             )
                         }
                     }
@@ -91,12 +101,12 @@ fun SegmentScreen(
                     if (showCloseButton) {
                         IconButton(
                             onClick = onClose,
-                            modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            modifier = Modifier.border(1.dp, Color.White, CircleShape)
                         ) {
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "Close",
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = Color.White
                             )
                         }
                     }

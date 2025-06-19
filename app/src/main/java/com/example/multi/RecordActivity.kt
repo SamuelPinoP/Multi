@@ -29,11 +29,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.draw.shadow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.ui.theme.AppBarBlue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -69,18 +72,25 @@ fun RecordScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
+                modifier = Modifier
+                    .height(72.dp)
+                    .shadow(4.dp),
                 title = {
                     Text(
                         text = "Record",
-                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp),
+                        color = Color.White
                     )
                 },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = AppBarBlue
+                ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onBackground
+                            tint = Color.White
                         )
                     }
                 }
