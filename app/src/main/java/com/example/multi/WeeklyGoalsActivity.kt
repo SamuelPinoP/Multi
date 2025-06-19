@@ -179,7 +179,7 @@ private fun WeeklyGoalsScreen() {
                             .padding(16.dp)) {
                             if (goal.remaining == 0) {
                                 Text(
-                                    text = "Completed",
+                                    text = "Completed!",
                                     color = Color.Green,
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.fillMaxWidth(),
