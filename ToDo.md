@@ -9,6 +9,9 @@ highlighted text in different colors as well as adding divisions between lines a
 4 Add feature of having a notification about daily activities. The user can click progress without 
 entering the app. As a Remainder, only for active users.
 
+5- Add Attach button in the events activity to attach notes to an specific event. It could be a new
+note or an existing one or even multiple of them. I must select the event first and then the note.
+
 */
 
 /* 
