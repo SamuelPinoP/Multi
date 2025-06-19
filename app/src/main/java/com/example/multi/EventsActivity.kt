@@ -50,7 +50,11 @@ import kotlinx.coroutines.withContext
 const val EXTRA_DATE = "extra_date"
 
 /** Activity displaying the list of user events. */
-class EventsActivity : SegmentActivity("Events") {
+class EventsActivity : SegmentActivity(
+    "Events",
+    showBackButton = false,
+    showCloseButton = false
+) {
     private var initialDate: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {

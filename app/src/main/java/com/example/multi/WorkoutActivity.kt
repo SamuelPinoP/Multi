@@ -10,7 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-class WorkoutActivity : SegmentActivity("Workout") {
+class WorkoutActivity : SegmentActivity(
+    "Workout",
+    showBackButton = false,
+    showCloseButton = false
+) {
     @Composable
     override fun SegmentContent() {
         Column(modifier = Modifier.padding(16.dp)) {
