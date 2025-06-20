@@ -4,9 +4,9 @@
 - Greatly improve the UI
 - Allow to download the Notes in Word or PDF format
 - Allow to share Notes to whatsap, gmail, and messenger
-- Implementar una papelera de reciclaje. Whenever a note is deleted it will go to the trashbin for
-- 1 month where if not recovered, it will be then deleted. Create trahbin button.
-- make sure every first letter is a mayus
+- Whenever a note is deleted it will go to the trashbin for 1 month where if not recovered, 
+- It will be then deleted. 
+- Make sure every first letter is a mayus
 
 
 -1 Delete back and close and save button
