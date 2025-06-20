@@ -7,7 +7,7 @@
 - Make it so a save button is not need but everything written in the note is saved
 - Delete back and close and save button
 - make sure every first letter is a mayus
-- The notes will only store a header and display it. If empty the notes will display the first two 
+- The notes will only store a header and display it. If empty the notes will display the first three
 - lines in the note
 
 0- The note opened last is always displayed first.
