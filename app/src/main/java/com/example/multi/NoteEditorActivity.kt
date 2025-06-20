@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -24,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -34,6 +34,8 @@ import com.example.multi.data.toEntity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
@@ -64,6 +66,36 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textState = remember { mutableStateOf(currentText) }
             var textSize by remember { mutableStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
+
+            LaunchedEffect(headerState.value, textState.value) {
+                if (!saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
+                    delay(500)
+                    val dao = EventDatabase.getInstance(context).noteDao()
+                    withContext(Dispatchers.IO) {
+                        if (noteId == 0L) {
+                            noteId = dao.insert(
+                                Note(
+                                    header = headerState.value.trim(),
+                                    content = textState.value.trim(),
+                                    created = noteCreated
+                                ).toEntity()
+                            )
+                        } else {
+                            dao.update(
+                                Note(
+                                    id = noteId,
+                                    header = headerState.value.trim(),
+                                    content = textState.value.trim(),
+                                    created = noteCreated
+                                ).toEntity()
+                            )
+                        }
+                    }
+                    saved = true
+                    currentHeader = headerState.value
+                    currentText = textState.value
+                }
+            }
 
             Box(modifier = Modifier
                 .fillMaxSize()
@@ -122,33 +154,6 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     }
                 }
 
-                ExtendedFloatingActionButton(
-                    onClick = {
-                    val text = textState.value.trim()
-                    val header = headerState.value.trim()
-                        saved = true
-                        currentText = text
-                        currentHeader = header
-                        scope.launch(Dispatchers.IO) {
-                            if (text.isNotEmpty() || header.isNotEmpty()) {
-                                val dao = EventDatabase.getInstance(context).noteDao()
-                                if (noteId == 0L) {
-                                    noteId = dao.insert(Note(header = header, content = text, created = noteCreated).toEntity())
-                                } else {
-                                    dao.update(Note(id = noteId, header = header, content = text, created = noteCreated).toEntity())
-                                }
-                            }
-                        }
-                        (context as? android.app.Activity)?.finish()
-                    },
-                    icon = { Icon(Icons.Default.Check, contentDescription = null) },
-                    text = { Text("Save") },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier
-                        .align(androidx.compose.ui.Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 80.dp)
-                )
 
                 if (noteId != 0L) {
                     ExtendedFloatingActionButton(
