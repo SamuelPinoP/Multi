@@ -50,7 +50,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
         noteCreated = intent.getLongExtra(EXTRA_NOTE_CREATED, noteCreated)
-        currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
+        currentHeader = (intent.getStringExtra(EXTRA_NOTE_HEADER) ?: "")
+            .lines().take(3).joinToString("\n")
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
         super.onCreate(savedInstanceState)
     }
@@ -80,11 +81,10 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         BasicTextField(
                             value = headerState.value,
                             onValueChange = {
-                                if (it.lines().size <= 3) {
-                                    headerState.value = it
-                                    currentHeader = it
-                                    saved = false
-                                }
+                                val trimmed = it.lines().take(3).joinToString("\n")
+                                headerState.value = trimmed
+                                currentHeader = trimmed
+                                saved = false
                             },
                             modifier = Modifier
                                 .fillMaxWidth(),
@@ -126,6 +126,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     onClick = {
                     val text = textState.value.trim()
                     val header = headerState.value.trim()
+                        .lines().take(3).joinToString("\n")
                         saved = true
                         currentText = text
                         currentHeader = header
@@ -215,6 +216,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         super.onStop()
         val text = currentText.trim()
         val header = currentHeader.trim()
+            .lines().take(3).joinToString("\n")
         if (!saved && (text.isNotEmpty() || header.isNotEmpty())) {
             saved = true
             lifecycleScope.launch(Dispatchers.IO) {

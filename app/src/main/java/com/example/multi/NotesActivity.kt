@@ -84,7 +84,7 @@ class NotesActivity : SegmentActivity(
                                 }
                         ) {
                             Text(
-                                note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
+                                note.previewHeader(),
                                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
                                 modifier = Modifier.padding(16.dp)
                             )
