@@ -1,21 +1,29 @@
 package com.example.multi
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -50,6 +58,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
             val textState = remember { mutableStateOf(currentText) }
+            var textSize by remember { mutableStateOf(20) }
+            var showSizeDialog by remember { mutableStateOf(false) }
 
             Box(modifier = Modifier
                 .fillMaxSize()
@@ -57,7 +67,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 if (textState.value.isEmpty()) {
                     Text(
                         text = "Start writing...",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -71,7 +81,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     modifier = Modifier.fillMaxSize(),
                     textStyle = TextStyle(
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 20.sp
+                        fontSize = textSize.sp
                     )
                 )
 
@@ -118,6 +128,44 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         modifier = Modifier
                             .align(androidx.compose.ui.Alignment.BottomStart)
                             .padding(start = 16.dp, bottom = 80.dp)
+                    )
+                }
+
+                ExtendedFloatingActionButton(
+                    onClick = { showSizeDialog = true },
+                    icon = { Icon(Icons.Default.FormatSize, contentDescription = null) },
+                    text = { Text("Text Size") },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.BottomCenter)
+                        .padding(bottom = 80.dp)
+                )
+
+                if (showSizeDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showSizeDialog = false },
+                        confirmButton = {
+                            TextButton(onClick = { showSizeDialog = false }) { Text("Close") }
+                        },
+                        title = { Text("Select Text Size") },
+                        text = {
+                            Column {
+                                listOf(16, 20, 24, 28, 32).forEach { size ->
+                                    Button(
+                                        onClick = {
+                                            textSize = size
+                                            showSizeDialog = false
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                    ) {
+                                        Text("${size}sp")
+                                    }
+                                }
+                            }
+                        }
                     )
                 }
             }
