@@ -1,15 +1,15 @@
 /*
     There is a lot of work to do now!
 
+- Greatly improve the UI
+- Allow to download the Notes in Word or PDF format
+- Allow to share Notes to whatsap, gmail, and messenger
 - Implementar una papelera de reciclaje. Whenever a note is deleted it will go to the trashbin for
-- 1 month where if not recovered, it will be then deleted.
-- Add text size button
-- Make it so a save button is not need but everything written in the note is saved
-- Delete back and close and save button
+- 1 month where if not recovered, it will be then deleted. Create trahbin button.
 - make sure every first letter is a mayus
-- The notes will only store a header and display it. If empty the notes will display the first three
-- lines in the note
 
+
+-1 Delete back and close and save button
 0- The note opened last is always displayed first.
 1- Implement the desired functionality for the Notes application.
 2- Make sure the notes application can copy and paste columns and rows as desired and also add
