@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.EXTRA_NOTE_ID
+import com.example.multi.EXTRA_NOTE_HEADER
 import com.example.multi.EXTRA_NOTE_CONTENT
 import com.example.multi.EXTRA_NOTE_CREATED
 import kotlinx.coroutines.Dispatchers
@@ -76,13 +77,14 @@ class NotesActivity : SegmentActivity(
                                 .clickable {
                                     val intent = Intent(context, NoteEditorActivity::class.java)
                                     intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                    intent.putExtra(EXTRA_NOTE_HEADER, note.header)
                                     intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
                                     intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                     context.startActivity(intent)
                                 }
                         ) {
                             Text(
-                                note.content,
+                                note.header,
                                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
                                 modifier = Modifier.padding(16.dp)
                             )
