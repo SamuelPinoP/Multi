@@ -7,11 +7,15 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +54,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
             val textState = remember { mutableStateOf(currentText) }
+            val sizeOptions = listOf(16.sp, 20.sp, 24.sp, 28.sp)
+            val fontSize = remember { mutableStateOf(20.sp) }
+            val showMenu = remember { mutableStateOf(false) }
 
             Box(modifier = Modifier
                 .fillMaxSize()
@@ -57,7 +64,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 if (textState.value.isEmpty()) {
                     Text(
                         text = "Start writing...",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = fontSize.value),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -71,9 +78,27 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     modifier = Modifier.fillMaxSize(),
                     textStyle = TextStyle(
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 20.sp
+                        fontSize = fontSize.value
                     )
                 )
+
+                IconButton(
+                    onClick = { showMenu.value = true },
+                    modifier = Modifier.align(androidx.compose.ui.Alignment.TopEnd)
+                ) {
+                    Icon(Icons.Default.FormatSize, contentDescription = "Text Size")
+                }
+                DropdownMenu(expanded = showMenu.value, onDismissRequest = { showMenu.value = false }) {
+                    sizeOptions.forEach { size ->
+                        DropdownMenuItem(
+                            text = { Text(size.value.toInt().toString()) },
+                            onClick = {
+                                fontSize.value = size
+                                showMenu.value = false
+                            }
+                        )
+                    }
+                }
 
                 ExtendedFloatingActionButton(
                     onClick = {
