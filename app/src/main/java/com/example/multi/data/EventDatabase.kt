@@ -13,6 +13,7 @@ import androidx.room.Update
 import androidx.room.Delete
 import com.example.multi.Event
 import com.example.multi.Note
+import com.example.multi.trimmedHeader
 import com.example.multi.WeeklyGoal
 import com.example.multi.WeeklyGoalRecord
 
@@ -146,4 +147,7 @@ fun WeeklyGoalRecordEntity.toModel() = WeeklyGoalRecord(id, header, completed, f
 fun WeeklyGoalRecord.toEntity() = WeeklyGoalRecordEntity(id, header, completed, frequency, weekStart, weekEnd)
 
 fun NoteEntity.toModel() = Note(id, header, content, created)
-fun Note.toEntity() = NoteEntity(id, header, content, created)
+fun Note.toEntity(): NoteEntity {
+    val trimmed = trimmedHeader()
+    return NoteEntity(id, trimmed, content, created)
+}
