@@ -4,7 +4,7 @@
 - Implementar una papelera de reciclaje. Whenever a note is deleted it will go to the trashbin for
 - 1 month where if not recovered, it will be then deleted.
 - Add text size button
-- Make it so a save button is not need but everything written in the note is saved
+- [x] Make it so a save button is not needed and everything written in the note is saved automatically
 - Delete back and close and save button
 - make sure every first letter is a mayus
 - The notes will only store a header and display it. If empty the notes will display the first three

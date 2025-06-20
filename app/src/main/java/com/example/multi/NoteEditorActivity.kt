@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -122,33 +121,6 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     }
                 }
 
-                ExtendedFloatingActionButton(
-                    onClick = {
-                    val text = textState.value.trim()
-                    val header = headerState.value.trim()
-                        saved = true
-                        currentText = text
-                        currentHeader = header
-                        scope.launch(Dispatchers.IO) {
-                            if (text.isNotEmpty() || header.isNotEmpty()) {
-                                val dao = EventDatabase.getInstance(context).noteDao()
-                                if (noteId == 0L) {
-                                    noteId = dao.insert(Note(header = header, content = text, created = noteCreated).toEntity())
-                                } else {
-                                    dao.update(Note(id = noteId, header = header, content = text, created = noteCreated).toEntity())
-                                }
-                            }
-                        }
-                        (context as? android.app.Activity)?.finish()
-                    },
-                    icon = { Icon(Icons.Default.Check, contentDescription = null) },
-                    text = { Text("Save") },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier
-                        .align(androidx.compose.ui.Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 80.dp)
-                )
 
                 if (noteId != 0L) {
                     ExtendedFloatingActionButton(
