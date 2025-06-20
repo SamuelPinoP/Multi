@@ -4,5 +4,7 @@ package com.example.multi
 data class Note(
     var id: Long = 0L,
     var content: String,
-    var created: Long = System.currentTimeMillis()
+    var created: Long = System.currentTimeMillis(),
+    /** Font size for this note in sp. */
+    var fontSize: Int = 20
 )

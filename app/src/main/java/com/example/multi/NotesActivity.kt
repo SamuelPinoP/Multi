@@ -78,12 +78,13 @@ class NotesActivity : SegmentActivity(
                                     intent.putExtra(EXTRA_NOTE_ID, note.id)
                                     intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
                                     intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                    intent.putExtra(EXTRA_NOTE_SIZE, note.fontSize)
                                     context.startActivity(intent)
                                 }
                         ) {
                             Text(
                                 note.content,
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = note.fontSize.sp),
                                 modifier = Modifier.padding(16.dp)
                             )
                         }
@@ -93,7 +94,9 @@ class NotesActivity : SegmentActivity(
 
             ExtendedFloatingActionButton(
                 onClick = {
-                    context.startActivity(Intent(context, NoteEditorActivity::class.java))
+                    val intent = Intent(context, NoteEditorActivity::class.java)
+                    intent.putExtra(EXTRA_NOTE_SIZE, 20)
+                    context.startActivity(intent)
                 },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { M3Text("New Note") },
