@@ -4,5 +4,6 @@ package com.example.multi
 data class Note(
     var id: Long = 0L,
     var content: String,
+    var textSize: Float = 20f,
     var created: Long = System.currentTimeMillis()
 )

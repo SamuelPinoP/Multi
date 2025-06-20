@@ -7,8 +7,12 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,17 +34,20 @@ import kotlinx.coroutines.launch
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
 const val EXTRA_NOTE_CREATED = "extra_note_created"
+const val EXTRA_NOTE_TEXT_SIZE = "extra_note_text_size"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
     private var noteCreated: Long = System.currentTimeMillis()
     private var currentText: String = ""
+    private var textSize: Float = 20f
     private var saved = false
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
         noteCreated = intent.getLongExtra(EXTRA_NOTE_CREATED, noteCreated)
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        textSize = intent.getFloatExtra(EXTRA_NOTE_TEXT_SIZE, textSize)
         super.onCreate(savedInstanceState)
     }
 
@@ -50,6 +57,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
             val textState = remember { mutableStateOf(currentText) }
+            val sizeState = remember { mutableStateOf(textSize) }
+            val menuExpanded = remember { mutableStateOf(false) }
 
             Box(modifier = Modifier
                 .fillMaxSize()
@@ -57,7 +66,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 if (textState.value.isEmpty()) {
                     Text(
                         text = "Start writing...",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = sizeState.value.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -71,9 +80,31 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     modifier = Modifier.fillMaxSize(),
                     textStyle = TextStyle(
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 20.sp
+                        fontSize = sizeState.value.sp
                     )
                 )
+
+                IconButton(
+                    onClick = { menuExpanded.value = true },
+                    modifier = Modifier.align(androidx.compose.ui.Alignment.TopEnd)
+                ) {
+                    Icon(Icons.Default.FormatSize, contentDescription = "Text Size")
+                }
+                DropdownMenu(
+                    expanded = menuExpanded.value,
+                    onDismissRequest = { menuExpanded.value = false }
+                ) {
+                    listOf(16f, 20f, 24f, 32f).forEach { size ->
+                        DropdownMenuItem(
+                            text = { Text("${size.toInt()} sp") },
+                            onClick = {
+                                sizeState.value = size
+                                textSize = size
+                                menuExpanded.value = false
+                            }
+                        )
+                    }
+                }
 
                 ExtendedFloatingActionButton(
                     onClick = {
@@ -84,9 +115,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             if (text.isNotEmpty()) {
                                 val dao = EventDatabase.getInstance(context).noteDao()
                                 if (noteId == 0L) {
-                                    noteId = dao.insert(Note(content = text, created = noteCreated).toEntity())
+                                    noteId = dao.insert(Note(content = text, textSize = textSize, created = noteCreated).toEntity())
                                 } else {
-                                    dao.update(Note(id = noteId, content = text, created = noteCreated).toEntity())
+                                    dao.update(Note(id = noteId, content = text, textSize = textSize, created = noteCreated).toEntity())
                                 }
                             }
                         }
@@ -107,7 +138,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             saved = true
                             scope.launch(Dispatchers.IO) {
                                 EventDatabase.getInstance(context).noteDao()
-                                    .delete(Note(id = noteId, content = currentText, created = noteCreated).toEntity())
+                                    .delete(Note(id = noteId, content = currentText, textSize = textSize, created = noteCreated).toEntity())
                             }
                             (context as? android.app.Activity)?.finish()
                         },
@@ -132,9 +163,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
             lifecycleScope.launch(Dispatchers.IO) {
                 val dao = EventDatabase.getInstance(applicationContext).noteDao()
                 if (noteId == 0L) {
-                    dao.insert(Note(content = text, created = noteCreated).toEntity())
+                    dao.insert(Note(content = text, textSize = textSize, created = noteCreated).toEntity())
                 } else {
-                    dao.update(Note(id = noteId, content = text, created = noteCreated).toEntity())
+                    dao.update(Note(id = noteId, content = text, textSize = textSize, created = noteCreated).toEntity())
                 }
             }
         }

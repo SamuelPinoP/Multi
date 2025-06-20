@@ -27,6 +27,7 @@ import com.example.multi.data.toModel
 import com.example.multi.EXTRA_NOTE_ID
 import com.example.multi.EXTRA_NOTE_CONTENT
 import com.example.multi.EXTRA_NOTE_CREATED
+import com.example.multi.EXTRA_NOTE_TEXT_SIZE
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -78,12 +79,13 @@ class NotesActivity : SegmentActivity(
                                     intent.putExtra(EXTRA_NOTE_ID, note.id)
                                     intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
                                     intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                    intent.putExtra(EXTRA_NOTE_TEXT_SIZE, note.textSize)
                                     context.startActivity(intent)
                                 }
                         ) {
                             Text(
                                 note.content,
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = note.textSize.sp),
                                 modifier = Modifier.padding(16.dp)
                             )
                         }
