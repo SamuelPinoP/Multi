@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
+import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +37,7 @@ import com.example.multi.data.toEntity
 import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.toDateString
+import com.example.multi.util.shareAsDocx
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -200,6 +202,22 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         modifier = Modifier
                             .align(androidx.compose.ui.Alignment.BottomStart)
                             .padding(start = 16.dp, bottom = 80.dp)
+                    )
+                }
+
+                if (!readOnly) {
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                            note.shareAsDocx(context)
+                        },
+                        icon = { Icon(Icons.Default.Note, contentDescription = null) },
+                        text = { Text("Share") },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier
+                            .align(androidx.compose.ui.Alignment.BottomEnd)
+                            .padding(end = 16.dp, bottom = 80.dp)
                     )
                 }
 
