@@ -20,6 +20,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +40,7 @@ import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsDocx
+import com.example.multi.util.shareAsPdf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -78,6 +81,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textState = remember { mutableStateOf(currentText) }
             var textSize by remember { mutableStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
+            var shareMenuExpanded by remember { mutableStateOf(false) }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
@@ -206,19 +210,40 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
 
                 if (!readOnly) {
-                    ExtendedFloatingActionButton(
-                        onClick = {
-                            val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
-                            note.shareAsDocx(context)
-                        },
-                        icon = { Icon(Icons.Default.Note, contentDescription = null) },
-                        text = { Text("Share") },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    Box(
                         modifier = Modifier
                             .align(androidx.compose.ui.Alignment.BottomEnd)
                             .padding(end = 16.dp, bottom = 80.dp)
-                    )
+                    ) {
+                        ExtendedFloatingActionButton(
+                            onClick = { shareMenuExpanded = true },
+                            icon = { Icon(Icons.Default.Note, contentDescription = null) },
+                            text = { Text("Share") },
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        DropdownMenu(
+                            expanded = shareMenuExpanded,
+                            onDismissRequest = { shareMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Word") },
+                                onClick = {
+                                    shareMenuExpanded = false
+                                    val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                                    note.shareAsDocx(context)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("PDF") },
+                                onClick = {
+                                    shareMenuExpanded = false
+                                    val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                                    note.shareAsPdf(context)
+                                }
+                            )
+                        }
+                    }
                 }
 
                 if (!readOnly) {
