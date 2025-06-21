@@ -4,8 +4,6 @@
 - Greatly improve the UI
 - Allow to download the Notes in Word or PDF format
 - Allow to share Notes to whatsap, gmail, and messenger
-- Whenever a note is deleted it will go to the trashbin for 1 month where if not recovered, 
-- It will be then deleted. 
 - Make sure every first letter is a mayus
 
 
