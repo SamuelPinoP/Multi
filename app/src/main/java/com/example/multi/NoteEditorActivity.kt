@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +36,8 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
+import androidx.core.content.FileProvider
+import com.example.multi.util.generateNoteDocx
 import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -242,6 +245,36 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         )
                     }
                 }
+
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        val note = Note(
+                            id = noteId,
+                            header = headerState.value,
+                            content = textState.value,
+                            created = noteCreated
+                        )
+                        val file = generateNoteDocx(context, note)
+                        val uri = FileProvider.getUriForFile(
+                            context,
+                            "${'$'}{context.packageName}.provider",
+                            file
+                        )
+                        val share = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(android.content.Intent.createChooser(share, null))
+                    },
+                    icon = { Icon(Icons.Default.Share, contentDescription = null) },
+                    text = { Text("Share") },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 80.dp)
+                )
             }
         }
     }

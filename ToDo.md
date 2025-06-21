@@ -2,7 +2,7 @@
     There is a lot of work to do now!
 
 - Greatly improve the UI
-- Allow to download the Notes in Word or PDF format
+- ~~Allow to download the Notes in Word or PDF format~~ (Word implemented)
 - Allow to share Notes to whatsap, gmail, and messenger
 - Make sure every first letter is a mayus
 
