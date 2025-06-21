@@ -70,6 +70,8 @@ class NotesActivity : SegmentActivity("Notes") {
                     items(notes) { note ->
                         ElevatedCard(
                             elevation = CardDefaults.elevatedCardElevation(),
+                            colors = CardDefaults.elevatedCardColors(),
+                            shape = MaterialTheme.shapes.medium,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
@@ -81,13 +83,22 @@ class NotesActivity : SegmentActivity("Notes") {
                                     context.startActivity(intent)
                                 }
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
+                            Column(modifier = Modifier.padding(20.dp)) {
                                 Text(
-                                    note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
-                                    maxLines = 3
+                                    text = note.header.ifBlank { note.content.lines().firstOrNull() ?: "" },
+                                    style = MaterialTheme.typography.titleLarge,
+                                    maxLines = 1
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
+                                if (note.header.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = note.content.lines().firstOrNull() ?: "",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        maxLines = 1,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     note.created.toDateString(),
                                     style = MaterialTheme.typography.labelSmall

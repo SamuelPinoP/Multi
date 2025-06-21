@@ -64,6 +64,9 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                     items(notes) { note ->
                         val daysLeft = ((note.deleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
                         ElevatedCard(
+                            elevation = CardDefaults.elevatedCardElevation(),
+                            colors = CardDefaults.elevatedCardColors(),
+                            shape = MaterialTheme.shapes.medium,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
@@ -74,16 +77,22 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                                     intent.putExtra(EXTRA_NOTE_DELETED, note.deleted)
                                     intent.putExtra(EXTRA_NOTE_READ_ONLY, true)
                                     context.startActivity(intent)
-                                },
-                            elevation = CardDefaults.elevatedCardElevation()
+                                }
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
+                            Column(modifier = Modifier.padding(20.dp)) {
                                 Text(
-                                    note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
-                                    maxLines = 3
+                                    text = note.header.ifBlank { note.content.lines().firstOrNull() ?: "" },
+                                    style = MaterialTheme.typography.titleLarge,
+                                    maxLines = 1
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = note.content.lines().firstOrNull() ?: "",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    maxLines = 1,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     "Created: ${note.created.toDateString()}",
                                     style = MaterialTheme.typography.labelSmall
@@ -97,7 +106,7 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End
                                 ) {
-                                    TextButton(onClick = {
+                                    OutlinedButton(onClick = {
                                         scope.launch {
                                             val db = EventDatabase.getInstance(context)
                                             withContext(Dispatchers.IO) {
@@ -110,7 +119,7 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                                         }
                                     }) { Text("Restore") }
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    TextButton(onClick = {
+                                    OutlinedButton(onClick = {
                                         scope.launch {
                                             val dao = EventDatabase.getInstance(context).trashedNoteDao()
                                             withContext(Dispatchers.IO) { dao.delete(note.toEntity()) }
