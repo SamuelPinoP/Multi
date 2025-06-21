@@ -79,7 +79,8 @@ data class NoteEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val header: String,
     val content: String,
-    val created: Long
+    val created: Long,
+    val deleted: Long? = null
 )
 
 @Dao
@@ -93,8 +94,14 @@ interface WeeklyGoalRecordDao {
 
 @Dao
 interface NoteDao {
-    @Query("SELECT * FROM notes ORDER BY created DESC")
+    @Query("SELECT * FROM notes WHERE deleted IS NULL ORDER BY created DESC")
     suspend fun getNotes(): List<NoteEntity>
+
+    @Query("SELECT * FROM notes WHERE deleted IS NOT NULL ORDER BY deleted DESC")
+    suspend fun getDeletedNotes(): List<NoteEntity>
+
+    @Query("DELETE FROM notes WHERE deleted IS NOT NULL AND deleted <= :olderThan")
+    suspend fun purgeDeleted(olderThan: Long)
 
     @Insert
     suspend fun insert(note: NoteEntity): Long
@@ -108,7 +115,7 @@ interface NoteDao {
 
 @Database(
     entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class, NoteEntity::class],
-    version = 5
+    version = 6
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -145,5 +152,5 @@ fun WeeklyGoal.toEntity() = WeeklyGoalEntity(id, header, frequency, remaining, l
 fun WeeklyGoalRecordEntity.toModel() = WeeklyGoalRecord(id, header, completed, frequency, weekStart, weekEnd)
 fun WeeklyGoalRecord.toEntity() = WeeklyGoalRecordEntity(id, header, completed, frequency, weekStart, weekEnd)
 
-fun NoteEntity.toModel() = Note(id, header, content, created)
-fun Note.toEntity() = NoteEntity(id, header, content, created)
+fun NoteEntity.toModel() = Note(id, header, content, created, deleted)
+fun Note.toEntity() = NoteEntity(id, header, content, created, deleted)

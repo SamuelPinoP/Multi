@@ -37,3 +37,10 @@ To run unit tests:
 ./gradlew test
 ```
 
+## Note deletion policy
+
+When a note is deleted it is moved to the **Trash Bin** rather than
+being removed permanently. Notes remain there for 30 days and can be
+restored at any time during that period. After 30 days they are
+automatically purged.
+

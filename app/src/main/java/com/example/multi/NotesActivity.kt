@@ -45,7 +45,11 @@ class NotesActivity : SegmentActivity(
         super.onResume()
         lifecycleScope.launch {
             val dao = EventDatabase.getInstance(this@NotesActivity).noteDao()
-            val stored = withContext(Dispatchers.IO) { dao.getNotes() }
+            val monthAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+            val stored = withContext(Dispatchers.IO) {
+                dao.purgeDeleted(monthAgo)
+                dao.getNotes()
+            }
             notes.clear(); notes.addAll(stored.map { it.toModel() })
         }
     }

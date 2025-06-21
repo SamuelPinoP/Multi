@@ -161,7 +161,15 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             saved = true
                             scope.launch(Dispatchers.IO) {
                                 EventDatabase.getInstance(context).noteDao()
-                                    .delete(Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated).toEntity())
+                                    .update(
+                                        Note(
+                                            id = noteId,
+                                            header = currentHeader,
+                                            content = currentText,
+                                            created = noteCreated,
+                                            deleted = System.currentTimeMillis()
+                                        ).toEntity()
+                                    )
                             }
                             (context as? android.app.Activity)?.finish()
                         },
