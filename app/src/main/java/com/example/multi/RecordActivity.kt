@@ -8,12 +8,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -51,7 +48,7 @@ class RecordActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MultiTheme {
-                RecordScreen { finish() }
+                RecordScreen()
             }
         }
     }
@@ -59,7 +56,7 @@ class RecordActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecordScreen(onBack: () -> Unit) {
+fun RecordScreen() {
     val context = LocalContext.current
     val records = remember { mutableStateListOf<WeeklyGoalRecord>() }
 
@@ -88,14 +85,7 @@ fun RecordScreen(onBack: () -> Unit) {
                         style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
                     )
                 },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
+                navigationIcon = {}
             )
         }
     ) { padding ->
