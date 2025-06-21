@@ -2,6 +2,7 @@ package com.example.multi
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,6 +34,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
+import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,10 +44,14 @@ const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
 const val EXTRA_NOTE_CREATED = "extra_note_created"
 const val EXTRA_NOTE_HEADER = "extra_note_header"
+const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
+const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
     private var noteCreated: Long = System.currentTimeMillis()
+    private var noteDeleted: Long = 0L
+    private var readOnly: Boolean = false
     private var currentHeader: String = ""
     private var currentText: String = ""
     private var saved = false
@@ -53,6 +59,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
         noteCreated = intent.getLongExtra(EXTRA_NOTE_CREATED, noteCreated)
+        noteDeleted = intent.getLongExtra(EXTRA_NOTE_DELETED, 0L)
+        readOnly = intent.getBooleanExtra(EXTRA_NOTE_READ_ONLY, false)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
         super.onCreate(savedInstanceState)
@@ -69,7 +77,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var showSizeDialog by remember { mutableStateOf(false) }
 
             LaunchedEffect(headerState.value, textState.value) {
-                if (!saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
+                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
                     delay(500)
                     val dao = EventDatabase.getInstance(context).noteDao()
                     withContext(Dispatchers.IO) {
@@ -102,6 +110,18 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 .fillMaxSize()
                 .padding(16.dp)) {
                 Column(modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        text = "Created: ${noteCreated.toDateString()}",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                    if (readOnly && noteDeleted != 0L) {
+                        val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
+                        Text(
+                            text = "Days remaining: $daysLeft",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                     Box {
                         if (headerState.value.isEmpty()) {
                             Text(
@@ -119,6 +139,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     saved = false
                                 }
                             },
+                            enabled = !readOnly,
                             modifier = Modifier
                                 .fillMaxWidth(),
                             textStyle = TextStyle(
@@ -146,6 +167,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 currentText = it
                                 saved = false
                             },
+                            enabled = !readOnly,
                             modifier = Modifier.fillMaxSize(),
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -156,7 +178,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
 
 
-                if (noteId != 0L) {
+                if (!readOnly && noteId != 0L) {
                     ExtendedFloatingActionButton(
                         onClick = {
                             saved = true
@@ -180,8 +202,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     )
                 }
 
-                ExtendedFloatingActionButton(
-                    onClick = { showSizeDialog = true },
+                if (!readOnly) {
+                    ExtendedFloatingActionButton(
+                        onClick = { showSizeDialog = true },
                     icon = { Icon(Icons.Default.FormatSize, contentDescription = null) },
                     text = { Text("Text Size") },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -189,33 +212,34 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     modifier = Modifier
                         .align(androidx.compose.ui.Alignment.BottomCenter)
                         .padding(bottom = 80.dp)
-                )
+                    )
 
-                if (showSizeDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showSizeDialog = false },
-                        confirmButton = {
-                            TextButton(onClick = { showSizeDialog = false }) { Text("Close") }
-                        },
-                        title = { Text("Select Text Size") },
-                        text = {
-                            Column {
-                                listOf(16, 20, 24, 28, 32).forEach { size ->
-                                    Button(
-                                        onClick = {
-                                            textSize = size
-                                            showSizeDialog = false
-                                        },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp)
-                                    ) {
-                                        Text("${size}sp")
+                    if (showSizeDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showSizeDialog = false },
+                            confirmButton = {
+                                TextButton(onClick = { showSizeDialog = false }) { Text("Close") }
+                            },
+                            title = { Text("Select Text Size") },
+                            text = {
+                                Column {
+                                    listOf(16, 20, 24, 28, 32).forEach { size ->
+                                        Button(
+                                            onClick = {
+                                                textSize = size
+                                                showSizeDialog = false
+                                            },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            Text("${size}sp")
+                                        }
                                     }
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -225,7 +249,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         super.onStop()
         val text = currentText.trim()
         val header = currentHeader.trim()
-        if (!saved && (text.isNotEmpty() || header.isNotEmpty())) {
+        if (!readOnly && !saved && (text.isNotEmpty() || header.isNotEmpty())) {
             saved = true
             lifecycleScope.launch(Dispatchers.IO) {
                 val dao = EventDatabase.getInstance(applicationContext).noteDao()

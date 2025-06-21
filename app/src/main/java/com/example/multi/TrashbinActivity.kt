@@ -19,6 +19,12 @@ import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.TrashedNote
 import com.example.multi.Note
+import com.example.multi.EXTRA_NOTE_CONTENT
+import com.example.multi.EXTRA_NOTE_CREATED
+import com.example.multi.EXTRA_NOTE_HEADER
+import com.example.multi.EXTRA_NOTE_READ_ONLY
+import com.example.multi.EXTRA_NOTE_DELETED
+import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -54,8 +60,19 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(notes) { note ->
+                        val daysLeft = ((note.deleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
                         ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val intent = Intent(context, NoteEditorActivity::class.java)
+                                    intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                    intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                    intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                    intent.putExtra(EXTRA_NOTE_DELETED, note.deleted)
+                                    intent.putExtra(EXTRA_NOTE_READ_ONLY, true)
+                                    context.startActivity(intent)
+                                },
                             elevation = CardDefaults.elevatedCardElevation()
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -63,6 +80,15 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                                     note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
                                     style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
                                     maxLines = 3
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Created: ${note.created.toDateString()}",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                                Text(
+                                    "Days remaining: $daysLeft",
+                                    style = MaterialTheme.typography.labelSmall
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(
