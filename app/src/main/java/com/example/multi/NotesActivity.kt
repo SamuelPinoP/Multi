@@ -29,6 +29,7 @@ import com.example.multi.EXTRA_NOTE_ID
 import com.example.multi.EXTRA_NOTE_CONTENT
 import com.example.multi.EXTRA_NOTE_CREATED
 import com.example.multi.EXTRA_NOTE_HEADER
+import com.example.multi.DateUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,12 +85,18 @@ class NotesActivity : SegmentActivity(
                                     context.startActivity(intent)
                                 }
                         ) {
-                            Text(
-                                note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
-                                modifier = Modifier.padding(16.dp),
-                                maxLines = 3
-                            )
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                                    maxLines = 3
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    DateUtils.formatDate(note.created),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
                     }
                 }

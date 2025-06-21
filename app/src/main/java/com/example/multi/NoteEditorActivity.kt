@@ -37,11 +37,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+import com.example.multi.DateUtils
 
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
 const val EXTRA_NOTE_CREATED = "extra_note_created"
 const val EXTRA_NOTE_HEADER = "extra_note_header"
+const val EXTRA_READ_ONLY = "extra_read_only"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -49,12 +51,14 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var currentHeader: String = ""
     private var currentText: String = ""
     private var saved = false
+    private var readOnly = false
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
         noteCreated = intent.getLongExtra(EXTRA_NOTE_CREATED, noteCreated)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        readOnly = intent.getBooleanExtra(EXTRA_READ_ONLY, false)
         super.onCreate(savedInstanceState)
     }
 
@@ -69,7 +73,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var showSizeDialog by remember { mutableStateOf(false) }
 
             LaunchedEffect(headerState.value, textState.value) {
-                if (!saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
+                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
                     delay(500)
                     val dao = EventDatabase.getInstance(context).noteDao()
                     withContext(Dispatchers.IO) {
@@ -102,6 +106,10 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 .fillMaxSize()
                 .padding(16.dp)) {
                 Column(modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        DateUtils.formatDate(noteCreated),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                     Box {
                         if (headerState.value.isEmpty()) {
                             Text(
@@ -125,6 +133,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
                             ),
+                            readOnly = readOnly,
                             maxLines = 3
                         )
                     }
@@ -150,13 +159,14 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
-                            )
+                            ),
+                            readOnly = readOnly
                         )
                     }
                 }
 
 
-                if (noteId != 0L) {
+                if (noteId != 0L && !readOnly) {
                     ExtendedFloatingActionButton(
                         onClick = {
                             saved = true
@@ -180,18 +190,20 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     )
                 }
 
-                ExtendedFloatingActionButton(
-                    onClick = { showSizeDialog = true },
-                    icon = { Icon(Icons.Default.FormatSize, contentDescription = null) },
-                    text = { Text("Text Size") },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier
-                        .align(androidx.compose.ui.Alignment.BottomCenter)
-                        .padding(bottom = 80.dp)
-                )
+                if (!readOnly) {
+                    ExtendedFloatingActionButton(
+                        onClick = { showSizeDialog = true },
+                        icon = { Icon(Icons.Default.FormatSize, contentDescription = null) },
+                        text = { Text("Text Size") },
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier
+                            .align(androidx.compose.ui.Alignment.BottomCenter)
+                            .padding(bottom = 80.dp)
+                    )
+                }
 
-                if (showSizeDialog) {
+                if (showSizeDialog && !readOnly) {
                     AlertDialog(
                         onDismissRequest = { showSizeDialog = false },
                         confirmButton = {
@@ -225,7 +237,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         super.onStop()
         val text = currentText.trim()
         val header = currentHeader.trim()
-        if (!saved && (text.isNotEmpty() || header.isNotEmpty())) {
+        if (!readOnly && !saved && (text.isNotEmpty() || header.isNotEmpty())) {
             saved = true
             lifecycleScope.launch(Dispatchers.IO) {
                 val dao = EventDatabase.getInstance(applicationContext).noteDao()
