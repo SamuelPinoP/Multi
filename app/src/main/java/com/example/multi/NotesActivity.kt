@@ -7,6 +7,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Text
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -15,6 +18,7 @@ import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Note
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -54,12 +58,22 @@ class NotesActivity : SegmentActivity("Notes") {
 
         Box(modifier = Modifier.fillMaxSize()) {
             if (notes.isEmpty()) {
-                Text(
-                    "No notes yet",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                )
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.Note,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    M3Text(
+                        "No notes yet",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
+                    )
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -70,6 +84,10 @@ class NotesActivity : SegmentActivity("Notes") {
                     items(notes) { note ->
                         ElevatedCard(
                             elevation = CardDefaults.elevatedCardElevation(),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            ),
+                            shape = RoundedCornerShape(16.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
@@ -81,17 +99,38 @@ class NotesActivity : SegmentActivity("Notes") {
                                     context.startActivity(intent)
                                 }
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
-                                    maxLines = 3
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    note.created.toDateString(),
-                                    style = MaterialTheme.typography.labelSmall
-                                )
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
+                                        M3Text(
+                                            text = initial,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    M3Text(
+                                        text = note.header.ifBlank { note.content.lines().firstOrNull() ?: "" },
+                                        style = MaterialTheme.typography.titleMedium,
+                                        maxLines = 1
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    M3Text(
+                                        text = note.created.toDateString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }

@@ -6,6 +6,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -49,11 +54,22 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
 
         Box(modifier = Modifier.fillMaxSize()) {
             if (notes.isEmpty()) {
-                Text(
-                    "Trashbin is empty",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Trashbin is empty",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
+                    )
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -64,6 +80,11 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                     items(notes) { note ->
                         val daysLeft = ((note.deleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
                         ElevatedCard(
+                            elevation = CardDefaults.elevatedCardElevation(),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            ),
+                            shape = RoundedCornerShape(16.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
@@ -74,24 +95,44 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                                     intent.putExtra(EXTRA_NOTE_DELETED, note.deleted)
                                     intent.putExtra(EXTRA_NOTE_READ_ONLY, true)
                                     context.startActivity(intent)
-                                },
-                            elevation = CardDefaults.elevatedCardElevation()
+                                }
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
-                                    maxLines = 3
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    "Created: ${note.created.toDateString()}",
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                                Text(
-                                    "Days remaining: $daysLeft",
-                                    style = MaterialTheme.typography.labelSmall
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
+                                            Text(
+                                                text = initial,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            note.header.ifBlank { note.content.lines().firstOrNull() ?: "" },
+                                            style = MaterialTheme.typography.titleMedium,
+                                            maxLines = 1
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            "Created: ${note.created.toDateString()}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            "Days remaining: $daysLeft",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
