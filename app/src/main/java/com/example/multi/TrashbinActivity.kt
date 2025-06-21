@@ -3,6 +3,7 @@ package com.example.multi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +20,12 @@ import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.TrashedNote
 import com.example.multi.Note
+import com.example.multi.daysRemaining
+import android.content.Intent
+import com.example.multi.EXTRA_NOTE_ID
+import com.example.multi.EXTRA_NOTE_HEADER
+import com.example.multi.EXTRA_NOTE_CONTENT
+import com.example.multi.EXTRA_NOTE_CREATED
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,7 +62,27 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                 ) {
                     items(notes) { note ->
                         ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    scope.launch {
+                                        val db = EventDatabase.getInstance(context)
+                                        val newId = withContext(Dispatchers.IO) {
+                                            val id = db.noteDao().insert(
+                                                Note(header = note.header, content = note.content, created = note.created).toEntity()
+                                            )
+                                            db.trashedNoteDao().delete(note.toEntity())
+                                            id
+                                        }
+                                        notes.remove(note)
+                                        val intent = Intent(context, NoteEditorActivity::class.java)
+                                        intent.putExtra(EXTRA_NOTE_ID, newId)
+                                        intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                        intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                        intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                        context.startActivity(intent)
+                                    }
+                                },
                             elevation = CardDefaults.elevatedCardElevation()
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -63,6 +90,11 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                                     note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
                                     style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
                                     maxLines = 3
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "${daysRemaining(note.deleted)} days remaining",
+                                    style = MaterialTheme.typography.bodySmall
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(

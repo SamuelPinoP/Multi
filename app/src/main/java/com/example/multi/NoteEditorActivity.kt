@@ -33,6 +33,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
+import com.example.multi.formatDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -154,6 +155,14 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         )
                     }
                 }
+
+                Text(
+                    formatDate(noteCreated),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 16.dp)
+                )
 
 
                 if (noteId != 0L) {
