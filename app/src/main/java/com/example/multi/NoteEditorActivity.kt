@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +27,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.core.content.FileProvider
+import android.content.Intent
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -36,6 +39,8 @@ import com.example.multi.data.toEntity
 import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.toDateString
+import com.example.multi.util.createDocxFile
+import com.example.multi.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -200,6 +205,40 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         modifier = Modifier
                             .align(androidx.compose.ui.Alignment.BottomStart)
                             .padding(start = 16.dp, bottom = 80.dp)
+                    )
+                }
+
+                if (!readOnly) {
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            val file = createDocxFile(
+                                context,
+                                Note(
+                                    id = noteId,
+                                    header = headerState.value.trim(),
+                                    content = textState.value.trim(),
+                                    created = noteCreated
+                                )
+                            )
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${BuildConfig.APPLICATION_ID}.provider",
+                                file
+                            )
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(intent, null))
+                        },
+                        icon = { Icon(Icons.Default.Share, contentDescription = null) },
+                        text = { Text("Share") },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier
+                            .align(androidx.compose.ui.Alignment.BottomEnd)
+                            .padding(end = 16.dp, bottom = 80.dp)
                     )
                 }
 
