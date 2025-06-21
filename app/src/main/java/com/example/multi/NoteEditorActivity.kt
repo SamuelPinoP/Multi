@@ -38,6 +38,7 @@ import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsDocx
+import com.example.multi.util.shareAsPdf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -78,6 +79,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textState = remember { mutableStateOf(currentText) }
             var textSize by remember { mutableStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
+            var showShareDialog by remember { mutableStateOf(false) }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
@@ -207,10 +209,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
                 if (!readOnly) {
                     ExtendedFloatingActionButton(
-                        onClick = {
-                            val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
-                            note.shareAsDocx(context)
-                        },
+                        onClick = { showShareDialog = true },
                         icon = { Icon(Icons.Default.Note, contentDescription = null) },
                         text = { Text("Share") },
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -219,6 +218,44 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             .align(androidx.compose.ui.Alignment.BottomEnd)
                             .padding(end = 16.dp, bottom = 80.dp)
                     )
+
+                    if (showShareDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showShareDialog = false },
+                            confirmButton = {
+                                TextButton(onClick = { showShareDialog = false }) { Text("Close") }
+                            },
+                            title = { Text("Share Note") },
+                            text = {
+                                Column {
+                                    Button(
+                                        onClick = {
+                                            val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                                            note.shareAsPdf(context)
+                                            showShareDialog = false
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                    ) {
+                                        Text("PDF")
+                                    }
+                                    Button(
+                                        onClick = {
+                                            val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                                            note.shareAsDocx(context)
+                                            showShareDialog = false
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                    ) {
+                                        Text("Word")
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
 
                 if (!readOnly) {
