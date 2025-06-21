@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -38,6 +40,7 @@ import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsDocx
+import com.example.multi.util.shareAsPdf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -206,19 +209,42 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
 
                 if (!readOnly) {
-                    ExtendedFloatingActionButton(
-                        onClick = {
-                            val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
-                            note.shareAsDocx(context)
-                        },
-                        icon = { Icon(Icons.Default.Note, contentDescription = null) },
-                        text = { Text("Share") },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    var showShareMenu by remember { mutableStateOf(false) }
+                    Box(
                         modifier = Modifier
                             .align(androidx.compose.ui.Alignment.BottomEnd)
                             .padding(end = 16.dp, bottom = 80.dp)
-                    )
+                    ) {
+                        ExtendedFloatingActionButton(
+                            onClick = { showShareMenu = true },
+                            icon = { Icon(Icons.Default.Note, contentDescription = null) },
+                            text = { Text("Share") },
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+
+                        DropdownMenu(
+                            expanded = showShareMenu,
+                            onDismissRequest = { showShareMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("PDF") },
+                                onClick = {
+                                    showShareMenu = false
+                                    val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                                    note.shareAsPdf(context)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Word") },
+                                onClick = {
+                                    showShareMenu = false
+                                    val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                                    note.shareAsDocx(context)
+                                }
+                            )
+                        }
+                    }
                 }
 
                 if (!readOnly) {
