@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Activity showing deleted notes. */
-class TrashbinActivity : SegmentActivity("Trash Bin") {
+class TrashbinActivity : SegmentActivity("Trash") {
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
@@ -66,7 +66,7 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Trashbin is empty",
+                        "Trash is empty",
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
                     )
                 }
