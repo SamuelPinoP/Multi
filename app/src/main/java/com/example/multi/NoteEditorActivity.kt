@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
+import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -160,8 +161,12 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         onClick = {
                             saved = true
                             scope.launch(Dispatchers.IO) {
-                                EventDatabase.getInstance(context).noteDao()
-                                    .delete(Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated).toEntity())
+                                val db = EventDatabase.getInstance(context)
+                                val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                                db.trashedNoteDao().insert(
+                                    TrashedNote(header = note.header, content = note.content, created = note.created).toEntity()
+                                )
+                                db.noteDao().delete(note.toEntity())
                             }
                             (context as? android.app.Activity)?.finish()
                         },

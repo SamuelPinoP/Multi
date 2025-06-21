@@ -37,3 +37,8 @@ To run unit tests:
 ./gradlew test
 ```
 
+## Trash Bin
+
+Deleted notes are moved to a temporary trash bin. Items remain there for 30 days
+unless restored or permanently removed earlier.
+

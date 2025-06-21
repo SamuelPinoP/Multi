@@ -13,6 +13,7 @@ import androidx.room.Update
 import androidx.room.Delete
 import com.example.multi.Event
 import com.example.multi.Note
+import com.example.multi.TrashedNote
 import com.example.multi.WeeklyGoal
 import com.example.multi.WeeklyGoalRecord
 
@@ -82,6 +83,15 @@ data class NoteEntity(
     val created: Long
 )
 
+@Entity(tableName = "trashed_notes")
+data class TrashedNoteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val header: String,
+    val content: String,
+    val created: Long,
+    val deleted: Long
+)
+
 @Dao
 interface WeeklyGoalRecordDao {
     @Query("SELECT * FROM weekly_goal_records ORDER BY weekStart DESC, id ASC")
@@ -106,15 +116,31 @@ interface NoteDao {
     suspend fun delete(note: NoteEntity)
 }
 
+@Dao
+interface TrashedNoteDao {
+    @Query("SELECT * FROM trashed_notes ORDER BY deleted DESC")
+    suspend fun getNotes(): List<TrashedNoteEntity>
+
+    @Query("DELETE FROM trashed_notes WHERE deleted < :threshold")
+    suspend fun deleteExpired(threshold: Long)
+
+    @Insert
+    suspend fun insert(note: TrashedNoteEntity): Long
+
+    @Delete
+    suspend fun delete(note: TrashedNoteEntity)
+}
+
 @Database(
-    entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class, NoteEntity::class],
-    version = 5
+    entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class, NoteEntity::class, TrashedNoteEntity::class],
+    version = 6
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
     abstract fun weeklyGoalDao(): WeeklyGoalDao
     abstract fun weeklyGoalRecordDao(): WeeklyGoalRecordDao
     abstract fun noteDao(): NoteDao
+    abstract fun trashedNoteDao(): TrashedNoteDao
 
     companion object {
         @Volatile
@@ -147,3 +173,6 @@ fun WeeklyGoalRecord.toEntity() = WeeklyGoalRecordEntity(id, header, completed, 
 
 fun NoteEntity.toModel() = Note(id, header, content, created)
 fun Note.toEntity() = NoteEntity(id, header, content, created)
+
+fun TrashedNoteEntity.toModel() = TrashedNote(id, header, content, created, deleted)
+fun TrashedNote.toEntity() = TrashedNoteEntity(id, header, content, created, deleted)
