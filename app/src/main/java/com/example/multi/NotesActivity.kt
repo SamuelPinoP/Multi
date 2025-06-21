@@ -35,11 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 
-class NotesActivity : SegmentActivity(
-    "Notes",
-    showBackButton = false,
-    showCloseButton = false
-) {
+class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
 
     override fun onResume() {

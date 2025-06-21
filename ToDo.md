@@ -6,8 +6,6 @@
 - Allow to share Notes to whatsap, gmail, and messenger
 - Make sure every first letter is a mayus
 
-
--1 Delete back and close and save button
 0- The note opened last is always displayed first.
 1- Implement the desired functionality for the Notes application.
 2- Make sure the notes application can copy and paste columns and rows as desired and also add

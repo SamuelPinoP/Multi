@@ -1,7 +1,6 @@
 package com.example.multi
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -12,13 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -40,17 +35,9 @@ class CreateEventActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MultiTheme {
-                CreateEventScreen { finishAfterSave() }
+                CreateEventScreen()
             }
         }
-    }
-
-    /**
-     * Displays a brief confirmation and closes the screen after saving.
-     */
-    private fun finishAfterSave() {
-        Toast.makeText(this, "Event saved", Toast.LENGTH_SHORT).show()
-        finish()
     }
 }
 
@@ -59,7 +46,7 @@ class CreateEventActivity : ComponentActivity() {
 /**
  * Form used to capture a new event from the user.
  */
-private fun CreateEventScreen(onSave: () -> Unit) {
+private fun CreateEventScreen() {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
 
@@ -85,15 +72,7 @@ private fun CreateEventScreen(onSave: () -> Unit) {
                 )
             }
         )
-    },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { if (title.isNotBlank()) onSave() },
-                modifier = Modifier.padding(bottom = 48.dp)
-            ) {
-                Icon(Icons.Default.Check, contentDescription = "Save")
-            }
-        }
+    }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp)) {
             OutlinedTextField(
