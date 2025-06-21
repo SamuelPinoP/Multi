@@ -1,8 +1,10 @@
 package com.example.multi
 
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,15 +56,40 @@ class TrashbinActivity : SegmentActivity("Trash Bin") {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(notes) { note ->
+                        val remaining = daysUntil(note.deleted, 30)
                         ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
                             elevation = CardDefaults.elevatedCardElevation()
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        val intent = Intent(context, TrashedNoteViewActivity::class.java)
+                                        intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                        intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                        intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                        intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                        intent.putExtra(EXTRA_NOTE_DELETED, note.deleted)
+                                        context.startActivity(intent)
+                                    }
+                                    .padding(16.dp)
+                            ) {
                                 Text(
                                     note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
                                     style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
                                     maxLines = 3
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Created: ${formatDate(note.created)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "$remaining days remaining",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(

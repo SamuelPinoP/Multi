@@ -42,6 +42,7 @@ const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
 const val EXTRA_NOTE_CREATED = "extra_note_created"
 const val EXTRA_NOTE_HEADER = "extra_note_header"
+const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -126,6 +127,11 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 fontSize = textSize.sp
                             ),
                             maxLines = 3
+                        )
+                        Text(
+                            text = formatDate(noteCreated),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 

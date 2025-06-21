@@ -84,12 +84,19 @@ class NotesActivity : SegmentActivity(
                                     context.startActivity(intent)
                                 }
                         ) {
-                            Text(
-                                note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
-                                modifier = Modifier.padding(16.dp),
-                                maxLines = 3
-                            )
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    note.header.ifBlank { note.content.lines().take(3).joinToString("\n") },
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                                    maxLines = 3
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    formatDate(note.created),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
