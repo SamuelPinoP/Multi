@@ -58,6 +58,9 @@
             android:name=".RecordActivity"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".EventsCalendarActivity"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".NoteEditorActivity"
             android:screenOrientation="portrait" />
         <activity
