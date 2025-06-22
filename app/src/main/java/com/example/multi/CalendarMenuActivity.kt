@@ -2,13 +2,20 @@ package com.example.multi
 
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,15 +34,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class CalendarMenuActivity : SegmentActivity("Calendar") {
-    @Composable
-    override fun SegmentContent() {
-        CalendarMenuScreen()
+class CalendarMenuActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            MultiTheme {
+                SegmentScreenNoTopBar {
+                    CalendarMenuScreen()
+                }
+            }
+        }
     }
 }
 
@@ -86,6 +102,12 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Events in Calendar",
             icon = Icons.Default.Event,
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ),
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
             onClick = { /* No action for now */ },
             modifier = Modifier
                 .fillMaxWidth()
@@ -95,6 +117,12 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Weekly Goals View",
             icon = Icons.Default.Flag,
+            shape = CutCornerShape(12.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            ),
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
             onClick = { /* No action for now */ },
             modifier = Modifier
                 .fillMaxWidth()
@@ -104,6 +132,12 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Calendar Display",
             icon = Icons.Default.CalendarMonth,
+            shape = RoundedCornerShape(40.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+            ),
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary),
             onClick = { showPicker = true },
             modifier = Modifier
                 .fillMaxWidth()
@@ -116,13 +150,17 @@ fun CalendarMenuScreen() {
 private fun MenuCardButton(
     label: String,
     icon: ImageVector,
+    shape: Shape = RoundedCornerShape(16.dp),
+    colors: CardColors = CardDefaults.elevatedCardColors(),
+    border: BorderStroke? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     ElevatedCard(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(),
+        shape = shape,
+        colors = colors,
+        border = border,
         modifier = modifier
     ) {
         Column(

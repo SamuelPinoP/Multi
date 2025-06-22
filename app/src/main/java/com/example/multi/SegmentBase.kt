@@ -100,3 +100,23 @@ fun SegmentScreen(
         }
     }
 }
+
+@Composable
+fun SegmentScreenNoTopBar(content: @Composable () -> Unit) {
+    Scaffold { innerPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) { content() }
+    }
+}
