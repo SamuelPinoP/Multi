@@ -115,7 +115,10 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Events in Calendar",
             icon = Icons.Default.Event,
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            gradient = listOf(
+                MaterialTheme.colorScheme.primaryContainer,
+                MaterialTheme.colorScheme.primary
+            ),
             shape = RoundedCornerShape(24.dp),
             onClick = { /* No action for now */ },
             modifier = Modifier
@@ -126,7 +129,10 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Weekly Goals View",
             icon = Icons.Default.Flag,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            gradient = listOf(
+                MaterialTheme.colorScheme.secondaryContainer,
+                MaterialTheme.colorScheme.secondary
+            ),
             shape = CutCornerShape(16.dp),
             onClick = { /* No action for now */ },
             modifier = Modifier
@@ -137,7 +143,10 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Calendar Display",
             icon = Icons.Default.CalendarMonth,
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            gradient = listOf(
+                MaterialTheme.colorScheme.tertiaryContainer,
+                MaterialTheme.colorScheme.tertiary
+            ),
             shape = RoundedCornerShape(topStart = 32.dp, bottomEnd = 32.dp),
             onClick = { showPicker = true },
             modifier = Modifier
@@ -151,7 +160,7 @@ fun CalendarMenuScreen() {
 private fun MenuCardButton(
     label: String,
     icon: ImageVector,
-    containerColor: Color,
+    gradient: List<Color>,
     shape: Shape,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -159,19 +168,28 @@ private fun MenuCardButton(
     ElevatedCard(
         onClick = onClick,
         shape = shape,
-        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.Transparent),
         modifier = modifier
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(gradient),
+                    shape = shape
+                )
                 .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(48.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(label, style = MaterialTheme.typography.titleMedium)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(label, style = MaterialTheme.typography.titleMedium)
+            }
         }
     }
 }
