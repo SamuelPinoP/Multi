@@ -10,6 +10,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.annotation.RequiresApi
 import android.os.Build
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.background
+import com.example.multi.Event
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -26,12 +29,17 @@ internal fun DayOfWeek.toCalendarOffset(): Int = (this.value + 6) % 7
  */
 @Composable
 @RequiresApi(Build.VERSION_CODES.O)
-fun CalendarView(date: LocalDate = LocalDate.now()) {
+fun CalendarView(date: LocalDate = LocalDate.now(), events: List<Event> = emptyList()) {
     val yearMonth = YearMonth.from(date)
     val firstDayOfMonth = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
     val daysOfWeek = DayOfWeek.entries.toTypedArray()
     val locale = Locale.getDefault()
+    val eventDates = events.mapNotNull { e ->
+        e.date?.let {
+            runCatching { LocalDate.parse(it) }.getOrNull()
+        }
+    }.toSet()
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
@@ -61,15 +69,19 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
                         if (cellIndex < firstDayOffset || currentDay > daysInMonth) {
                             Box(modifier = Modifier.weight(1f).aspectRatio(1f))
                         } else {
+                            val cellDate = yearMonth.atDay(currentDay)
+                            val hasEvent = eventDates.contains(cellDate)
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .aspectRatio(1f),
+                                    .aspectRatio(1f)
+                                    .background(if (hasEvent) Color.Green.copy(alpha = 0.3f) else Color.Transparent),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = currentDay.toString(),
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (hasEvent) Color.Green else MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             currentDay++
