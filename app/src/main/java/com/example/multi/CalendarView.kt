@@ -1,6 +1,8 @@
 package com.example.multi
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,7 +28,10 @@ internal fun DayOfWeek.toCalendarOffset(): Int = (this.value + 6) % 7
  */
 @Composable
 @RequiresApi(Build.VERSION_CODES.O)
-fun CalendarView(date: LocalDate = LocalDate.now()) {
+fun CalendarView(
+    date: LocalDate = LocalDate.now(),
+    events: Set<LocalDate> = emptySet()
+) {
     val yearMonth = YearMonth.from(date)
     val firstDayOfMonth = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
@@ -61,10 +66,18 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
                         if (cellIndex < firstDayOffset || currentDay > daysInMonth) {
                             Box(modifier = Modifier.weight(1f).aspectRatio(1f))
                         } else {
+                            val dayDate = yearMonth.atDay(currentDay)
+                            val highlight = dayDate in events
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .aspectRatio(1f),
+                                    .aspectRatio(1f)
+                                    .then(
+                                        if (highlight) Modifier.background(
+                                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                                            shape = CircleShape
+                                        ) else Modifier
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
