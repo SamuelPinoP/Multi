@@ -114,10 +114,19 @@ class NotesActivity : SegmentActivity("Notes") {
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
+                                    val previewLines = mutableListOf<String>()
+                                    val headerLine = note.header.trim()
+                                    if (headerLine.isNotEmpty()) previewLines.add(headerLine)
+                                    previewLines.addAll(
+                                        note.content.lines()
+                                            .map { it.trim() }
+                                            .filter { it.isNotEmpty() }
+                                    )
+                                    val previewText = previewLines.take(2).joinToString("\n")
                                     M3Text(
-                                        text = note.header.ifBlank { note.content.lines().firstOrNull() ?: "" },
+                                        text = previewText,
                                         style = MaterialTheme.typography.titleMedium,
-                                        maxLines = 1
+                                        maxLines = 2
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     M3Text(
