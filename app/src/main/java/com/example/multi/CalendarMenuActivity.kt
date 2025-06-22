@@ -2,7 +2,13 @@ package com.example.multi
 
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -25,6 +31,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -32,10 +41,29 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class CalendarMenuActivity : SegmentActivity("Calendar") {
-    @Composable
-    override fun SegmentContent() {
-        CalendarMenuScreen()
+class CalendarMenuActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            MultiTheme {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surface,
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CalendarMenuScreen()
+                }
+            }
+        }
     }
 }
 
@@ -86,6 +114,8 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Events in Calendar",
             icon = Icons.Default.Event,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            shape = RoundedCornerShape(24.dp),
             onClick = { /* No action for now */ },
             modifier = Modifier
                 .fillMaxWidth()
@@ -95,6 +125,8 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Weekly Goals View",
             icon = Icons.Default.Flag,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            shape = CutCornerShape(16.dp),
             onClick = { /* No action for now */ },
             modifier = Modifier
                 .fillMaxWidth()
@@ -104,6 +136,8 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Calendar Display",
             icon = Icons.Default.CalendarMonth,
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            shape = RoundedCornerShape(topStart = 32.dp, bottomEnd = 32.dp),
             onClick = { showPicker = true },
             modifier = Modifier
                 .fillMaxWidth()
@@ -116,13 +150,15 @@ fun CalendarMenuScreen() {
 private fun MenuCardButton(
     label: String,
     icon: ImageVector,
+    containerColor: Color,
+    shape: Shape,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     ElevatedCard(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(),
+        shape = shape,
+        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
         modifier = modifier
     ) {
         Column(
