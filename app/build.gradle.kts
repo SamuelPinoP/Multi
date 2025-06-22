@@ -53,6 +53,9 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material)
     implementation(libs.androidx.material.icons.extended)
+    implementation("com.prolificinteractive:material-calendarview:1.4.3") {
+        exclude(group = "com.android.support")
+    }
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.apache.poi)

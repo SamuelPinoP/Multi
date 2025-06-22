@@ -10,6 +10,15 @@ Compose Material 3 dependency:
 implementation("androidx.compose.material3:material3")
 ```
 
+The events calendar relies on the `MaterialCalendarView` library. Add this
+dependency to the `app` module:
+
+```kotlin
+implementation("com.prolificinteractive:material-calendarview:1.4.3") {
+    exclude(group = "com.android.support")
+}
+```
+
 ## Prerequisites
 
 - Android Studio Hedgehog or later with the Android SDK configured
