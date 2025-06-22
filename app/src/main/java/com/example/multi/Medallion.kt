@@ -166,23 +166,29 @@ fun MedallionScreen() {
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    showPicker = false
-                    pickerState.selectedDateMillis?.let { millis ->
-                        val dateStr = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            java.time.Instant.ofEpochMilli(millis)
-                                .atZone(java.time.ZoneOffset.UTC)
-                                .toLocalDate()
-                                .toString()
-                        } else {
-                            val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                            fmt.format(Date(millis))
+                Row {
+                    TextButton(onClick = {
+                        showPicker = false
+                        context.startActivity(Intent(context, CalendarActivity::class.java))
+                    }) { Text("Events") }
+                    TextButton(onClick = {
+                        showPicker = false
+                        pickerState.selectedDateMillis?.let { millis ->
+                            val dateStr = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                java.time.Instant.ofEpochMilli(millis)
+                                    .atZone(java.time.ZoneOffset.UTC)
+                                    .toLocalDate()
+                                    .toString()
+                            } else {
+                                val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                fmt.format(Date(millis))
+                            }
+                            val intent = Intent(context, EventsActivity::class.java)
+                            intent.putExtra(EXTRA_DATE, dateStr)
+                            context.startActivity(intent)
                         }
-                        val intent = Intent(context, EventsActivity::class.java)
-                        intent.putExtra(EXTRA_DATE, dateStr)
-                        context.startActivity(intent)
-                    }
-                }) { Text("OK") }
+                    }) { Text("OK") }
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) { Text("Cancel") }
