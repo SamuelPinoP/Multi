@@ -11,6 +11,7 @@ composeBom = "2024.05.00"
 desugarJdk = "2.0.4"
 room = "2.6.1"
 poi = "5.2.5"
+materialCalendar = "2.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,6 +35,7 @@ androidx-room-runtime = { group = "androidx.room", name = "room-runtime", versio
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 apache-poi = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poi" }
+material-calendarview = { group = "com.prolificinteractive", name = "material-calendarview", version.ref = "materialCalendar" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
