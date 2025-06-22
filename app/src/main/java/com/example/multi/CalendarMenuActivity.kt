@@ -115,7 +115,12 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Events in Calendar",
             icon = Icons.Default.Event,
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            gradient = Brush.horizontalGradient(
+                listOf(
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primaryContainer
+                )
+            ),
             shape = RoundedCornerShape(24.dp),
             onClick = { /* No action for now */ },
             modifier = Modifier
@@ -126,7 +131,12 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Weekly Goals View",
             icon = Icons.Default.Flag,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            gradient = Brush.horizontalGradient(
+                listOf(
+                    MaterialTheme.colorScheme.secondary,
+                    MaterialTheme.colorScheme.secondaryContainer
+                )
+            ),
             shape = CutCornerShape(16.dp),
             onClick = { /* No action for now */ },
             modifier = Modifier
@@ -137,7 +147,12 @@ fun CalendarMenuScreen() {
         MenuCardButton(
             label = "Calendar Display",
             icon = Icons.Default.CalendarMonth,
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            gradient = Brush.horizontalGradient(
+                listOf(
+                    MaterialTheme.colorScheme.tertiary,
+                    MaterialTheme.colorScheme.tertiaryContainer
+                )
+            ),
             shape = RoundedCornerShape(topStart = 32.dp, bottomEnd = 32.dp),
             onClick = { showPicker = true },
             modifier = Modifier
@@ -151,7 +166,7 @@ fun CalendarMenuScreen() {
 private fun MenuCardButton(
     label: String,
     icon: ImageVector,
-    containerColor: Color,
+    gradient: Brush,
     shape: Shape,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -159,19 +174,23 @@ private fun MenuCardButton(
     ElevatedCard(
         onClick = onClick,
         shape = shape,
-        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.Transparent),
         modifier = modifier
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(gradient, shape)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(48.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(label, style = MaterialTheme.typography.titleMedium)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(48.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(label, style = MaterialTheme.typography.titleMedium)
+            }
         }
     }
 }
