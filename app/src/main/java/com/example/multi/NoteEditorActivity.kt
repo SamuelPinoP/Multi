@@ -32,12 +32,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
+import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsDocx
 import com.example.multi.util.shareAsPdf
@@ -88,11 +91,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     delay(500)
                     val dao = EventDatabase.getInstance(context).noteDao()
                     withContext(Dispatchers.IO) {
+                        val formattedHeader = headerState.value.trim().capitalizeSentences()
+                        val formattedContent = textState.value.trim().capitalizeSentences()
                         if (noteId == 0L) {
                             noteId = dao.insert(
                                 Note(
-                                    header = headerState.value.trim(),
-                                    content = textState.value.trim(),
+                                    header = formattedHeader,
+                                    content = formattedContent,
                                     created = noteCreated
                                 ).toEntity()
                             )
@@ -100,8 +105,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             dao.update(
                                 Note(
                                     id = noteId,
-                                    header = headerState.value.trim(),
-                                    content = textState.value.trim(),
+                                    header = formattedHeader,
+                                    content = formattedContent,
                                     created = noteCreated
                                 ).toEntity()
                             )
@@ -141,8 +146,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             value = headerState.value,
                             onValueChange = {
                                 if (it.lines().size <= 3) {
-                                    headerState.value = it
-                                    currentHeader = it
+                                    val formatted = it.capitalizeSentences()
+                                    headerState.value = formatted
+                                    currentHeader = formatted
                                     saved = false
                                 }
                             },
@@ -152,6 +158,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
+                            ),
+                            keyboardOptions = KeyboardOptions.Default.copy(
+                                capitalization = KeyboardCapitalization.Sentences
                             ),
                             maxLines = 3
                         )
@@ -170,8 +179,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         BasicTextField(
                             value = textState.value,
                             onValueChange = {
-                                textState.value = it
-                                currentText = it
+                                val formatted = it.capitalizeSentences()
+                                textState.value = formatted
+                                currentText = formatted
                                 saved = false
                             },
                             enabled = !readOnly,
@@ -179,6 +189,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
+                            ),
+                            keyboardOptions = KeyboardOptions.Default.copy(
+                                capitalization = KeyboardCapitalization.Sentences
                             )
                         )
                     }
@@ -297,10 +310,12 @@ class NoteEditorActivity : SegmentActivity("Note") {
             saved = true
             lifecycleScope.launch(Dispatchers.IO) {
                 val dao = EventDatabase.getInstance(applicationContext).noteDao()
+                val formattedHeader = header.capitalizeSentences()
+                val formattedText = text.capitalizeSentences()
                 if (noteId == 0L) {
-                    dao.insert(Note(header = header, content = text, created = noteCreated).toEntity())
+                    dao.insert(Note(header = formattedHeader, content = formattedText, created = noteCreated).toEntity())
                 } else {
-                    dao.update(Note(id = noteId, header = header, content = text, created = noteCreated).toEntity())
+                    dao.update(Note(id = noteId, header = formattedHeader, content = formattedText, created = noteCreated).toEntity())
                 }
             }
         }
