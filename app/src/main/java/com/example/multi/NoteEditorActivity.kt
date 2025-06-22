@@ -7,13 +7,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Note
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -208,96 +211,95 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
 
 
-                if (!readOnly && noteId != 0L) {
-                    ExtendedFloatingActionButton(
-                        onClick = {
-                            saved = true
-                            scope.launch(Dispatchers.IO) {
-                                val db = EventDatabase.getInstance(context)
-                                val note = Note(
-                                    id = noteId,
-                                    header = currentHeader,
-                                    content = currentText,
-                                    created = noteCreated,
-                                    lastOpened = noteLastOpened
-                                )
-                                db.trashedNoteDao().insert(
-                                    TrashedNote(header = note.header, content = note.content, created = note.created).toEntity()
-                                )
-                                db.noteDao().delete(note.toEntity())
-                            }
-                            (context as? android.app.Activity)?.finish()
-                        },
-                        icon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                        text = { Text("Delete") },
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier
-                            .align(androidx.compose.ui.Alignment.BottomStart)
-                            .padding(start = 16.dp, bottom = 80.dp)
-                    )
-                }
-
                 if (!readOnly) {
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .align(androidx.compose.ui.Alignment.BottomEnd)
-                            .padding(end = 16.dp, bottom = 80.dp)
+                            .align(androidx.compose.ui.Alignment.BottomCenter)
+                            .padding(bottom = 80.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        ExtendedFloatingActionButton(
-                            onClick = { shareMenuExpanded = true },
-                            icon = { Icon(Icons.Default.Note, contentDescription = null) },
-                            text = { Text("Share") },
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                        DropdownMenu(
-                            expanded = shareMenuExpanded,
-                            onDismissRequest = { shareMenuExpanded = false }
+                        if (noteId != 0L) {
+                            FloatingActionButton(
+                                onClick = {
+                                    saved = true
+                                    scope.launch(Dispatchers.IO) {
+                                        val db = EventDatabase.getInstance(context)
+                                        val note = Note(
+                                            id = noteId,
+                                            header = currentHeader,
+                                            content = currentText,
+                                            created = noteCreated,
+                                            lastOpened = noteLastOpened
+                                        )
+                                        db.trashedNoteDao().insert(
+                                            TrashedNote(
+                                                header = note.header,
+                                                content = note.content,
+                                                created = note.created
+                                            ).toEntity()
+                                        )
+                                        db.noteDao().delete(note.toEntity())
+                                    }
+                                    (context as? android.app.Activity)?.finish()
+                                },
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = null)
+                            }
+                        }
+
+                        FloatingActionButton(
+                            onClick = { showSizeDialog = true },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("Word") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val note = Note(
-                                        id = noteId,
-                                        header = currentHeader,
-                                        content = currentText,
-                                        created = noteCreated,
-                                        lastOpened = noteLastOpened
-                                    )
-                                    note.shareAsDocx(context)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("PDF") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val note = Note(
-                                        id = noteId,
-                                        header = currentHeader,
-                                        content = currentText,
-                                        created = noteCreated,
-                                        lastOpened = noteLastOpened
-                                    )
-                                    note.shareAsPdf(context)
-                                }
-                            )
+                            Icon(Icons.Default.FormatSize, contentDescription = null)
+                        }
+
+                        Box {
+                            FloatingActionButton(
+                                onClick = { shareMenuExpanded = true },
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ) {
+                                Icon(Icons.Default.Share, contentDescription = null)
+                            }
+                            DropdownMenu(
+                                expanded = shareMenuExpanded,
+                                onDismissRequest = { shareMenuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Word") },
+                                    onClick = {
+                                        shareMenuExpanded = false
+                                        val note = Note(
+                                            id = noteId,
+                                            header = currentHeader,
+                                            content = currentText,
+                                            created = noteCreated,
+                                            lastOpened = noteLastOpened
+                                        )
+                                        note.shareAsDocx(context)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("PDF") },
+                                    onClick = {
+                                        shareMenuExpanded = false
+                                        val note = Note(
+                                            id = noteId,
+                                            header = currentHeader,
+                                            content = currentText,
+                                            created = noteCreated,
+                                            lastOpened = noteLastOpened
+                                        )
+                                        note.shareAsPdf(context)
+                                    }
+                                )
+                            }
                         }
                     }
-                }
-
-                if (!readOnly) {
-                    ExtendedFloatingActionButton(
-                        onClick = { showSizeDialog = true },
-                    icon = { Icon(Icons.Default.FormatSize, contentDescription = null) },
-                    text = { Text("Text Size") },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier
-                        .align(androidx.compose.ui.Alignment.BottomCenter)
-                        .padding(bottom = 80.dp)
-                    )
 
                     if (showSizeDialog) {
                         AlertDialog(
