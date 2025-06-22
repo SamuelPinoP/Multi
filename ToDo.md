@@ -3,7 +3,7 @@ There is a lot of work to do now!
 
 0- Whenever an event date is added it should be in the Calendar marking the day with the green color
 if the user clicks the day with green color then every event in that day is displayed either in its
-own database or in the events view of the events page.
+own database or in the events view of the events page. **DONE**
 1- The Workout page should have different workout plans. They should be added to the events page.
 Maybe add options to customize the workout such as adding a specific workout of calestenics to the
 day. Think it further. Or even more. The user can create constraints such as only natural exercises. No legs workout, no

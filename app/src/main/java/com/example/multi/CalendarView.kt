@@ -1,11 +1,15 @@
 package com.example.multi
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.annotation.RequiresApi
@@ -26,7 +30,11 @@ internal fun DayOfWeek.toCalendarOffset(): Int = (this.value + 6) % 7
  */
 @Composable
 @RequiresApi(Build.VERSION_CODES.O)
-fun CalendarView(date: LocalDate = LocalDate.now()) {
+fun CalendarView(
+    date: LocalDate = LocalDate.now(),
+    events: Map<LocalDate, List<Event>> = emptyMap(),
+    onDayClick: (LocalDate) -> Unit = {}
+) {
     val yearMonth = YearMonth.from(date)
     val firstDayOfMonth = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
@@ -61,15 +69,26 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
                         if (cellIndex < firstDayOffset || currentDay > daysInMonth) {
                             Box(modifier = Modifier.weight(1f).aspectRatio(1f))
                         } else {
+                            val dayDate = yearMonth.atDay(currentDay)
+                            val hasEvent = events.containsKey(dayDate)
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .aspectRatio(1f),
+                                    .aspectRatio(1f)
+                                    .then(
+                                        if (hasEvent) {
+                                            Modifier
+                                                .clip(CircleShape)
+                                                .background(Color.Green)
+                                                .clickable { onDayClick(dayDate) }
+                                        } else Modifier
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = currentDay.toString(),
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (hasEvent) Color.White else MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             currentDay++
