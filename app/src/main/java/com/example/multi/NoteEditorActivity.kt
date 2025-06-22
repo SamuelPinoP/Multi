@@ -59,6 +59,7 @@ const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
     private var noteCreated: Long = System.currentTimeMillis()
+    private var noteLastOpened: Long = System.currentTimeMillis()
     private var noteDeleted: Long = 0L
     private var readOnly: Boolean = false
     private var currentHeader: String = ""
@@ -72,6 +73,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
         readOnly = intent.getBooleanExtra(EXTRA_NOTE_READ_ONLY, false)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        noteLastOpened = System.currentTimeMillis()
+        if (noteId != 0L && !readOnly) {
+            lifecycleScope.launch {
+                val dao = EventDatabase.getInstance(this@NoteEditorActivity).noteDao()
+                withContext(Dispatchers.IO) { dao.touch(noteId, noteLastOpened) }
+            }
+        }
         super.onCreate(savedInstanceState)
     }
 
@@ -98,7 +106,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 Note(
                                     header = formattedHeader,
                                     content = formattedContent,
-                                    created = noteCreated
+                                    created = noteCreated,
+                                    lastOpened = noteLastOpened
                                 ).toEntity()
                             )
                         } else {
@@ -107,7 +116,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     id = noteId,
                                     header = formattedHeader,
                                     content = formattedContent,
-                                    created = noteCreated
+                                    created = noteCreated,
+                                    lastOpened = noteLastOpened
                                 ).toEntity()
                             )
                         }
@@ -204,7 +214,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             saved = true
                             scope.launch(Dispatchers.IO) {
                                 val db = EventDatabase.getInstance(context)
-                                val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                                val note = Note(
+                                    id = noteId,
+                                    header = currentHeader,
+                                    content = currentText,
+                                    created = noteCreated,
+                                    lastOpened = noteLastOpened
+                                )
                                 db.trashedNoteDao().insert(
                                     TrashedNote(header = note.header, content = note.content, created = note.created).toEntity()
                                 )
@@ -243,7 +259,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 text = { Text("Word") },
                                 onClick = {
                                     shareMenuExpanded = false
-                                    val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                                    val note = Note(
+                                        id = noteId,
+                                        header = currentHeader,
+                                        content = currentText,
+                                        created = noteCreated,
+                                        lastOpened = noteLastOpened
+                                    )
                                     note.shareAsDocx(context)
                                 }
                             )
@@ -251,7 +273,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 text = { Text("PDF") },
                                 onClick = {
                                     shareMenuExpanded = false
-                                    val note = Note(id = noteId, header = currentHeader, content = currentText, created = noteCreated)
+                                    val note = Note(
+                                        id = noteId,
+                                        header = currentHeader,
+                                        content = currentText,
+                                        created = noteCreated,
+                                        lastOpened = noteLastOpened
+                                    )
                                     note.shareAsPdf(context)
                                 }
                             )
@@ -313,9 +341,24 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 val formattedHeader = header.capitalizeSentences()
                 val formattedText = text.capitalizeSentences()
                 if (noteId == 0L) {
-                    dao.insert(Note(header = formattedHeader, content = formattedText, created = noteCreated).toEntity())
+                    dao.insert(
+                        Note(
+                            header = formattedHeader,
+                            content = formattedText,
+                            created = noteCreated,
+                            lastOpened = noteLastOpened
+                        ).toEntity()
+                    )
                 } else {
-                    dao.update(Note(id = noteId, header = formattedHeader, content = formattedText, created = noteCreated).toEntity())
+                    dao.update(
+                        Note(
+                            id = noteId,
+                            header = formattedHeader,
+                            content = formattedText,
+                            created = noteCreated,
+                            lastOpened = noteLastOpened
+                        ).toEntity()
+                    )
                 }
             }
         }

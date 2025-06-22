@@ -80,7 +80,8 @@ data class NoteEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val header: String,
     val content: String,
-    val created: Long
+    val created: Long,
+    val lastOpened: Long
 )
 
 @Entity(tableName = "trashed_notes")
@@ -103,8 +104,11 @@ interface WeeklyGoalRecordDao {
 
 @Dao
 interface NoteDao {
-    @Query("SELECT * FROM notes ORDER BY created DESC")
+    @Query("SELECT * FROM notes ORDER BY lastOpened DESC")
     suspend fun getNotes(): List<NoteEntity>
+
+    @Query("UPDATE notes SET lastOpened = :time WHERE id = :id")
+    suspend fun touch(id: Long, time: Long)
 
     @Insert
     suspend fun insert(note: NoteEntity): Long
@@ -133,7 +137,7 @@ interface TrashedNoteDao {
 
 @Database(
     entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class, NoteEntity::class, TrashedNoteEntity::class],
-    version = 6
+    version = 7
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -171,8 +175,8 @@ fun WeeklyGoal.toEntity() = WeeklyGoalEntity(id, header, frequency, remaining, l
 fun WeeklyGoalRecordEntity.toModel() = WeeklyGoalRecord(id, header, completed, frequency, weekStart, weekEnd)
 fun WeeklyGoalRecord.toEntity() = WeeklyGoalRecordEntity(id, header, completed, frequency, weekStart, weekEnd)
 
-fun NoteEntity.toModel() = Note(id, header, content, created)
-fun Note.toEntity() = NoteEntity(id, header, content, created)
+fun NoteEntity.toModel() = Note(id, header, content, created, lastOpened)
+fun Note.toEntity() = NoteEntity(id, header, content, created, lastOpened)
 
 fun TrashedNoteEntity.toModel() = TrashedNote(id, header, content, created, deleted)
 fun TrashedNote.toEntity() = TrashedNoteEntity(id, header, content, created, deleted)
