@@ -37,6 +37,9 @@
             android:name=".CalendarActivity"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".CalendarHomeActivity"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".EventsActivity"
             android:screenOrientation="portrait" />
         <activity

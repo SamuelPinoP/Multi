@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 import android.os.Build
+import com.example.multi.CalendarHomeActivity
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -185,8 +186,14 @@ fun MedallionScreen() {
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
-            }
+                Row {
+                    TextButton(onClick = {
+                        showPicker = false
+                        context.startActivity(Intent(context, CalendarHomeActivity::class.java))
+                    }) { Text("Events") }
+                    TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                }
+            },
         ) {
             DatePicker(state = pickerState)
         }
