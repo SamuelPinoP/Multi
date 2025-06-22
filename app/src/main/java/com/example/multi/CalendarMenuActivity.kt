@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
+import com.example.multi.EventsCalendarActivity
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.multi.ui.theme.MultiTheme
@@ -123,7 +124,10 @@ fun CalendarMenuScreen() {
             ),
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             shape = RoundedCornerShape(24.dp),
-            onClick = { /* No action for now */ },
+            onClick = {
+                val intent = Intent(context, EventsCalendarActivity::class.java)
+                context.startActivity(intent)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
