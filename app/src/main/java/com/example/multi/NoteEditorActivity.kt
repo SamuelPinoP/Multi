@@ -41,6 +41,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsDocx
 import com.example.multi.util.shareAsPdf
+import com.example.multi.util.capitalizeSentences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -77,8 +78,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val headerState = remember { mutableStateOf(currentHeader) }
-            val textState = remember { mutableStateOf(currentText) }
+            val headerState = remember { mutableStateOf(currentHeader.capitalizeSentences()) }
+            val textState = remember { mutableStateOf(currentText.capitalizeSentences()) }
             var textSize by remember { mutableStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
@@ -91,8 +92,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         if (noteId == 0L) {
                             noteId = dao.insert(
                                 Note(
-                                    header = headerState.value.trim(),
-                                    content = textState.value.trim(),
+                                    header = headerState.value.trim().capitalizeSentences(),
+                                    content = textState.value.trim().capitalizeSentences(),
                                     created = noteCreated
                                 ).toEntity()
                             )
@@ -100,8 +101,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             dao.update(
                                 Note(
                                     id = noteId,
-                                    header = headerState.value.trim(),
-                                    content = textState.value.trim(),
+                                    header = headerState.value.trim().capitalizeSentences(),
+                                    content = textState.value.trim().capitalizeSentences(),
                                     created = noteCreated
                                 ).toEntity()
                             )
@@ -141,8 +142,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             value = headerState.value,
                             onValueChange = {
                                 if (it.lines().size <= 3) {
-                                    headerState.value = it
-                                    currentHeader = it
+                                    val updated = it.capitalizeSentences()
+                                    headerState.value = updated
+                                    currentHeader = updated
                                     saved = false
                                 }
                             },
@@ -170,8 +172,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         BasicTextField(
                             value = textState.value,
                             onValueChange = {
-                                textState.value = it
-                                currentText = it
+                                val updated = it.capitalizeSentences()
+                                textState.value = updated
+                                currentText = updated
                                 saved = false
                             },
                             enabled = !readOnly,
@@ -291,8 +294,10 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     override fun onStop() {
         super.onStop()
-        val text = currentText.trim()
-        val header = currentHeader.trim()
+        val text = currentText.trim().capitalizeSentences()
+        val header = currentHeader.trim().capitalizeSentences()
+        currentText = text
+        currentHeader = header
         if (!readOnly && !saved && (text.isNotEmpty() || header.isNotEmpty())) {
             saved = true
             lifecycleScope.launch(Dispatchers.IO) {
