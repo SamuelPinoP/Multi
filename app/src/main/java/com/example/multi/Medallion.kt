@@ -10,8 +10,6 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -19,7 +17,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.contentColorFor
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,10 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
-import android.os.Build
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, WORKOUT, NOTES }
@@ -159,37 +152,20 @@ fun Medallion(
 @OptIn(ExperimentalMaterial3Api::class)
 fun MedallionScreen() {
     val context = LocalContext.current
-    var showPicker by remember { mutableStateOf(false) }
-    val pickerState = rememberDatePickerState()
+    var showCalendar by remember { mutableStateOf(false) }
 
-    if (showPicker) {
-        DatePickerDialog(
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    showPicker = false
-                    pickerState.selectedDateMillis?.let { millis ->
-                        val dateStr = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            java.time.Instant.ofEpochMilli(millis)
-                                .atZone(java.time.ZoneOffset.UTC)
-                                .toLocalDate()
-                                .toString()
-                        } else {
-                            val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                            fmt.format(Date(millis))
-                        }
-                        val intent = Intent(context, EventsActivity::class.java)
-                        intent.putExtra(EXTRA_DATE, dateStr)
-                        context.startActivity(intent)
-                    }
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+    if (showCalendar) {
+        EventCalendarDialog(
+            onDismiss = { showCalendar = false },
+            onEvents = { date ->
+                showCalendar = false
+                date?.let {
+                    val intent = Intent(context, EventsActivity::class.java)
+                    intent.putExtra(EXTRA_DATE, it)
+                    context.startActivity(intent)
+                }
             }
-        ) {
-            DatePicker(state = pickerState)
-        }
+        )
     }
 
     Box(
@@ -200,7 +176,7 @@ fun MedallionScreen() {
     ) {
         Medallion { segment ->
             if (segment == MedallionSegment.CALENDAR) {
-                showPicker = true
+                showCalendar = true
             } else {
                 val cls = when (segment) {
                     MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
