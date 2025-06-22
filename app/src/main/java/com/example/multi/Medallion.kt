@@ -185,7 +185,13 @@ fun MedallionScreen() {
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                Row {
+                    TextButton(onClick = {
+                        showPicker = false
+                        context.startActivity(Intent(context, CalendarActivity::class.java))
+                    }) { Text("Events") }
+                    TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                }
             }
         ) {
             DatePicker(state = pickerState)
