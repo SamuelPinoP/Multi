@@ -123,7 +123,10 @@ fun CalendarMenuScreen() {
             ),
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             shape = RoundedCornerShape(24.dp),
-            onClick = { /* No action for now */ },
+            onClick = {
+                val intent = Intent(context, EventCalendarActivity::class.java)
+                context.startActivity(intent)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
