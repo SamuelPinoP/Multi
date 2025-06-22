@@ -10,22 +10,13 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.contentColorFor
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,10 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
-import android.os.Build
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, WORKOUT, NOTES }
@@ -156,42 +144,8 @@ fun Medallion(
 
 /** Simple screen displaying the [Medallion] in the center. */
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 fun MedallionScreen() {
     val context = LocalContext.current
-    var showPicker by remember { mutableStateOf(false) }
-    val pickerState = rememberDatePickerState()
-
-    if (showPicker) {
-        DatePickerDialog(
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    showPicker = false
-                    pickerState.selectedDateMillis?.let { millis ->
-                        val dateStr = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            java.time.Instant.ofEpochMilli(millis)
-                                .atZone(java.time.ZoneOffset.UTC)
-                                .toLocalDate()
-                                .toString()
-                        } else {
-                            val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                            fmt.format(Date(millis))
-                        }
-                        val intent = Intent(context, EventsActivity::class.java)
-                        intent.putExtra(EXTRA_DATE, dateStr)
-                        context.startActivity(intent)
-                    }
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
-            }
-        ) {
-            DatePicker(state = pickerState)
-        }
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -199,18 +153,14 @@ fun MedallionScreen() {
         contentAlignment = Alignment.Center
     ) {
         Medallion { segment ->
-            if (segment == MedallionSegment.CALENDAR) {
-                showPicker = true
-            } else {
-                val cls = when (segment) {
-                    MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                    MedallionSegment.EVENTS -> EventsActivity::class.java
-                    MedallionSegment.WORKOUT -> WorkoutActivity::class.java
-                    MedallionSegment.NOTES -> NotesActivity::class.java
-                    else -> CalendarActivity::class.java
-                }
-                context.startActivity(Intent(context, cls))
+            val cls = when (segment) {
+                MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+                MedallionSegment.CALENDAR -> CalendarActivity::class.java
+                MedallionSegment.EVENTS -> EventsActivity::class.java
+                MedallionSegment.WORKOUT -> WorkoutActivity::class.java
+                MedallionSegment.NOTES -> NotesActivity::class.java
             }
+            context.startActivity(Intent(context, cls))
         }
     }
 }
