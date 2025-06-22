@@ -4,12 +4,22 @@ import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.EventAvailable
+import androidx.compose.material.icons.filled.ViewWeek
+import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -21,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -44,7 +55,7 @@ fun CalendarMenuScreen() {
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {
-                TextButton(onClick = {
+                Button(onClick = {
                     showPicker = false
                     pickerState.selectedDateMillis?.let { millis ->
                         val dateStr = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -64,7 +75,8 @@ fun CalendarMenuScreen() {
             },
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) { Text("Cancel") }
-            }
+            },
+            shape = RoundedCornerShape(28.dp)
         ) {
             DatePicker(state = pickerState)
         }
@@ -74,23 +86,54 @@ fun CalendarMenuScreen() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        ElevatedButton(
-            onClick = { /* No action for now */ },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Events in Calendar") }
+        MenuButton(
+            label = "Events in Calendar",
+            icon = Icons.Default.EventAvailable,
+            onClick = { /* No action for now */ }
+        )
 
-        ElevatedButton(
-            onClick = { /* No action for now */ },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Weekly Goals View") }
+        MenuButton(
+            label = "Weekly Goals View",
+            icon = Icons.Default.ViewWeek,
+            onClick = { /* No action for now */ }
+        )
 
-        ElevatedButton(
-            onClick = { showPicker = true },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Calendar Display") }
+        MenuButton(
+            label = "Calendar Display",
+            icon = Icons.Default.CalendarMonth,
+            onClick = { showPicker = true }
+        )
+    }
+}
+
+@Composable
+private fun MenuButton(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    ElevatedCard(
+        onClick = onClick,
+        colors = CardDefaults.elevatedCardColors(),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 20.dp, horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
     }
 }
 
