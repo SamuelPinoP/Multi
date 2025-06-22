@@ -4,12 +4,24 @@ import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -22,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.vector.ImageVector
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -77,20 +90,50 @@ fun CalendarMenuScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        ElevatedButton(
-            onClick = { /* No action for now */ },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Events in Calendar") }
+        MenuCardButton(
+            label = "Events in Calendar",
+            icon = Icons.Default.Event,
+            onClick = { /* No action for now */ }
+        )
 
-        ElevatedButton(
-            onClick = { /* No action for now */ },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Weekly Goals View") }
+        MenuCardButton(
+            label = "Weekly Goals View",
+            icon = Icons.Default.Flag,
+            onClick = { /* No action for now */ }
+        )
 
-        ElevatedButton(
-            onClick = { showPicker = true },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Calendar Display") }
+        MenuCardButton(
+            label = "Calendar Display",
+            icon = Icons.Default.DateRange,
+            onClick = { showPicker = true }
+        )
+    }
+}
+
+@Composable
+private fun MenuCardButton(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    ElevatedCard(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(label, style = MaterialTheme.typography.titleMedium)
+        }
     }
 }
 

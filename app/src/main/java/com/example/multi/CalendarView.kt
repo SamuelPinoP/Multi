@@ -1,7 +1,9 @@
 package com.example.multi
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -33,7 +35,10 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
     val daysOfWeek = DayOfWeek.entries.toTypedArray()
     val locale = Locale.getDefault()
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = Modifier.padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(
             text = "${yearMonth.month.getDisplayName(TextStyle.FULL, locale)} ${yearMonth.year}",
             style = MaterialTheme.typography.titleLarge,
@@ -59,18 +64,31 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
                     for (col in 0 until 7) {
                         val cellIndex = row * 7 + col
                         if (cellIndex < firstDayOffset || currentDay > daysInMonth) {
-                            Box(modifier = Modifier.weight(1f).aspectRatio(1f))
-                        } else {
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .aspectRatio(1f),
-                                contentAlignment = Alignment.Center
+                                    .aspectRatio(1f)
+                                    .padding(2.dp)
+                            )
+                        } else {
+                            Surface(
+                                tonalElevation = 1.dp,
+                                shape = RoundedCornerShape(4.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .padding(2.dp)
                             ) {
-                                Text(
-                                    text = currentDay.toString(),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = currentDay.toString(),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
                             }
                             currentDay++
                         }
