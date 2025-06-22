@@ -3,8 +3,9 @@
 This is a simple Android application using Jetpack Compose.
 
 The home screen now shows a Material Design date picker dialog when the
-Calendar segment is tapped. Ensure your Gradle configuration includes the
-Compose Material 3 dependency:
+Calendar segment is tapped. The calendar screen highlights dates that have
+events in the database. Ensure your Gradle configuration includes the Compose
+Material 3 dependency:
 
 ```kotlin
 implementation("androidx.compose.material3:material3")
