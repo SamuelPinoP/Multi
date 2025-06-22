@@ -5,5 +5,6 @@ data class Note(
     var id: Long = 0L,
     var header: String = "",
     var content: String,
-    var created: Long = System.currentTimeMillis()
+    var created: Long = System.currentTimeMillis(),
+    var lastOpened: Long = System.currentTimeMillis()
 )

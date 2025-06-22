@@ -136,7 +136,12 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                             val db = EventDatabase.getInstance(context)
                                             withContext(Dispatchers.IO) {
                                                 db.noteDao().insert(
-                                                    Note(header = note.header, content = note.content, created = note.created).toEntity()
+                                                    Note(
+                                                        header = note.header,
+                                                        content = note.content,
+                                                        created = note.created,
+                                                        lastOpened = System.currentTimeMillis()
+                                                    ).toEntity()
                                                 )
                                                 db.trashedNoteDao().delete(note.toEntity())
                                             }
