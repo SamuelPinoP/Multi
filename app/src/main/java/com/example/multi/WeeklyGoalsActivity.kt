@@ -74,7 +74,7 @@ private fun WeeklyGoalsScreen() {
         val recordDao = db.weeklyGoalRecordDao()
         val stored = withContext(Dispatchers.IO) { dao.getGoals() }
         val currentWeek = currentWeek()
-        val today = java.time.LocalDate.now()
+        val today = LocalDate.now()
         val startCurrent = today.minusDays((today.dayOfWeek.value % 7).toLong())
         val prevStart = startCurrent.minusDays(7)
         val prevEnd = startCurrent.minusDays(1)
@@ -127,12 +127,12 @@ private fun WeeklyGoalsScreen() {
                         .height(50.dp)
                         .defaultMinSize(minWidth = 170.dp)
                 ) {
-                    androidx.compose.material3.Icon(
+                    Icon(
                         Icons.Default.Check,
                         contentDescription = null,
                         modifier = Modifier.padding(end = 4.dp)
                     )
-                    androidx.compose.material3.Text("Record", fontSize = 18.sp)
+                    Text("Record", fontSize = 18.sp)
                 }
             }
 

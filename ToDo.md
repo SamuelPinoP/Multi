@@ -1,9 +1,6 @@
 /*
     There is a lot of work to do now!
 
-
-- Make sure every first letter is a mayus
-
 0- The note opened last is always displayed first.
 1- Implement the desired functionality for the Notes application.
 2- Make sure the notes application can copy and paste columns and rows as desired and also add

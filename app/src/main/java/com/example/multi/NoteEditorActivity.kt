@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
@@ -29,16 +30,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
-import com.example.multi.TrashedNote
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
@@ -82,7 +82,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val scope = rememberCoroutineScope()
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(currentText) }
-            var textSize by remember { mutableStateOf(20) }
+            var textSize by remember { mutableIntStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
 

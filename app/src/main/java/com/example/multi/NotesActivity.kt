@@ -4,7 +4,6 @@ import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Text
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.shape.CircleShape
@@ -29,10 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
-import com.example.multi.EXTRA_NOTE_ID
-import com.example.multi.EXTRA_NOTE_CONTENT
-import com.example.multi.EXTRA_NOTE_CREATED
-import com.example.multi.EXTRA_NOTE_HEADER
 import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

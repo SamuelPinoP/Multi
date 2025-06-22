@@ -24,13 +24,6 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
-import com.example.multi.TrashedNote
-import com.example.multi.Note
-import com.example.multi.EXTRA_NOTE_CONTENT
-import com.example.multi.EXTRA_NOTE_CREATED
-import com.example.multi.EXTRA_NOTE_HEADER
-import com.example.multi.EXTRA_NOTE_READ_ONLY
-import com.example.multi.EXTRA_NOTE_DELETED
 import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
