@@ -1,7 +1,9 @@
 package com.example.multi
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,14 +34,21 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
     val daysInMonth = yearMonth.lengthOfMonth()
     val daysOfWeek = DayOfWeek.entries.toTypedArray()
     val locale = Locale.getDefault()
+    val today = LocalDate.now()
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Text(
             text = "${yearMonth.month.getDisplayName(TextStyle.FULL, locale)} ${yearMonth.year}",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(vertical = 16.dp)
         )
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             for (day in daysOfWeek) {
                 Text(
                     text = day.getDisplayName(TextStyle.SHORT, locale),
@@ -53,24 +62,39 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
         var currentDay = 1
         val totalCells = firstDayOffset + daysInMonth
         val rows = (totalCells + 6) / 7
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             for (row in 0 until rows) {
-                Row(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     for (col in 0 until 7) {
                         val cellIndex = row * 7 + col
                         if (cellIndex < firstDayOffset || currentDay > daysInMonth) {
-                            Box(modifier = Modifier.weight(1f).aspectRatio(1f))
+                            Spacer(modifier = Modifier.weight(1f).aspectRatio(1f))
                         } else {
+                            val thisDate = yearMonth.atDay(currentDay)
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
                                     .aspectRatio(1f),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = currentDay.toString(),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = if (thisDate == today) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = currentDay.toString(),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (thisDate == today) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
                             }
                             currentDay++
                         }
