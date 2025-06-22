@@ -41,6 +41,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsDocx
 import com.example.multi.util.shareAsPdf
+import com.example.multi.util.capitalizeAfterPeriod
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -141,8 +142,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             value = headerState.value,
                             onValueChange = {
                                 if (it.lines().size <= 3) {
-                                    headerState.value = it
-                                    currentHeader = it
+                                    val processed = it.capitalizeAfterPeriod()
+                                    headerState.value = processed
+                                    currentHeader = processed
                                     saved = false
                                 }
                             },
@@ -170,8 +172,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         BasicTextField(
                             value = textState.value,
                             onValueChange = {
-                                textState.value = it
-                                currentText = it
+                                val processed = it.capitalizeAfterPeriod()
+                                textState.value = processed
+                                currentText = processed
                                 saved = false
                             },
                             enabled = !readOnly,
@@ -291,8 +294,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     override fun onStop() {
         super.onStop()
-        val text = currentText.trim()
-        val header = currentHeader.trim()
+        val text = currentText.trim().capitalizeAfterPeriod()
+        val header = currentHeader.trim().capitalizeAfterPeriod()
         if (!readOnly && !saved && (text.isNotEmpty() || header.isNotEmpty())) {
             saved = true
             lifecycleScope.launch(Dispatchers.IO) {
