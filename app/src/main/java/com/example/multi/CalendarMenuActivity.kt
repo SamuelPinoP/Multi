@@ -3,16 +3,29 @@ package com.example.multi
 import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +43,35 @@ class CalendarMenuActivity : SegmentActivity("Calendar") {
     @Composable
     override fun SegmentContent() {
         CalendarMenuScreen()
+    }
+}
+
+@Composable
+private fun MenuOption(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ElevatedCard(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 80.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(32.dp))
+                Spacer(modifier = Modifier.size(12.dp))
+                Text(text, style = MaterialTheme.typography.titleMedium)
+            }
+        }
     }
 }
 
@@ -64,7 +106,9 @@ fun CalendarMenuScreen() {
             },
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) { Text("Cancel") }
-            }
+            },
+            shape = RoundedCornerShape(16.dp),
+            colors = androidx.compose.material3.DatePickerDefaults.colors()
         ) {
             DatePicker(state = pickerState)
         }
@@ -72,25 +116,30 @@ fun CalendarMenuScreen() {
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        ElevatedButton(
+        MenuOption(
+            text = "Events in Calendar",
+            icon = Icons.Default.Event,
             onClick = { /* No action for now */ },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Events in Calendar") }
+            modifier = Modifier.weight(1f)
+        )
 
-        ElevatedButton(
+        MenuOption(
+            text = "Weekly Goals View",
+            icon = Icons.Default.Flag,
             onClick = { /* No action for now */ },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Weekly Goals View") }
+            modifier = Modifier.weight(1f)
+        )
 
-        ElevatedButton(
+        MenuOption(
+            text = "Calendar Display",
+            icon = Icons.Default.DateRange,
             onClick = { showPicker = true },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Calendar Display") }
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
