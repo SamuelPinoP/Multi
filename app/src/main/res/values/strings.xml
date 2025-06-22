@@ -5,4 +5,7 @@
     <string name="label_workout">Workout</string>
     <string name="label_notes">Notes</string>
     <string name="label_weekly_goals">Weekly Goals</string>
+    <string name="label_calendar_events">Events in Calendar</string>
+    <string name="label_calendar_goals">Weekly Goals View</string>
+    <string name="label_calendar_display">Calendar Display</string>
 </resources>

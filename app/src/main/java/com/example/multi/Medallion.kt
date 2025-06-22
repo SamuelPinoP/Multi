@@ -13,6 +13,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -160,6 +162,7 @@ fun Medallion(
 fun MedallionScreen() {
     val context = LocalContext.current
     var showPicker by remember { mutableStateOf(false) }
+    var showOptions by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
 
     if (showPicker) {
@@ -192,6 +195,30 @@ fun MedallionScreen() {
         }
     }
 
+    if (showOptions) {
+        AlertDialog(
+            onDismissRequest = { showOptions = false },
+            confirmButton = {},
+            title = { Text(stringResource(R.string.label_calendar)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { showOptions = false }) {
+                        Text(stringResource(R.string.label_calendar_events))
+                    }
+                    Button(onClick = { showOptions = false }) {
+                        Text(stringResource(R.string.label_calendar_goals))
+                    }
+                    Button(onClick = {
+                        showOptions = false
+                        showPicker = true
+                    }) {
+                        Text(stringResource(R.string.label_calendar_display))
+                    }
+                }
+            }
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -200,7 +227,7 @@ fun MedallionScreen() {
     ) {
         Medallion { segment ->
             if (segment == MedallionSegment.CALENDAR) {
-                showPicker = true
+                showOptions = true
             } else {
                 val cls = when (segment) {
                     MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
