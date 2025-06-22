@@ -1,6 +1,9 @@
 package com.example.multi
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,46 +36,61 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
     val daysOfWeek = DayOfWeek.entries.toTypedArray()
     val locale = Locale.getDefault()
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "${yearMonth.month.getDisplayName(TextStyle.FULL, locale)} ${yearMonth.year}",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(vertical = 16.dp)
-        )
-        Row(modifier = Modifier.fillMaxWidth()) {
-            for (day in daysOfWeek) {
-                Text(
-                    text = day.getDisplayName(TextStyle.SHORT, locale),
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+    ElevatedCard(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(),
+        modifier = Modifier.padding(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "${yearMonth.month.getDisplayName(TextStyle.FULL, locale)} ${yearMonth.year}",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                for (day in daysOfWeek) {
+                    Text(
+                        text = day.getDisplayName(TextStyle.SHORT, locale),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
-        }
-        val firstDayOffset = firstDayOfMonth.dayOfWeek.toCalendarOffset()
-        var currentDay = 1
-        val totalCells = firstDayOffset + daysInMonth
-        val rows = (totalCells + 6) / 7
-        Column {
-            for (row in 0 until rows) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    for (col in 0 until 7) {
-                        val cellIndex = row * 7 + col
-                        if (cellIndex < firstDayOffset || currentDay > daysInMonth) {
-                            Box(modifier = Modifier.weight(1f).aspectRatio(1f))
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .aspectRatio(1f),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = currentDay.toString(),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val firstDayOffset = firstDayOfMonth.dayOfWeek.toCalendarOffset()
+            var currentDay = 1
+            val totalCells = firstDayOffset + daysInMonth
+            val rows = (totalCells + 6) / 7
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                for (row in 0 until rows) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        for (col in 0 until 7) {
+                            val cellIndex = row * 7 + col
+                            if (cellIndex < firstDayOffset || currentDay > daysInMonth) {
+                                Box(modifier = Modifier.weight(1f).aspectRatio(1f))
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .aspectRatio(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = currentDay.toString(),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                                currentDay++
                             }
-                            currentDay++
                         }
                     }
                 }
