@@ -1,7 +1,11 @@
 package com.example.multi
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,24 +36,36 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
     val daysInMonth = yearMonth.lengthOfMonth()
     val daysOfWeek = DayOfWeek.entries.toTypedArray()
     val locale = Locale.getDefault()
+    val today = LocalDate.now()
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "${yearMonth.month.getDisplayName(TextStyle.FULL, locale)} ${yearMonth.year}",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(vertical = 16.dp)
-        )
-        Row(modifier = Modifier.fillMaxWidth()) {
-            for (day in daysOfWeek) {
-                Text(
-                    text = day.getDisplayName(TextStyle.SHORT, locale),
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+    ElevatedCard(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+        elevation = CardDefaults.elevatedCardElevation()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "${yearMonth.month.getDisplayName(TextStyle.FULL, locale)} ${yearMonth.year}",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                for (day in daysOfWeek) {
+                    Text(
+                        text = day.getDisplayName(TextStyle.SHORT, locale),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
-        }
-        val firstDayOffset = firstDayOfMonth.dayOfWeek.toCalendarOffset()
+
+            val firstDayOffset = firstDayOfMonth.dayOfWeek.toCalendarOffset()
         var currentDay = 1
         val totalCells = firstDayOffset + daysInMonth
         val rows = (totalCells + 6) / 7
@@ -61,16 +77,31 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
                         if (cellIndex < firstDayOffset || currentDay > daysInMonth) {
                             Box(modifier = Modifier.weight(1f).aspectRatio(1f))
                         } else {
+                            val thisDate = yearMonth.atDay(currentDay)
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
                                     .aspectRatio(1f),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = currentDay.toString(),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (thisDate == today) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                                    tonalElevation = if (thisDate == today) 4.dp else 0.dp
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(4.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = currentDay.toString(),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (thisDate == today) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
                             }
                             currentDay++
                         }
