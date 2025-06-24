@@ -7,6 +7,8 @@ import java.util.Locale
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.LocalDate
+import java.time.format.DateTimeParseException
 
 fun Long.toDateString(): String = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
     Instant.ofEpochMilli(this)
@@ -16,4 +18,11 @@ fun Long.toDateString(): String = if (Build.VERSION.SDK_INT >= Build.VERSION_COD
 } else {
     val fmt = SimpleDateFormat("M/d/yyyy", Locale.getDefault())
     fmt.format(Date(this))
+}
+
+/** Try to parse this string as an ISO local date. */
+fun String.toLocalDateOrNull(): LocalDate? = try {
+    LocalDate.parse(this)
+} catch (_: DateTimeParseException) {
+    null
 }

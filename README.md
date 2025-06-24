@@ -10,6 +10,13 @@ Compose Material 3 dependency:
 implementation("androidx.compose.material3:material3")
 ```
 
+To display events on a calendar grid, the project uses the
+[Multiplatform-Calendar](https://github.com/kizitonwose/Calendar) library:
+
+```kotlin
+implementation("com.kizitonwose.calendar:compose:2.3.0")
+```
+
 ## Prerequisites
 
 - Android Studio Hedgehog or later with the Android SDK configured
