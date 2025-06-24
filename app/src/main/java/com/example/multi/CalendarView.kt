@@ -6,6 +6,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +32,10 @@ internal fun DayOfWeek.toCalendarOffset(): Int = (this.value + 6) % 7
  */
 @Composable
 @RequiresApi(Build.VERSION_CODES.O)
-fun CalendarView(date: LocalDate = LocalDate.now()) {
+fun CalendarView(
+    date: LocalDate = LocalDate.now(),
+    eventDates: Set<LocalDate> = emptySet()
+) {
     val yearMonth = YearMonth.from(date)
     val firstDayOfMonth = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
@@ -78,10 +84,15 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
                             if (cellIndex < firstDayOffset || currentDay > daysInMonth) {
                                 Box(modifier = Modifier.weight(1f).aspectRatio(1f))
                             } else {
+                                val dayDate = yearMonth.atDay(currentDay)
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
                                         .aspectRatio(1f),
+                                        .background(
+                                            if (eventDates.contains(dayDate)) Color.Green else Color.Transparent,
+                                            CircleShape
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
