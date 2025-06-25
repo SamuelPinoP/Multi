@@ -254,6 +254,23 @@ private fun WeeklyGoalsScreen() {
             WeeklyGoalDialog(
                 initial = goal,
                 onDismiss = { editingIndex = null },
+                onSave = { header, freq ->
+                    editingIndex = null
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                        if (isNew) {
+                            val id = withContext(Dispatchers.IO) {
+                                dao.insert(WeeklyGoal(header = header, frequency = freq).toEntity())
+                            }
+                            goals.add(WeeklyGoal(id, header, freq))
+                            snackbarHostState.showSnackbar("New Weekly Activity added")
+                        } else {
+                            val updated = goal.copy(header = header, frequency = freq)
+                            goals[index] = updated
+                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                        }
+                    }
+                },
                 onDelete = if (isNew) null else {
                     {
                         scope.launch {
@@ -293,6 +310,7 @@ private fun WeeklyGoalsScreen() {
 private fun WeeklyGoalDialog(
     initial: WeeklyGoal,
     onDismiss: () -> Unit,
+    onSave: (String, Int) -> Unit,
     onDelete: (() -> Unit)? = null,
     onProgress: (() -> Unit)? = null
 ) {
@@ -301,7 +319,12 @@ private fun WeeklyGoalDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = {},
+        confirmButton = {
+            Button(
+                onClick = { frequency?.let { onSave(header, it) } },
+                enabled = header.isNotBlank() && frequency != null
+            ) { Text("Save") }
+        },
         dismissButton = {
             Row {
                 onProgress?.let { prog ->
