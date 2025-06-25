@@ -1,6 +1,13 @@
 /*
 There is a lot of work to do now!
 
+Fix the Save button has been deleted from Weekly Goals. Bring it back.
+
+
+I need to add levels of priority to the notes. Priority green. It is high. Yellow is medium. Red is
+low. By clicking each of them we can display the notes with that priority.
+
+
 I want the Events in Calendar button to bring a MaterialCalendarView. Every date when an event 
 happens must be marked in green or choose a color for them. I want a button that says Weekly Goals 
 View were every day when the user completed a Weekly goal will be marked. Also a Calendar regular 
