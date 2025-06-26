@@ -11,6 +11,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -32,17 +36,39 @@ private fun KizCalendarScreen() {
         firstDayOfWeek = firstDayOfWeekFromLocale()
     )
 
-    HorizontalCalendar(
-        state = state,
-        dayContent = { day ->
-            Box(
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .padding(2.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = day.date.dayOfMonth.toString())
+    val visibleMonth = state.firstVisibleMonth
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "${visibleMonth.yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${visibleMonth.yearMonth.year}",
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            DayOfWeek.entries.forEach { dayOfWeek ->
+                Text(
+                    text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
             }
         }
-    )
+
+        HorizontalCalendar(
+            state = state,
+            dayContent = { day ->
+                Box(
+                    modifier = Modifier
+                        .aspectRatio(1f)
+                        .padding(2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = day.date.dayOfMonth.toString())
+                }
+            }
+        )
+    }
 }
