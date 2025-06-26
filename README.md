@@ -10,6 +10,12 @@ Compose Material 3 dependency:
 implementation("androidx.compose.material3:material3")
 ```
 
+The new Events Calendar screen relies on the Kizitonwose calendar library:
+
+```kotlin
+implementation("com.kizitonwose.calendar:compose:2.3.0")
+```
+
 ## Prerequisites
 
 - Android Studio Hedgehog or later with the Android SDK configured
