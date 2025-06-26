@@ -28,6 +28,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,6 +91,10 @@ private fun EventsScreen(initialDate: String? = null) {
             itemsIndexed(events) { index, event ->
                 ElevatedCard(
                     elevation = CardDefaults.elevatedCardElevation(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { editingIndex = index }
