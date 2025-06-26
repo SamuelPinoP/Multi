@@ -38,8 +38,11 @@ private fun KizCalendarScreen() {
         firstDayOfWeek = firstDayOfWeek
     )
     val locale = Locale.getDefault()
+    // Use the Java enum values() function instead of the Kotlin-specific
+    // `entries` property to avoid crashes on older runtimes where the
+    // generated field does not exist.
     val daysOfWeek = remember {
-        DayOfWeek.entries.toList()
+        DayOfWeek.values().toList()
     }
     val daysOfWeekOrdered = remember(firstDayOfWeek) {
         val startIndex = firstDayOfWeek.ordinal
