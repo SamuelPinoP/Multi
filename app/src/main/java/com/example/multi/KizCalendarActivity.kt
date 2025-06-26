@@ -14,9 +14,12 @@ import java.time.YearMonth
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ElevatedCard
@@ -39,6 +42,10 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.data.toEntity
 import androidx.compose.ui.draw.alpha
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import java.time.LocalDate
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -91,12 +98,35 @@ private fun KizCalendarScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val visibleMonth = state.firstVisibleMonth.yearMonth
-        Text(
-            text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(vertical = 8.dp),
-            textAlign = TextAlign.Center
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = {
+                scope.launch {
+                    state.animateScrollToMonth(visibleMonth.minusMonths(1))
+                }
+            }) {
+                Icon(Icons.Filled.KeyboardArrowLeft, contentDescription = "Previous month")
+            }
+            Text(
+                text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+                color = if (visibleMonth == currentMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+            IconButton(onClick = {
+                scope.launch {
+                    state.animateScrollToMonth(visibleMonth.plusMonths(1))
+                }
+            }) {
+                Icon(Icons.Filled.KeyboardArrowRight, contentDescription = "Next month")
+            }
+        }
 
         Row(modifier = Modifier.fillMaxWidth()) {
             for (day in daysOfWeekOrdered) {
@@ -116,20 +146,26 @@ private fun KizCalendarScreen() {
             dayContent = { day ->
                 val dayEvents = events.filter { it.date == day.date.toString() }
                 val isCurrentMonth = day.position == DayPosition.MonthDate
+                val isToday = day.date == LocalDate.now()
                 val textColor = when {
                     dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primary
                     isCurrentMonth -> MaterialTheme.colorScheme.onSurface
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
-                val bgColor = if (dayEvents.isNotEmpty()) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    androidx.compose.ui.graphics.Color.Transparent
+                val bgColor = when {
+                    isToday -> MaterialTheme.colorScheme.secondaryContainer
+                    dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primaryContainer
+                    else -> androidx.compose.ui.graphics.Color.Transparent
                 }
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(2.dp)
+                        .border(
+                            width = if (isToday) 2.dp else 1.dp,
+                            color = if (isToday) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
+                            shape = CircleShape
+                        )
                         .background(bgColor, CircleShape)
                         .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
