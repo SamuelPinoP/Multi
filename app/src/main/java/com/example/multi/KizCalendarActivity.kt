@@ -1,19 +1,33 @@
 package com.example.multi
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.YearMonth
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -37,6 +51,13 @@ private fun KizCalendarScreen() {
         firstVisibleMonth = currentMonth,
         firstDayOfWeek = firstDayOfWeek
     )
+    val context = LocalContext.current
+    var eventDates by remember { mutableStateOf<Set<LocalDate>>(emptySet()) }
+    LaunchedEffect(Unit) {
+        val dao = EventDatabase.getInstance(context).eventDao()
+        val stored = withContext(Dispatchers.IO) { dao.getEvents() }
+        eventDates = stored.mapNotNull { it.toModel().date?.let(LocalDate::parse) }.toSet()
+    }
     val locale = Locale.getDefault()
     val daysOfWeek = remember {
         DayOfWeek.entries.toList()
@@ -74,13 +95,26 @@ private fun KizCalendarScreen() {
             modifier = Modifier.fillMaxWidth(),
             state = state,
             dayContent = { day ->
+                val hasEvent = day.date in eventDates
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
-                        .padding(2.dp),
+                        .padding(2.dp)
+                        .background(
+                            color = if (hasEvent) MaterialTheme.colorScheme.tertiaryContainer else Color.Transparent,
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        .clickable {
+                            val intent = android.content.Intent(context, EventsActivity::class.java)
+                            intent.putExtra(EXTRA_DATE, day.date.toString())
+                            context.startActivity(intent)
+                        },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = day.date.dayOfMonth.toString())
+                    Text(
+                        text = day.date.dayOfMonth.toString(),
+                        color = if (hasEvent) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         )

@@ -10,6 +10,10 @@ Compose Material 3 dependency:
 implementation("androidx.compose.material3:material3")
 ```
 
+The Events Calendar displays a scrolling calendar where days containing
+events are highlighted. Tapping any highlighted date opens the list of
+events scheduled for that day.
+
 ## Prerequisites
 
 - Android Studio Hedgehog or later with the Android SDK configured
