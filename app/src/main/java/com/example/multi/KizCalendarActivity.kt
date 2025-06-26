@@ -17,10 +17,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -79,6 +80,7 @@ private fun KizCalendarScreen() {
 
     var selectedEvents by remember { mutableStateOf<List<Event>>(emptyList()) }
     var showDialog by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
     var editingEvent by remember { mutableStateOf<Event?>(null) }
     val scope = rememberCoroutineScope()
 
@@ -152,35 +154,40 @@ private fun KizCalendarScreen() {
         )
 
         if (showDialog) {
-            AlertDialog(
+            ModalBottomSheet(
                 onDismissRequest = { showDialog = false },
-                confirmButton = {
-                    TextButton(onClick = { showDialog = false }) { Text("Close") }
-                },
-                text = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        selectedEvents.forEach { event ->
-                            ElevatedCard(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        editingEvent = event
-                                        showDialog = false
-                                    }
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(event.title, style = MaterialTheme.typography.titleMedium)
-                                    if (event.description.isNotBlank()) {
-                                        Text(event.description, style = MaterialTheme.typography.bodyMedium)
-                                    }
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    selectedEvents.forEach { event ->
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    editingEvent = event
+                                    showDialog = false
+                                }
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(event.title, style = MaterialTheme.typography.titleMedium)
+                                if (event.description.isNotBlank()) {
+                                    Text(event.description, style = MaterialTheme.typography.bodyMedium)
                                 }
                             }
                         }
                     }
+                    Spacer(Modifier.height(12.dp))
+                    TextButton(
+                        onClick = { showDialog = false },
+                        modifier = Modifier.align(Alignment.End)
+                    ) { Text("Close") }
                 }
-            )
+            }
         }
 
         editingEvent?.let { event ->
