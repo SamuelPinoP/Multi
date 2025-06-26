@@ -9,6 +9,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
+import com.kizitonwose.calendar.core.DayPosition
 import java.time.YearMonth
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
@@ -22,8 +23,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
@@ -77,6 +80,7 @@ private fun KizCalendarScreen() {
     var selectedEvents by remember { mutableStateOf<List<Event>>(emptyList()) }
     var showDialog by remember { mutableStateOf(false) }
     var editingEvent by remember { mutableStateOf<Event?>(null) }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
     val scope = rememberCoroutineScope()
 
     Column(
@@ -108,19 +112,31 @@ private fun KizCalendarScreen() {
             state = state,
             dayContent = { day ->
                 val dayEvents = events.filter { it.date == day.date.toString() }
+                val isCurrentMonth = day.position == DayPosition.MonthDate
+                val isSelected = selectedDate == day.date
+                val textColor = when {
+                    dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primary
+                    isCurrentMonth -> MaterialTheme.colorScheme.onSurface
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(2.dp)
-                        .clickable(enabled = dayEvents.isNotEmpty()) {
+                        .background(
+                            color = if (isSelected) MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f) else Color.Transparent,
+                            shape = CircleShape
+                        )
+                        .clickable {
+                            selectedDate = day.date
                             selectedEvents = dayEvents
-                            showDialog = true
+                            showDialog = dayEvents.isNotEmpty()
                         },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = day.date.dayOfMonth.toString(),
-                        color = if (dayEvents.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        color = textColor
                     )
                     if (dayEvents.isNotEmpty()) {
                         Box(
