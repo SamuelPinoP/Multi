@@ -17,10 +17,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -82,10 +85,16 @@ private fun KizCalendarScreen() {
     var editingEvent by remember { mutableStateOf<Event?>(null) }
     val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.elevatedCardColors()
     ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         val visibleMonth = state.firstVisibleMonth.yearMonth
         Text(
             text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
@@ -122,65 +131,73 @@ private fun KizCalendarScreen() {
                 } else {
                     androidx.compose.ui.graphics.Color.Transparent
                 }
-                Box(
+                Surface(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(2.dp)
-                        .background(bgColor, CircleShape)
                         .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
                             selectedEvents = dayEvents
                             showDialog = true
                         },
-                    contentAlignment = Alignment.Center
+                    shape = CircleShape,
+                    color = bgColor
                 ) {
-                    Text(
-                        text = day.date.dayOfMonth.toString(),
-                        color = textColor,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    if (dayEvents.isNotEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .align(Alignment.BottomCenter)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = day.date.dayOfMonth.toString(),
+                            color = textColor,
+                            style = MaterialTheme.typography.bodyMedium
                         )
+                        if (dayEvents.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .align(Alignment.BottomCenter)
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                            )
+                        }
                     }
                 }
             }
         )
 
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         if (showDialog) {
-            AlertDialog(
+            ModalBottomSheet(
                 onDismissRequest = { showDialog = false },
-                confirmButton = {
-                    TextButton(onClick = { showDialog = false }) { Text("Close") }
-                },
-                text = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        selectedEvents.forEach { event ->
-                            ElevatedCard(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        editingEvent = event
-                                        showDialog = false
-                                    }
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(event.title, style = MaterialTheme.typography.titleMedium)
-                                    if (event.description.isNotBlank()) {
-                                        Text(event.description, style = MaterialTheme.typography.bodyMedium)
-                                    }
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    selectedEvents.forEach { event ->
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    editingEvent = event
+                                    showDialog = false
+                                }
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(event.title, style = MaterialTheme.typography.titleMedium)
+                                if (event.description.isNotBlank()) {
+                                    Text(event.description, style = MaterialTheme.typography.bodyMedium)
                                 }
                             }
                         }
                     }
+                    TextButton(
+                        onClick = { showDialog = false },
+                        modifier = Modifier.align(Alignment.End)
+                    ) { Text("Close") }
                 }
-            )
+            }
         }
 
         editingEvent?.let { event ->
