@@ -211,7 +211,7 @@ private fun EventsScreen(initialDate: String? = null) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EventDialog(
+fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
     onSave: (String, String, String?) -> Unit,
