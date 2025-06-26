@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
@@ -23,6 +25,11 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIos
+import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -39,6 +46,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.data.toEntity
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -86,17 +94,46 @@ private fun KizCalendarScreen() {
     var editingEvent by remember { mutableStateOf<Event?>(null) }
     val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        val visibleMonth = state.firstVisibleMonth.yearMonth
-        Text(
-            text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(vertical = 8.dp),
-            textAlign = TextAlign.Center
-        )
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val visibleMonth = state.firstVisibleMonth.yearMonth
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(onClick = {
+                    scope.launch {
+                        state.animateScrollToMonth(visibleMonth.minusMonths(1))
+                    }
+                }) {
+                    Icon(Icons.Default.ArrowBackIos, contentDescription = "Previous Month")
+                }
+                Text(
+                    text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(vertical = 8.dp).weight(1f),
+                    textAlign = TextAlign.Center,
+                    color = if (visibleMonth == currentMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+                IconButton(onClick = {
+                    scope.launch {
+                        state.animateScrollToMonth(visibleMonth.plusMonths(1))
+                    }
+                }) {
+                    Icon(Icons.Default.ArrowForwardIos, contentDescription = "Next Month")
+                }
+            }
 
         Row(modifier = Modifier.fillMaxWidth()) {
             for (day in daysOfWeekOrdered) {
@@ -116,21 +153,23 @@ private fun KizCalendarScreen() {
             dayContent = { day ->
                 val dayEvents = events.filter { it.date == day.date.toString() }
                 val isCurrentMonth = day.position == DayPosition.MonthDate
+                val isToday = day.date == java.time.LocalDate.now()
                 val textColor = when {
                     dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primary
                     isCurrentMonth -> MaterialTheme.colorScheme.onSurface
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
-                val bgColor = if (dayEvents.isNotEmpty()) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    androidx.compose.ui.graphics.Color.Transparent
+                val bgColor = when {
+                    isToday -> MaterialTheme.colorScheme.secondaryContainer
+                    dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primaryContainer
+                    else -> Color.Transparent
                 }
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(2.dp)
                         .background(bgColor, CircleShape)
+                        .then(if (isToday) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape) else Modifier)
                         .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
                             selectedEvents = dayEvents
@@ -170,10 +209,12 @@ private fun KizCalendarScreen() {
                         ElevatedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
                                 .clickable {
                                     editingEvent = event
                                     showDialog = false
-                                }
+                                },
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(event.title, style = MaterialTheme.typography.titleMedium)
