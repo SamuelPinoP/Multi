@@ -17,10 +17,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -78,7 +80,8 @@ private fun KizCalendarScreen() {
     }
 
     var selectedEvents by remember { mutableStateOf<List<Event>>(emptyList()) }
-    var showDialog by remember { mutableStateOf(false) }
+    var showSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
     var editingEvent by remember { mutableStateOf<Event?>(null) }
     val scope = rememberCoroutineScope()
 
@@ -130,7 +133,7 @@ private fun KizCalendarScreen() {
                         .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
                             selectedEvents = dayEvents
-                            showDialog = true
+                            showSheet = true
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -151,36 +154,38 @@ private fun KizCalendarScreen() {
             }
         )
 
-        if (showDialog) {
-            AlertDialog(
-                onDismissRequest = { showDialog = false },
-                confirmButton = {
-                    TextButton(onClick = { showDialog = false }) { Text("Close") }
-                },
-                text = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        selectedEvents.forEach { event ->
-                            ElevatedCard(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        editingEvent = event
-                                        showDialog = false
-                                    }
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(event.title, style = MaterialTheme.typography.titleMedium)
-                                    if (event.description.isNotBlank()) {
-                                        Text(event.description, style = MaterialTheme.typography.bodyMedium)
-                                    }
+        if (showSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showSheet = false },
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    selectedEvents.forEach { event ->
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    editingEvent = event
+                                    showSheet = false
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(event.title, style = MaterialTheme.typography.titleMedium)
+                                if (event.description.isNotBlank()) {
+                                    Text(event.description, style = MaterialTheme.typography.bodyMedium)
                                 }
                             }
                         }
                     }
                 }
-            )
+            }
         }
 
         editingEvent?.let { event ->
