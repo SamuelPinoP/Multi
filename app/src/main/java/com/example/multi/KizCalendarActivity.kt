@@ -1,21 +1,34 @@
 package com.example.multi
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.YearMonth
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.platform.LocalContext
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toModel
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -27,6 +40,16 @@ class KizCalendarActivity : SegmentActivity("Events Calendar") {
 
 @Composable
 private fun KizCalendarScreen() {
+    val context = LocalContext.current
+    val events = remember { mutableStateListOf<Event>() }
+
+    LaunchedEffect(Unit) {
+        val dao = EventDatabase.getInstance(context).eventDao()
+        val stored = withContext(Dispatchers.IO) { dao.getEvents() }
+        events.clear()
+        events.addAll(stored.map { it.toModel() }.filter { it.date != null })
+    }
+
     val currentMonth = remember { YearMonth.now() }
     val startMonth = remember { currentMonth.minusMonths(12) }
     val endMonth = remember { currentMonth.plusMonths(12) }
@@ -45,6 +68,9 @@ private fun KizCalendarScreen() {
         val startIndex = firstDayOfWeek.ordinal
         daysOfWeek.drop(startIndex) + daysOfWeek.take(startIndex)
     }
+
+    var selectedEvents by remember { mutableStateOf<List<Event>>(emptyList()) }
+    var showDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -74,15 +100,51 @@ private fun KizCalendarScreen() {
             modifier = Modifier.fillMaxWidth(),
             state = state,
             dayContent = { day ->
+                val dayEvents = events.filter { it.date == day.date.toString() }
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
-                        .padding(2.dp),
+                        .padding(2.dp)
+                        .clickable(enabled = dayEvents.isNotEmpty()) {
+                            selectedEvents = dayEvents
+                            showDialog = true
+                        },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = day.date.dayOfMonth.toString())
+                    Text(
+                        text = day.date.dayOfMonth.toString(),
+                        color = if (dayEvents.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
+                    if (dayEvents.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .align(Alignment.BottomCenter)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        )
+                    }
                 }
             }
         )
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showDialog = false }) { Text("Close") }
+                },
+                text = {
+                    Column {
+                        selectedEvents.forEach { event ->
+                            Text(event.title, style = MaterialTheme.typography.bodyLarge)
+                            if (event.description.isNotBlank()) {
+                                Text(event.description, style = MaterialTheme.typography.bodyMedium)
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
+                    }
+                }
+            )
+        }
     }
 }
