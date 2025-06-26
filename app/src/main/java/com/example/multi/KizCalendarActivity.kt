@@ -7,10 +7,15 @@ import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.YearMonth
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -32,17 +37,45 @@ private fun KizCalendarScreen() {
         firstDayOfWeek = firstDayOfWeekFromLocale()
     )
 
-    HorizontalCalendar(
-        state = state,
-        dayContent = { day ->
-            Box(
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .padding(2.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = day.date.dayOfMonth.toString())
+    val locale = Locale.getDefault()
+    val daysOfWeek = DayOfWeek.entries.toTypedArray()
+
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        val visibleMonth = state.firstVisibleMonth.yearMonth
+        Text(
+            text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(bottom = 12.dp)
+        )
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            for (day in daysOfWeek) {
+                Text(
+                    text = day.getDisplayName(TextStyle.SHORT, locale),
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
-    )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        HorizontalCalendar(
+            state = state,
+            dayContent = { day ->
+                Box(
+                    modifier = Modifier
+                        .aspectRatio(1f)
+                        .padding(2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = day.date.dayOfMonth.toString())
+                }
+            }
+        )
+    }
 }
