@@ -1,8 +1,8 @@
 /*
 There is a lot of work to do now!
 
--3- I need the pop up in the Events Calendar to take me to that events pop up edit window and allow 
-me to edit the event whenever I click it. 
+-3- Improving UI of Events in Calendar. If I choose every tuesday, then I want every tuesday to be 
+marked in the Calendar. 
 
 -2- We need a Sort button for the events. To display the order of the events added or date when the
 event happens.
