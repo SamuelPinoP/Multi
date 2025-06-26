@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
@@ -28,6 +29,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
@@ -72,7 +74,10 @@ private fun KizCalendarScreen() {
     }
 
     var selectedEvents by remember { mutableStateOf<List<Event>>(emptyList()) }
+    var selectedDate by remember { mutableStateOf<String?>(null) }
     var showDialog by remember { mutableStateOf(false) }
+    var editingEvent by remember { mutableStateOf<Event?>(null) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -108,6 +113,7 @@ private fun KizCalendarScreen() {
                         .aspectRatio(1f)
                         .padding(2.dp)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
+                            selectedDate = day.date.toString()
                             selectedEvents = dayEvents
                             showDialog = true
                         },
@@ -138,11 +144,51 @@ private fun KizCalendarScreen() {
                 text = {
                     Column {
                         selectedEvents.forEach { event ->
-                            Text(event.title, style = MaterialTheme.typography.bodyLarge)
-                            if (event.description.isNotBlank()) {
-                                Text(event.description, style = MaterialTheme.typography.bodyMedium)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        editingEvent = event
+                                        showDialog = false
+                                    }
+                            ) {
+                                Text(event.title, style = MaterialTheme.typography.bodyLarge)
+                                if (event.description.isNotBlank()) {
+                                    Text(event.description, style = MaterialTheme.typography.bodyMedium)
+                                }
                             }
                             Spacer(Modifier.height(8.dp))
+                        }
+                    }
+                }
+            )
+        }
+
+        editingEvent?.let { event ->
+            EventDialog(
+                initial = event,
+                onDismiss = { editingEvent = null },
+                onSave = { title, desc, date ->
+                    editingEvent = null
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).eventDao()
+                        val updated = Event(event.id, title, desc, date)
+                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                        val index = events.indexOfFirst { it.id == event.id }
+                        if (index != -1) events[index] = updated
+                        selectedDate?.let { d ->
+                            selectedEvents = events.filter { it.date == d }
+                        }
+                    }
+                },
+                onDelete = {
+                    editingEvent = null
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).eventDao()
+                        withContext(Dispatchers.IO) { dao.delete(event.toEntity()) }
+                        events.removeAll { it.id == event.id }
+                        selectedDate?.let { d ->
+                            selectedEvents = events.filter { it.date == d }
                         }
                     }
                 }
