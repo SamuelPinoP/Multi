@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
+import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.YearMonth
 import androidx.compose.ui.Alignment
@@ -19,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -108,10 +110,22 @@ private fun KizCalendarScreen() {
             state = state,
             dayContent = { day ->
                 val dayEvents = events.filter { it.date == day.date.toString() }
+                val inMonth = day.position == DayPosition.MonthDate
+                val dayTextColor = when {
+                    !inMonth -> MaterialTheme.colorScheme.outline
+                    dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.onPrimary
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
+                val bgColor = if (dayEvents.isNotEmpty()) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    androidx.compose.ui.graphics.Color.Transparent
+                }
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(2.dp)
+                        .background(bgColor, CircleShape)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
                             selectedEvents = dayEvents
                             showDialog = true
@@ -120,7 +134,7 @@ private fun KizCalendarScreen() {
                 ) {
                     Text(
                         text = day.date.dayOfMonth.toString(),
-                        color = if (dayEvents.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        color = dayTextColor
                     )
                     if (dayEvents.isNotEmpty()) {
                         Box(
@@ -141,9 +155,11 @@ private fun KizCalendarScreen() {
                     TextButton(onClick = { showDialog = false }) { Text("Close") }
                 },
                 text = {
-                    Column {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         selectedEvents.forEach { event ->
-                            Column(
+                            ElevatedCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
@@ -151,12 +167,13 @@ private fun KizCalendarScreen() {
                                         showDialog = false
                                     }
                             ) {
-                                Text(event.title, style = MaterialTheme.typography.bodyLarge)
-                                if (event.description.isNotBlank()) {
-                                    Text(event.description, style = MaterialTheme.typography.bodyMedium)
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(event.title, style = MaterialTheme.typography.titleMedium)
+                                    if (event.description.isNotBlank()) {
+                                        Text(event.description, style = MaterialTheme.typography.bodyMedium)
+                                    }
                                 }
                             }
-                            Spacer(Modifier.height(8.dp))
                         }
                     }
                 }
