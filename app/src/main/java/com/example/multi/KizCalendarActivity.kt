@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.data.toEntity
+import androidx.compose.ui.draw.alpha
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -110,11 +111,11 @@ private fun KizCalendarScreen() {
             state = state,
             dayContent = { day ->
                 val dayEvents = events.filter { it.date == day.date.toString() }
-                val inMonth = day.position == DayPosition.MonthDate
-                val dayTextColor = when {
-                    !inMonth -> MaterialTheme.colorScheme.outline
-                    dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.onPrimary
-                    else -> MaterialTheme.colorScheme.onSurface
+                val isCurrentMonth = day.position == DayPosition.MonthDate
+                val textColor = when {
+                    dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primary
+                    isCurrentMonth -> MaterialTheme.colorScheme.onSurface
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
                 val bgColor = if (dayEvents.isNotEmpty()) {
                     MaterialTheme.colorScheme.primaryContainer
@@ -126,6 +127,7 @@ private fun KizCalendarScreen() {
                         .aspectRatio(1f)
                         .padding(2.dp)
                         .background(bgColor, CircleShape)
+                        .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
                             selectedEvents = dayEvents
                             showDialog = true
@@ -134,7 +136,8 @@ private fun KizCalendarScreen() {
                 ) {
                     Text(
                         text = day.date.dayOfMonth.toString(),
-                        color = dayTextColor
+                        color = textColor,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                     if (dayEvents.isNotEmpty()) {
                         Box(
