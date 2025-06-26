@@ -1,6 +1,8 @@
 package com.example.multi
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
@@ -37,6 +39,10 @@ private fun KizCalendarScreen() {
         firstVisibleMonth = currentMonth,
         firstDayOfWeek = firstDayOfWeek
     )
+    val visibleMonthState = remember { mutableStateOf(state.firstVisibleMonth.yearMonth) }
+    LaunchedEffect(state.firstVisibleMonth) {
+        visibleMonthState.value = state.firstVisibleMonth.yearMonth
+    }
     val locale = Locale.getDefault()
     val daysOfWeek = remember {
         DayOfWeek.entries.toList()
@@ -50,7 +56,7 @@ private fun KizCalendarScreen() {
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val visibleMonth = state.firstVisibleMonth.yearMonth
+        val visibleMonth = visibleMonthState.value
         Text(
             text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
             style = MaterialTheme.typography.titleLarge,
