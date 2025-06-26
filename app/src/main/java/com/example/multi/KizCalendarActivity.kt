@@ -6,6 +6,7 @@ import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.YearMonth
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,7 +48,9 @@ private fun KizCalendarScreen() {
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .systemGestureExclusion(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val visibleMonth = state.firstVisibleMonth.yearMonth
