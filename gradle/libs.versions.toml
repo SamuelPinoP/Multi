@@ -34,6 +34,7 @@ androidx-room-runtime = { group = "androidx.room", name = "room-runtime", versio
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 apache-poi = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poi" }
+calendar-compose = { group = "com.kizitonwose.calendar", name = "compose", version = "2.1.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

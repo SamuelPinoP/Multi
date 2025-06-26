@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Flag
+import com.example.multi.EventsCalendarActivity
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
@@ -123,7 +124,14 @@ fun CalendarMenuScreen() {
             ),
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             shape = RoundedCornerShape(24.dp),
-            onClick = { /* No action for now */ },
+            onClick = {
+                context.startActivity(
+                    android.content.Intent(
+                        context,
+                        EventsCalendarActivity::class.java
+                    )
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
