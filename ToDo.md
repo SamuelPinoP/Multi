@@ -1,6 +1,10 @@
 /*
 There is a lot of work to do now!
 
+-5- I want the add new event Button to be there to. Also a Button that says go to Events.
+
+-4- I want the current day and month in the Events in Calendar to be Highlighted.
+
 -3- Improving UI of Events in Calendar. If I choose every tuesday, then I want every tuesday to be 
 marked in the Calendar. 
 

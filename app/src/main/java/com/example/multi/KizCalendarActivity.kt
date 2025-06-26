@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.getValue
@@ -47,6 +48,7 @@ class KizCalendarActivity : SegmentActivity("Events Calendar") {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun KizCalendarScreen() {
     val context = LocalContext.current
