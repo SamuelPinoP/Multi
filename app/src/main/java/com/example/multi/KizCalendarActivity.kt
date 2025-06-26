@@ -10,15 +10,24 @@ import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.YearMonth
+import java.time.LocalDate
+import com.kizitonwose.calendar.core.DayPosition
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -84,12 +93,30 @@ private fun KizCalendarScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val visibleMonth = state.firstVisibleMonth.yearMonth
-        Text(
-            text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(vertical = 8.dp),
-            textAlign = TextAlign.Center
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = {
+                val prev = visibleMonth.minusMonths(1)
+                scope.launch { state.animateScrollToMonth(prev) }
+            }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Previous month")
+            }
+            Text(
+                text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
+                style = MaterialTheme.typography.titleLarge
+            )
+            IconButton(onClick = {
+                val next = visibleMonth.plusMonths(1)
+                scope.launch { state.animateScrollToMonth(next) }
+            }) {
+                Icon(Icons.Default.ArrowForward, contentDescription = "Next month")
+            }
+        }
 
         Row(modifier = Modifier.fillMaxWidth()) {
             for (day in daysOfWeekOrdered) {
@@ -108,10 +135,23 @@ private fun KizCalendarScreen() {
             state = state,
             dayContent = { day ->
                 val dayEvents = events.filter { it.date == day.date.toString() }
+                val inMonth = day.position == DayPosition.MonthDate
+                val textColor = when {
+                    dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primary
+                    inMonth -> MaterialTheme.colorScheme.onSurface
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                val backgroundColor = if (day.date == LocalDate.now()) {
+                    MaterialTheme.colorScheme.secondaryContainer
+                } else {
+                    Color.Transparent
+                }
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
-                        .padding(2.dp)
+                        .padding(4.dp)
+                        .clip(CircleShape)
+                        .background(backgroundColor)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
                             selectedEvents = dayEvents
                             showDialog = true
@@ -120,7 +160,8 @@ private fun KizCalendarScreen() {
                 ) {
                     Text(
                         text = day.date.dayOfMonth.toString(),
-                        color = if (dayEvents.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        color = textColor,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                     if (dayEvents.isNotEmpty()) {
                         Box(
