@@ -51,6 +51,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.ui.graphics.Color
 import com.example.multi.ui.theme.CalendarBlue
+import com.example.multi.ui.theme.CalendarMonthBg
+import com.example.multi.ui.theme.CalendarTodayBg
+import com.example.multi.ui.theme.CalendarTodayBorder
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -127,16 +130,16 @@ private fun KizCalendarScreen() {
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .background(
-                        if (isCurrentMonthVisible) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                        RoundedCornerShape(8.dp)
+                        if (isCurrentMonthVisible) CalendarMonthBg else MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(12.dp)
                     )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
                     text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
                     style = MaterialTheme.typography.titleLarge,
                     textAlign = TextAlign.Center,
-                    color = if (isCurrentMonthVisible) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                    color = if (isCurrentMonthVisible) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -167,7 +170,9 @@ private fun KizCalendarScreen() {
         }
 
         HorizontalCalendar(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(420.dp),
             state = state,
             dayContent = { day ->
                 val dayEvents = events.filter { it.date == day.date.toString() }
@@ -179,7 +184,7 @@ private fun KizCalendarScreen() {
                 }
                 val isToday = day.date == java.time.LocalDate.now()
                 val bgColor = when {
-                    isToday -> MaterialTheme.colorScheme.secondaryContainer
+                    isToday -> CalendarTodayBg
                     dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primaryContainer
                     else -> Color.Transparent
                 }
@@ -191,18 +196,18 @@ private fun KizCalendarScreen() {
                             when {
                                 isToday -> Modifier.border(
                                     width = 2.dp,
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    shape = RoundedCornerShape(4.dp)
+                                    color = CalendarTodayBorder,
+                                    shape = RoundedCornerShape(8.dp)
                                 )
                                 isCurrentMonth -> Modifier.border(
                                     width = 1.dp,
                                     color = MaterialTheme.colorScheme.outline,
-                                    shape = RoundedCornerShape(4.dp)
+                                    shape = RoundedCornerShape(8.dp)
                                 )
                                 else -> Modifier
                             }
                         )
-                        .background(bgColor, RoundedCornerShape(4.dp))
+                        .background(bgColor, RoundedCornerShape(8.dp))
                         .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
                             selectedEvents = dayEvents
@@ -212,13 +217,13 @@ private fun KizCalendarScreen() {
                 ) {
                     Text(
                         text = day.date.dayOfMonth.toString(),
-                        color = if (isToday) MaterialTheme.colorScheme.onSecondaryContainer else textColor,
+                        color = if (isToday) MaterialTheme.colorScheme.onSurface else textColor,
                         style = MaterialTheme.typography.bodyMedium
                     )
                     if (dayEvents.isNotEmpty()) {
                         Box(
                             modifier = Modifier
-                                .size(6.dp)
+                                .size(8.dp)
                                 .align(Alignment.BottomCenter)
                                 .background(MaterialTheme.colorScheme.primary, CircleShape)
                         )
