@@ -14,13 +14,20 @@ import java.time.YearMonth
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.getValue
@@ -91,12 +98,29 @@ private fun KizCalendarScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val visibleMonth = state.firstVisibleMonth.yearMonth
-        Text(
-            text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(vertical = 8.dp),
-            textAlign = TextAlign.Center
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = {
+                scope.launch { state.animateScrollToMonth(visibleMonth.minusMonths(1)) }
+            }) {
+                Icon(Icons.Default.ChevronLeft, contentDescription = "Previous month")
+            }
+            Text(
+                text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center
+            )
+            IconButton(onClick = {
+                scope.launch { state.animateScrollToMonth(visibleMonth.plusMonths(1)) }
+            }) {
+                Icon(Icons.Default.ChevronRight, contentDescription = "Next month")
+            }
+        }
 
         Row(modifier = Modifier.fillMaxWidth()) {
             for (day in daysOfWeekOrdered) {
@@ -121,16 +145,16 @@ private fun KizCalendarScreen() {
                     isCurrentMonth -> MaterialTheme.colorScheme.onSurface
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
-                val bgColor = if (dayEvents.isNotEmpty()) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    androidx.compose.ui.graphics.Color.Transparent
-                }
+                val bgColor = androidx.compose.ui.graphics.Color.Transparent
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(2.dp)
                         .background(bgColor, CircleShape)
+                        .then(if (isCurrentMonth) Modifier.border(
+                            BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                            CircleShape
+                        ) else Modifier)
                         .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
                             selectedEvents = dayEvents
