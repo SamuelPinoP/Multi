@@ -32,6 +32,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.time.DayOfWeek
@@ -45,6 +47,8 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.data.toEntity
 import androidx.compose.ui.draw.alpha
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.ui.graphics.Color
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -91,11 +95,15 @@ private fun KizCalendarScreen() {
     val sheetState = rememberModalBottomSheetState()
     var editingEvent by remember { mutableStateOf<Event?>(null) }
     val scope = rememberCoroutineScope()
+    var creatingEvent by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         val visibleMonth = state.firstVisibleMonth.yearMonth
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -112,11 +120,23 @@ private fun KizCalendarScreen() {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous month")
             }
 
-            Text(
-                text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center
-            )
+            val isCurrentMonthVisible = visibleMonth == currentMonth
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .background(
+                        if (isCurrentMonthVisible) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                        RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    color = if (isCurrentMonthVisible) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                )
+            }
 
             IconButton(onClick = {
                 scope.launch {
@@ -150,21 +170,30 @@ private fun KizCalendarScreen() {
                     isCurrentMonth -> MaterialTheme.colorScheme.onSurface
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
-                val bgColor = if (dayEvents.isNotEmpty()) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    androidx.compose.ui.graphics.Color.Transparent
+                val isToday = day.date == java.time.LocalDate.now()
+                val bgColor = when {
+                    isToday -> MaterialTheme.colorScheme.secondaryContainer
+                    dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primaryContainer
+                    else -> Color.Transparent
                 }
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(2.dp)
                         .then(
-                            if (isCurrentMonth) Modifier.border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.outline,
-                                shape = CircleShape
-                            ) else Modifier
+                            when {
+                                isToday -> Modifier.border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    shape = CircleShape
+                                )
+                                isCurrentMonth -> Modifier.border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline,
+                                    shape = CircleShape
+                                )
+                                else -> Modifier
+                            }
                         )
                         .background(bgColor, CircleShape)
                         .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
@@ -176,7 +205,7 @@ private fun KizCalendarScreen() {
                 ) {
                     Text(
                         text = day.date.dayOfMonth.toString(),
-                        color = textColor,
+                        color = if (isToday) MaterialTheme.colorScheme.onSecondaryContainer else textColor,
                         style = MaterialTheme.typography.bodyMedium
                     )
                     if (dayEvents.isNotEmpty()) {
@@ -190,6 +219,31 @@ private fun KizCalendarScreen() {
                 }
             }
         )
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ExtendedFloatingActionButton(
+                onClick = { creatingEvent = true },
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Add Event") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+            ExtendedFloatingActionButton(
+                onClick = {
+                    context.startActivity(android.content.Intent(context, EventsActivity::class.java))
+                },
+                icon = { Icon(Icons.Default.Event, contentDescription = null) },
+                text = { Text("My Events") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        }
 
         if (showDialog) {
             ModalBottomSheet(
@@ -226,6 +280,24 @@ private fun KizCalendarScreen() {
                     ) { Text("Close") }
                 }
             }
+        }
+
+        if (creatingEvent) {
+            EventDialog(
+                initial = Event(0L, "", ""),
+                onDismiss = { creatingEvent = false },
+                onSave = { title, desc, date ->
+                    creatingEvent = false
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).eventDao()
+                        val id = withContext(Dispatchers.IO) {
+                            dao.insert(Event(title = title, description = desc, date = date).toEntity())
+                        }
+                        events.add(Event(id, title, desc, date))
+                        context.startActivity(android.content.Intent(context, EventsActivity::class.java))
+                    }
+                }
+            )
         }
 
         editingEvent?.let { event ->
