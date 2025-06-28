@@ -1,9 +1,10 @@
 /*
 There is a lot of work to do now!
 
--5- I want the add new event Button to be there to. Also a Button that says go to Events.
-
--4- I want the current day and month in the Events in Calendar to be Highlighted.
+-4- Make sure July 4, Presidents Day. The super Bowl and every other event such as formula races or 
+any other marked famous date and relevant event is in the Calendar plus any additions. Boost the 
+feature of creating custom Events. So I make sure people enjoy their lives and use their time with 
+their families because that is the kind of app I would use.
 
 -3- Improving UI of Events in Calendar. If I choose every tuesday, then I want every tuesday to be 
 marked in the Calendar. 
@@ -22,9 +23,11 @@ will be marked.
 Maybe add options to customize the workout such as adding a specific workout of calestenics to the
 day. Think it further. Or even more. The user can create constraints such as only natural exercises. 
 No legs workout, no cardio, or only weight lifting.
-2- Make sure the notes application can copy and paste columns and rows as desired and also add
-highlighted text in different colors as well as adding divisions between lines and segments.
+
+2- Add highlighted text in different colors as well as adding divisions between lines and segments.
+
 3- Add notifications for the Events we have.
+
 4- Add feature of having a notification about daily activities. The user can click progress without
 entering the app. As a Remainder, only for active users.
 
@@ -37,6 +40,7 @@ note or an existing one or even multiple of them. I must select the event first 
 There is a lot of work to do in the future!
 
 1- Launch the Notes app as a separate lightweight app.
+
 2- Implement the desired Calendar View API to the Weekly Goals Record.
 
 */
