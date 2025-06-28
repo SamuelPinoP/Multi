@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -50,6 +51,7 @@ import com.example.multi.data.toEntity
 import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -98,11 +100,20 @@ private fun KizCalendarScreen() {
     val scope = rememberCoroutineScope()
     var creatingEvent by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        ElevatedCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
         val visibleMonth = state.firstVisibleMonth.yearMonth
@@ -121,21 +132,22 @@ private fun KizCalendarScreen() {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous month")
             }
 
-            val isCurrentMonthVisible = visibleMonth == currentMonth
+            val headerGradient = Brush.horizontalGradient(
+                listOf(
+                    MaterialTheme.colorScheme.primaryContainer,
+                    MaterialTheme.colorScheme.secondaryContainer
+                )
+            )
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .background(
-                        if (isCurrentMonthVisible) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                        RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .background(headerGradient, RoundedCornerShape(16.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
                     text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     textAlign = TextAlign.Center,
-                    color = if (isCurrentMonthVisible) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
 
@@ -154,7 +166,7 @@ private fun KizCalendarScreen() {
                     text = day.getDisplayName(TextStyle.SHORT, locale),
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -212,7 +224,7 @@ private fun KizCalendarScreen() {
                     if (dayEvents.isNotEmpty()) {
                         Box(
                             modifier = Modifier
-                                .size(6.dp)
+                                .size(8.dp)
                                 .align(Alignment.BottomCenter)
                                 .background(MaterialTheme.colorScheme.primary, CircleShape)
                         )
@@ -220,6 +232,7 @@ private fun KizCalendarScreen() {
                 }
             }
         )
+        }
         }
 
         Row(
