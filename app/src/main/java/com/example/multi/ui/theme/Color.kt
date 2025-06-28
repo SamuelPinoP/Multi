@@ -16,3 +16,12 @@ val Pink40 = Color(0xFF7D5260)
 
 /** Blue used for highlighting days of week */
 val CalendarBlue = Color(0xFF1976D2)
+
+/** Gradient start color for calendar headers */
+val CalendarHeaderStart = Color(0xFF64B5F6)
+
+/** Gradient end color for calendar headers */
+val CalendarHeaderEnd = Color(0xFF2196F3)
+
+/** Accent color for today's border */
+val CalendarTodayBorder = Color(0xFFFF9800)
