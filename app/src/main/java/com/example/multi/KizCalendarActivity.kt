@@ -45,6 +45,9 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.data.toEntity
 import androidx.compose.ui.draw.alpha
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.ButtonDefaults
+import android.content.Intent
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -90,8 +93,10 @@ private fun KizCalendarScreen() {
     var showDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     var editingEvent by remember { mutableStateOf<Event?>(null) }
+    var creating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -112,10 +117,12 @@ private fun KizCalendarScreen() {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous month")
             }
 
+            val isCurrent = visibleMonth == currentMonth
             Text(
                 text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
                 style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
 
             IconButton(onClick = {
@@ -145,22 +152,28 @@ private fun KizCalendarScreen() {
             dayContent = { day ->
                 val dayEvents = events.filter { it.date == day.date.toString() }
                 val isCurrentMonth = day.position == DayPosition.MonthDate
+                val isToday = day.date == java.time.LocalDate.now()
                 val textColor = when {
                     dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primary
+                    isToday -> MaterialTheme.colorScheme.onPrimary
                     isCurrentMonth -> MaterialTheme.colorScheme.onSurface
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
-                val bgColor = if (dayEvents.isNotEmpty()) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    androidx.compose.ui.graphics.Color.Transparent
+                val bgColor = when {
+                    dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primaryContainer
+                    isToday -> MaterialTheme.colorScheme.secondaryContainer
+                    else -> androidx.compose.ui.graphics.Color.Transparent
                 }
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(2.dp)
                         .then(
-                            if (isCurrentMonth) Modifier.border(
+                            if (isToday) Modifier.border(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.secondary,
+                                shape = CircleShape
+                            ) else if (isCurrentMonth) Modifier.border(
                                 width = 1.dp,
                                 color = MaterialTheme.colorScheme.outline,
                                 shape = CircleShape
@@ -236,11 +249,20 @@ private fun KizCalendarScreen() {
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date)
-                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                        val idx = events.indexOfFirst { it.id == event.id }
-                        if (idx >= 0) {
-                            events[idx] = updated
+                        if (creating) {
+                            val id = withContext(Dispatchers.IO) {
+                                dao.insert(Event(title = title, description = desc, date = date).toEntity())
+                            }
+                            events.add(Event(id, title, desc, date))
+                            creating = false
+                            context.startActivity(Intent(context, EventsActivity::class.java))
+                        } else {
+                            val updated = Event(event.id, title, desc, date)
+                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                            val idx = events.indexOfFirst { it.id == event.id }
+                            if (idx >= 0) {
+                                events[idx] = updated
+                            }
                         }
                     }
                 },
@@ -255,6 +277,32 @@ private fun KizCalendarScreen() {
                         }
                     }
                 }
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    context.startActivity(Intent(context, EventsActivity::class.java))
+                },
+                text = { Text("My Events") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+
+            ExtendedFloatingActionButton(
+                onClick = {
+                    creating = true
+                    editingEvent = Event(0L, "", "", null)
+                },
+                text = { Text("Create Event") },
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary
             )
         }
     }
