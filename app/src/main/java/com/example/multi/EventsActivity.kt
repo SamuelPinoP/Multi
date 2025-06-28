@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Bundle
 
 import androidx.compose.foundation.clickable
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -24,6 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -90,6 +93,10 @@ private fun EventsScreen(initialDate: String? = null) {
             itemsIndexed(events) { index, event ->
                 ElevatedCard(
                     elevation = CardDefaults.elevatedCardElevation(),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { editingIndex = index }
@@ -156,6 +163,19 @@ private fun EventsScreen(initialDate: String? = null) {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 68.dp, end = 16.dp)
+        )
+
+        ExtendedFloatingActionButton(
+            onClick = {
+                context.startActivity(Intent(context, KizCalendarActivity::class.java))
+            },
+            icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+            text = { Text("Calendar") },
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onSecondary,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(bottom = 68.dp, start = 16.dp)
         )
 
         val index = editingIndex

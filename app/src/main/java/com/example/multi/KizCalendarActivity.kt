@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -99,10 +100,19 @@ private fun KizCalendarScreen() {
     var creatingEvent by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        ElevatedCard(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.TopCenter)
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.TopCenter),
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
         val visibleMonth = state.firstVisibleMonth.yearMonth
@@ -126,10 +136,10 @@ private fun KizCalendarScreen() {
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .background(
-                        if (isCurrentMonthVisible) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                        RoundedCornerShape(8.dp)
+                        if (isCurrentMonthVisible) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(12.dp)
                     )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
@@ -220,6 +230,7 @@ private fun KizCalendarScreen() {
                 }
             }
         )
+        }
         }
 
         Row(
