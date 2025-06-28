@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -148,14 +149,19 @@ private fun KizCalendarScreen() {
             }
         }
 
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF1565C0), RoundedCornerShape(8.dp))
+                .padding(vertical = 4.dp)
+        ) {
             for (day in daysOfWeekOrdered) {
                 Text(
                     text = day.getDisplayName(TextStyle.SHORT, locale),
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = Color.White
                 )
             }
         }
@@ -186,17 +192,17 @@ private fun KizCalendarScreen() {
                                 isToday -> Modifier.border(
                                     width = 2.dp,
                                     color = MaterialTheme.colorScheme.secondary,
-                                    shape = CircleShape
+                                    shape = RoundedCornerShape(4.dp)
                                 )
                                 isCurrentMonth -> Modifier.border(
                                     width = 1.dp,
                                     color = MaterialTheme.colorScheme.outline,
-                                    shape = CircleShape
+                                    shape = RoundedCornerShape(4.dp)
                                 )
                                 else -> Modifier
                             }
                         )
-                        .background(bgColor, CircleShape)
+                        .background(bgColor, RoundedCornerShape(4.dp))
                         .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
                             selectedEvents = dayEvents
