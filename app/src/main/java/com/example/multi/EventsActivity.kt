@@ -24,6 +24,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -42,6 +43,8 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.KizCalendarActivity
+import android.content.Intent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -144,19 +147,32 @@ private fun EventsScreen(initialDate: String? = null) {
             )
         }
 
-        ExtendedFloatingActionButton(
-            onClick = {
-                newDate = null
-                editingIndex = -1
-            },
-            icon = { Icon(Icons.Default.Add, contentDescription = null) },
-            text = { Text("Add Event") },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = 68.dp, end = 16.dp)
-        )
+                .padding(bottom = 68.dp, end = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    newDate = null
+                    editingIndex = -1
+                },
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Add Event") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+            ExtendedFloatingActionButton(
+                onClick = {
+                    context.startActivity(Intent(context, KizCalendarActivity::class.java))
+                },
+                icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+                text = { Text("Calendar") },
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary
+            )
+        }
 
         val index = editingIndex
         if (index != null) {

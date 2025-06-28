@@ -18,6 +18,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
@@ -25,6 +26,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -98,13 +100,30 @@ private fun KizCalendarScreen() {
     val scope = rememberCoroutineScope()
     var creatingEvent by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            )
+    ) {
+        ElevatedCard(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(16.dp)
                 .align(Alignment.TopCenter),
-            horizontalAlignment = Alignment.CenterHorizontally
+            colors = CardDefaults.elevatedCardColors(),
+            shape = RoundedCornerShape(24.dp)
         ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
         val visibleMonth = state.firstVisibleMonth.yearMonth
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -177,6 +196,7 @@ private fun KizCalendarScreen() {
                     dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primaryContainer
                     else -> Color.Transparent
                 }
+                val cellShape = RoundedCornerShape(8.dp)
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
@@ -186,17 +206,17 @@ private fun KizCalendarScreen() {
                                 isToday -> Modifier.border(
                                     width = 2.dp,
                                     color = MaterialTheme.colorScheme.secondary,
-                                    shape = CircleShape
+                                    shape = cellShape
                                 )
                                 isCurrentMonth -> Modifier.border(
                                     width = 1.dp,
                                     color = MaterialTheme.colorScheme.outline,
-                                    shape = CircleShape
+                                    shape = cellShape
                                 )
                                 else -> Modifier
                             }
                         )
-                        .background(bgColor, CircleShape)
+                        .background(bgColor, cellShape)
                         .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
                         .clickable(enabled = dayEvents.isNotEmpty()) {
                             selectedEvents = dayEvents
