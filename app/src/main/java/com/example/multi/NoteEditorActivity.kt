@@ -11,6 +11,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
@@ -91,6 +97,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
+            val scrollState = rememberScrollState()
+            val headerBringIntoView = remember { BringIntoViewRequester() }
+            val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(currentText) }
             var textSize by remember { mutableIntStateOf(20) }
@@ -131,10 +140,17 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
             }
 
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)) {
-                Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .imePadding()
+                ) {
                     Text(
                         text = "Created: ${noteCreated.toDateString()}",
                         style = MaterialTheme.typography.labelSmall
@@ -167,7 +183,15 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             },
                             enabled = !readOnly,
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .bringIntoViewRequester(headerBringIntoView)
+                                .onFocusEvent {
+                                    if (it.isFocused) {
+                                        scope.launch {
+                                            headerBringIntoView.bringIntoView()
+                                        }
+                                    }
+                                },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
@@ -198,7 +222,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 saved = false
                             },
                             enabled = !readOnly,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .bringIntoViewRequester(textBringIntoView)
+                                .onFocusEvent {
+                                    if (it.isFocused) {
+                                        scope.launch {
+                                            textBringIntoView.bringIntoView()
+                                        }
+                                    }
+                                },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
