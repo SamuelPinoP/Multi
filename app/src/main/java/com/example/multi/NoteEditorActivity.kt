@@ -40,7 +40,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -57,6 +59,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+import android.content.SharedPreferences
 
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
@@ -74,8 +77,11 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var currentHeader: String = ""
     private var currentText: String = ""
     private var saved = false
+    private var currentScroll: Int = 0
+    private lateinit var prefs: SharedPreferences
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        prefs = getSharedPreferences("note_prefs", MODE_PRIVATE)
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
         noteCreated = intent.getLongExtra(EXTRA_NOTE_CREATED, noteCreated)
         noteDeleted = intent.getLongExtra(EXTRA_NOTE_DELETED, 0L)
@@ -83,6 +89,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
         noteLastOpened = System.currentTimeMillis()
+        if (noteId != 0L) {
+            currentScroll = prefs.getInt("scroll_$noteId", 0)
+        }
         if (noteId != 0L && !readOnly) {
             lifecycleScope.launch {
                 val dao = EventDatabase.getInstance(this@NoteEditorActivity).noteDao()
@@ -98,7 +107,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val scrollState = rememberScrollState()
+            val scrollState = rememberScrollState(initial = currentScroll)
+            var viewportHeight by remember { mutableIntStateOf(0) }
             val headerBringIntoView = remember { BringIntoViewRequester() }
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
@@ -106,6 +116,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var textSize by remember { mutableIntStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
+
+            LaunchedEffect(scrollState.value) { currentScroll = scrollState.value }
+            val pageCount by derivedStateOf {
+                val vh = viewportHeight
+                if (vh == 0) 1 else ((scrollState.maxValue + vh) / vh)
+            }
+            val currentPage by derivedStateOf {
+                val vh = viewportHeight
+                if (vh == 0) 1 else (scrollState.value / vh) + 1
+            }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
@@ -145,6 +165,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
+                    .onSizeChanged { viewportHeight = it.height }
             ) {
                 Column(
                     modifier = Modifier
@@ -362,12 +383,24 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         )
                     }
                 }
+
+                Text(
+                    text = "Page $currentPage / $pageCount",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.BottomCenter)
+                        .padding(bottom = if (!readOnly) 120.dp else 16.dp)
+                )
             }
         }
     }
 
     override fun onStop() {
         super.onStop()
+        if (noteId != 0L) {
+            prefs.edit().putInt("scroll_$noteId", currentScroll).apply()
+        }
         val text = currentText.trim()
         val header = currentHeader.trim()
         if (!readOnly && !saved && (text.isNotEmpty() || header.isNotEmpty())) {
