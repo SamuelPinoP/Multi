@@ -152,7 +152,6 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(scrollState)
                         .imePadding()
                 ) {
                     Text(
@@ -228,6 +227,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             enabled = !readOnly,
                             modifier = Modifier
                                 .fillMaxSize()
+                                .verticalScroll(scrollState)
                                 .bringIntoViewRequester(textBringIntoView)
                                 .onFocusEvent {
                                     if (it.isFocused) {
@@ -341,7 +341,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     val totalLines = headerState.value.lines().size + textState.value.lines().size
                     val totalPages = ((totalLines - 1) / 20) + 1
                     val lineHeightPx = with(density) { (textSize.sp * 1.5f).toPx() }
-                    val currentPage = ((scrollState.value / (lineHeightPx * 20)).toInt() + 1).coerceIn(1, totalPages)
+                    val headerHeightPx = headerState.value.lines().size * lineHeightPx
+                    val currentPage = (((scrollState.value + headerHeightPx) / (lineHeightPx * 20)).toInt() + 1).coerceIn(1, totalPages)
 
                     Surface(
                         modifier = Modifier
