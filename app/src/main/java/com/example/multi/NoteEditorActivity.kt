@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
@@ -25,13 +26,13 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -242,15 +243,40 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             )
                         )
                     }
-                }
+            }
+
+            val density = LocalDensity.current
+            val lineHeightPx = with(density) { textSize.sp.toPx() * 1.3f }
+            val totalLines = remember(headerState.value, textState.value) {
+                headerState.value.lines().size + textState.value.lines().size
+            }
+            val pageCount = (totalLines + 19) / 20
+            val pageHeightPx = lineHeightPx * 20
+            val currentPage = ((scrollState.value / pageHeightPx).toInt() + 1).coerceIn(1, pageCount)
+
+            Surface(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                tonalElevation = 3.dp,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            ) {
+                Text(
+                    text = "$currentPage/$pageCount",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
 
 
-                if (!readOnly) {
-                    Row(
-                        modifier = Modifier
-                            .align(androidx.compose.ui.Alignment.BottomCenter)
-                            .padding(bottom = 80.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+            if (!readOnly) {
+                Row(
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.BottomCenter)
+                        .padding(bottom = 80.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         if (noteId != 0L) {
                             FloatingActionButton(
