@@ -1,9 +1,13 @@
 /*
 There is a lot of work to do now!
 
-Now!!! I need to display the page number. I need to have the notes open in the exact page and point
-I close. If I was in the 5th page, second paragraph then when I reopen, I will be in the fifth page
-in that paragraph.
+Now!!! I need to display the page number for each page in the Notes. I need to have the notes open 
+in the exact page and point I close. If I was in the 5th page, second paragraph then when I reopen, 
+I will be in the fifth page in that paragraph.
+
+-12- Whenever I cut something it must be removed from the note asap. Currently when I cut something
+the note still keeps it. If the note becomes empty when I cut the text then the note must be
+automatically deleted.
 
 -11- Make it so that the note can be shared as a text file too.
 
@@ -21,10 +25,6 @@ Then put another note under. Like parent and child. They will look like blocks a
 organize them as he pleases, and also freely resize them. It will be precisely good for project 
 management.
 
-
--7- Whenever I cut something it must be removed from the note asap. Currently when I cut something
-the note still keeps it. If the note becomes empty when I cut the text then the note must be 
-automatically deleted.
 
 -6- I need to add the share button for PDF and Word next to trash and new note. The button must be
 beautiful. I must be able to select several notes and share all of them and not just 1.
