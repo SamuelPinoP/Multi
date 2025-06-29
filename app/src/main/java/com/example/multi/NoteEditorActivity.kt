@@ -1,5 +1,6 @@
 package com.example.multi
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +21,6 @@ import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
-import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -92,6 +92,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         super.onCreate(savedInstanceState)
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     override fun SegmentContent() {
         Surface(modifier = Modifier.fillMaxSize()) {

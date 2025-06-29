@@ -21,13 +21,6 @@ Then put another note under. Like parent and child. They will look like blocks a
 organize them as he pleases, and also freely resize them. It will be precisely good for project 
 management.
 
--8- Fix keyboard covering part of the note. It will be fixed by scrolling up the note until it is 
-not covered by the keyboard.
-
-Maybe this is necessary:
-It will be fixed by adding three empty pages to every note after 
-creating it, so I can scroll if the keyboard is covering my line. If I scroll to the third page of 
-my note and write something then the program will automatically create three more pages under that one.
 
 -7- Whenever I cut something it must be removed from the note asap. Currently when I cut something
 the note still keeps it. If the note becomes empty when I cut the text then the note must be 
