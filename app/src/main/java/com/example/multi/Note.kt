@@ -6,5 +6,6 @@ data class Note(
     var header: String = "",
     var content: String,
     var created: Long = System.currentTimeMillis(),
-    var lastOpened: Long = System.currentTimeMillis()
+    var lastOpened: Long = System.currentTimeMillis(),
+    var scroll: Int = 0
 )

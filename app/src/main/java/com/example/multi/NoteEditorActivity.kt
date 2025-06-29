@@ -36,12 +36,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -57,6 +61,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
@@ -64,12 +69,14 @@ const val EXTRA_NOTE_CREATED = "extra_note_created"
 const val EXTRA_NOTE_HEADER = "extra_note_header"
 const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
 const val EXTRA_NOTE_DELETED = "extra_note_deleted"
+const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
     private var noteCreated: Long = System.currentTimeMillis()
     private var noteLastOpened: Long = System.currentTimeMillis()
     private var noteDeleted: Long = 0L
+    private var noteScroll: Int = 0
     private var readOnly: Boolean = false
     private var currentHeader: String = ""
     private var currentText: String = ""
@@ -82,6 +89,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         readOnly = intent.getBooleanExtra(EXTRA_NOTE_READ_ONLY, false)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        noteScroll = intent.getIntExtra(EXTRA_NOTE_SCROLL, 0)
         noteLastOpened = System.currentTimeMillis()
         if (noteId != 0L && !readOnly) {
             lifecycleScope.launch {
@@ -98,7 +106,12 @@ class NoteEditorActivity : SegmentActivity("Note") {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val scrollState = rememberScrollState()
+            val scrollState = rememberScrollState(initial = noteScroll)
+            val density = LocalDensity.current
+            val configuration = LocalConfiguration.current
+            val pageHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
+            val currentPage by remember { derivedStateOf { (scrollState.value / pageHeightPx).toInt() + 1 } }
+            val totalPages by remember { derivedStateOf { (scrollState.maxValue / pageHeightPx).toInt() + 1 } }
             val headerBringIntoView = remember { BringIntoViewRequester() }
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
@@ -120,7 +133,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     header = formattedHeader,
                                     content = formattedContent,
                                     created = noteCreated,
-                                    lastOpened = noteLastOpened
+                                    lastOpened = noteLastOpened,
+                                    scroll = noteScroll
                                 ).toEntity()
                             )
                         } else {
@@ -130,7 +144,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     header = formattedHeader,
                                     content = formattedContent,
                                     created = noteCreated,
-                                    lastOpened = noteLastOpened
+                                    lastOpened = noteLastOpened,
+                                    scroll = noteScroll
                                 ).toEntity()
                             )
                         }
@@ -139,6 +154,10 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     currentHeader = headerState.value
                     currentText = textState.value
                 }
+            }
+
+            LaunchedEffect(scrollState) {
+                snapshotFlow { scrollState.value }.collectLatest { noteScroll = it }
             }
 
             Box(
@@ -244,6 +263,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     }
                 }
 
+                Text(
+                    text = "Page $currentPage of $totalPages",
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = if (readOnly) 16.dp else 96.dp),
+                    style = MaterialTheme.typography.labelMedium
+                )
 
                 if (!readOnly) {
                     Row(
@@ -263,7 +289,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             header = currentHeader,
                                             content = currentText,
                                             created = noteCreated,
-                                            lastOpened = noteLastOpened
+                                            lastOpened = noteLastOpened,
+                                            scroll = noteScroll
                                         )
                                         db.trashedNoteDao().insert(
                                             TrashedNote(
@@ -312,7 +339,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             header = currentHeader,
                                             content = currentText,
                                             created = noteCreated,
-                                            lastOpened = noteLastOpened
+                                            lastOpened = noteLastOpened,
+                                            scroll = noteScroll
                                         )
                                         note.shareAsDocx(context)
                                     }
@@ -326,7 +354,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             header = currentHeader,
                                             content = currentText,
                                             created = noteCreated,
-                                            lastOpened = noteLastOpened
+                                            lastOpened = noteLastOpened,
+                                            scroll = noteScroll
                                         )
                                         note.shareAsPdf(context)
                                     }
@@ -370,33 +399,29 @@ class NoteEditorActivity : SegmentActivity("Note") {
         super.onStop()
         val text = currentText.trim()
         val header = currentHeader.trim()
-        if (!readOnly && !saved && (text.isNotEmpty() || header.isNotEmpty())) {
-            saved = true
-            lifecycleScope.launch(Dispatchers.IO) {
-                val dao = EventDatabase.getInstance(applicationContext).noteDao()
-                val formattedHeader = header.capitalizeSentences()
-                val formattedText = text.capitalizeSentences()
-                if (noteId == 0L) {
-                    dao.insert(
-                        Note(
-                            header = formattedHeader,
-                            content = formattedText,
-                            created = noteCreated,
-                            lastOpened = noteLastOpened
-                        ).toEntity()
-                    )
-                } else {
-                    dao.update(
-                        Note(
-                            id = noteId,
-                            header = formattedHeader,
-                            content = formattedText,
-                            created = noteCreated,
-                            lastOpened = noteLastOpened
-                        ).toEntity()
-                    )
+        if (readOnly) return
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val dao = EventDatabase.getInstance(applicationContext).noteDao()
+            val formattedHeader = header.capitalizeSentences()
+            val formattedText = text.capitalizeSentences()
+            val note = Note(
+                id = noteId,
+                header = formattedHeader,
+                content = formattedText,
+                created = noteCreated,
+                lastOpened = noteLastOpened,
+                scroll = noteScroll
+            )
+
+            if (noteId == 0L) {
+                if (formattedHeader.isNotEmpty() || formattedText.isNotEmpty()) {
+                    noteId = dao.insert(note.toEntity())
                 }
+            } else {
+                dao.update(note.toEntity())
             }
         }
+        saved = true
     }
 }
