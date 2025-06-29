@@ -38,12 +38,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
@@ -106,6 +111,21 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var textSize by remember { mutableIntStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
+            val textLayoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+            val pageInfo by remember(scrollState.value, textLayoutResult.value) {
+                derivedStateOf {
+                    val lines = textLayoutResult.value?.lineCount ?: 0
+                    val totalPages = if (lines == 0) 1 else ((lines - 1) / 20) + 1
+                    val lineHeight = textLayoutResult.value?.getLineBottom(0)?.minus(
+                        textLayoutResult.value?.getLineTop(0) ?: 0f
+                    ) ?: 0f
+                    val currentPage = if (lineHeight > 0f) {
+                        ((scrollState.value / (lineHeight * 20)).toInt() + 1)
+                            .coerceIn(1, totalPages)
+                    } else 1
+                    currentPage to totalPages
+                }
+            }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
@@ -239,11 +259,27 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             ),
                             keyboardOptions = KeyboardOptions.Default.copy(
                                 capitalization = KeyboardCapitalization.Sentences
-                            )
+                            ),
+                            onTextLayout = { textLayoutResult.value = it }
                         )
                     }
                 }
 
+
+                val (currentPage, totalPages) = pageInfo
+                Text(
+                    text = "$currentPage/$totalPages",
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.BottomCenter)
+                        .padding(bottom = if (!readOnly) 16.dp else 16.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.titleMedium
+                )
 
                 if (!readOnly) {
                     Row(
