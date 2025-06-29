@@ -6,5 +6,7 @@ data class Note(
     var header: String = "",
     var content: String,
     var created: Long = System.currentTimeMillis(),
-    var lastOpened: Long = System.currentTimeMillis()
+    var lastOpened: Long = System.currentTimeMillis(),
+    /** Saved vertical scroll position in pixels. */
+    var scroll: Int = 0
 )

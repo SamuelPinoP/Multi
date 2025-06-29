@@ -86,6 +86,7 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                     intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
                                     intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                     intent.putExtra(EXTRA_NOTE_DELETED, note.deleted)
+                                    intent.putExtra(EXTRA_NOTE_SCROLL, 0)
                                     intent.putExtra(EXTRA_NOTE_READ_ONLY, true)
                                     context.startActivity(intent)
                                 }
