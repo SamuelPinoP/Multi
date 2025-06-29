@@ -32,6 +32,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -106,6 +108,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var textSize by remember { mutableIntStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
+            val density = LocalDensity.current
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
@@ -333,6 +336,26 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 )
                             }
                         }
+                    }
+
+                    val totalLines = headerState.value.lines().size + textState.value.lines().size
+                    val totalPages = ((totalLines - 1) / 20) + 1
+                    val lineHeightPx = with(density) { (textSize.sp * 1.5f).toPx() }
+                    val currentPage = ((scrollState.value / (lineHeightPx * 20)).toInt() + 1).coerceIn(1, totalPages)
+
+                    Surface(
+                        modifier = Modifier
+                            .align(androidx.compose.ui.Alignment.BottomCenter)
+                            .padding(bottom = if (!readOnly) 16.dp else 16.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Text(
+                            text = "$currentPage/$totalPages",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
                     }
 
                     if (showSizeDialog) {
