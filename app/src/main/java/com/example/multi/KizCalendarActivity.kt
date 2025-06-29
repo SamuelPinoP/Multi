@@ -50,8 +50,6 @@ import com.example.multi.data.toEntity
 import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.ui.graphics.Color
-import com.example.multi.ui.theme.CalendarBlue
-import com.example.multi.ui.theme.CalendarMonthBg
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
 
@@ -130,8 +128,8 @@ private fun KizCalendarScreen() {
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .background(
-                        if (isCurrentMonthVisible) CalendarMonthBg else MaterialTheme.colorScheme.surfaceVariant,
-                        RoundedCornerShape(12.dp)
+                        if (isCurrentMonthVisible) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(16.dp)
                     )
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
@@ -139,7 +137,7 @@ private fun KizCalendarScreen() {
                     text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, locale)} ${visibleMonth.year}",
                     style = MaterialTheme.typography.titleLarge,
                     textAlign = TextAlign.Center,
-                    color = if (isCurrentMonthVisible) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isCurrentMonthVisible) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -155,8 +153,8 @@ private fun KizCalendarScreen() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(CalendarBlue, RoundedCornerShape(8.dp))
-                .padding(vertical = 4.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp))
+                .padding(vertical = 6.dp)
         ) {
             for (day in daysOfWeekOrdered) {
                 Text(
@@ -164,7 +162,7 @@ private fun KizCalendarScreen() {
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
