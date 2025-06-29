@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -40,6 +46,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.focus.onFocusChanged
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import androidx.lifecycle.lifecycleScope
@@ -96,6 +103,24 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var textSize by remember { mutableIntStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
+            val scrollState = rememberScrollState()
+            val headerBringIntoView = remember { BringIntoViewRequester() }
+            val textBringIntoView = remember { BringIntoViewRequester() }
+            var headerFocused by remember { mutableStateOf(false) }
+            var textFocused by remember { mutableStateOf(false) }
+
+            LaunchedEffect(headerFocused) {
+                if (headerFocused) {
+                    delay(200)
+                    headerBringIntoView.bringIntoView()
+                }
+            }
+            LaunchedEffect(textFocused) {
+                if (textFocused) {
+                    delay(200)
+                    textBringIntoView.bringIntoView()
+                }
+            }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
@@ -133,8 +158,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
             Box(modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)) {
-                Column(modifier = Modifier.fillMaxSize()) {
+                .padding(16.dp)
+                .imePadding()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                ) {
                     Text(
                         text = "Created: ${noteCreated.toDateString()}",
                         style = MaterialTheme.typography.labelSmall
@@ -167,7 +197,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             },
                             enabled = !readOnly,
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .bringIntoViewRequester(headerBringIntoView)
+                                .onFocusChanged { headerFocused = it.isFocused },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
@@ -198,7 +230,10 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 saved = false
                             },
                             enabled = !readOnly,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .bringIntoViewRequester(textBringIntoView)
+                                .onFocusChanged { textFocused = it.isFocused },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
