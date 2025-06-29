@@ -9,6 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.bringIntoViewRequester
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.verticalScroll
+import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -38,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
@@ -131,9 +137,17 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
             }
 
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)) {
+            val bringHeaderIntoView = remember { BringIntoViewRequester() }
+            val bringContentIntoView = remember { BringIntoViewRequester() }
+            val scrollState = rememberScrollState()
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(scrollState)
+                    .imePadding()
+            ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     Text(
                         text = "Created: ${noteCreated.toDateString()}",
@@ -167,7 +181,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             },
                             enabled = !readOnly,
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .bringIntoViewRequester(bringHeaderIntoView)
+                                .onFocusEvent { focusState ->
+                                    if (focusState.isFocused) {
+                                        scope.launch { bringHeaderIntoView.bringIntoView() }
+                                    }
+                                },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
@@ -198,7 +218,14 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 saved = false
                             },
                             enabled = !readOnly,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .bringIntoViewRequester(bringContentIntoView)
+                                .onFocusEvent { focusState ->
+                                    if (focusState.isFocused) {
+                                        scope.launch { bringContentIntoView.bringIntoView() }
+                                    }
+                                },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
