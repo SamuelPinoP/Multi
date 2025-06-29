@@ -41,6 +41,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -64,6 +68,7 @@ const val EXTRA_NOTE_CREATED = "extra_note_created"
 const val EXTRA_NOTE_HEADER = "extra_note_header"
 const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
 const val EXTRA_NOTE_DELETED = "extra_note_deleted"
+const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -73,6 +78,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var readOnly: Boolean = false
     private var currentHeader: String = ""
     private var currentText: String = ""
+    private var currentScroll: Int = 0
     private var saved = false
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
@@ -82,6 +88,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         readOnly = intent.getBooleanExtra(EXTRA_NOTE_READ_ONLY, false)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        currentScroll = intent.getIntExtra(EXTRA_NOTE_SCROLL, 0)
         noteLastOpened = System.currentTimeMillis()
         if (noteId != 0L && !readOnly) {
             lifecycleScope.launch {
@@ -98,7 +105,14 @@ class NoteEditorActivity : SegmentActivity("Note") {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val scrollState = rememberScrollState()
+            val scrollState = rememberScrollState(initial = currentScroll)
+            LaunchedEffect(Unit) { scrollState.scrollTo(currentScroll) }
+            LaunchedEffect(scrollState.value) { currentScroll = scrollState.value }
+            val configuration = LocalConfiguration.current
+            val density = LocalDensity.current
+            val pageHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
+            val currentPage = ((scrollState.value) / pageHeightPx).toInt() + 1
+            val totalPages = ((scrollState.maxValue) / pageHeightPx).toInt() + 1
             val headerBringIntoView = remember { BringIntoViewRequester() }
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
@@ -120,7 +134,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     header = formattedHeader,
                                     content = formattedContent,
                                     created = noteCreated,
-                                    lastOpened = noteLastOpened
+                                    lastOpened = noteLastOpened,
+                                    scrollPos = currentScroll
                                 ).toEntity()
                             )
                         } else {
@@ -130,7 +145,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     header = formattedHeader,
                                     content = formattedContent,
                                     created = noteCreated,
-                                    lastOpened = noteLastOpened
+                                    lastOpened = noteLastOpened,
+                                    scrollPos = currentScroll
                                 ).toEntity()
                             )
                         }
@@ -263,7 +279,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             header = currentHeader,
                                             content = currentText,
                                             created = noteCreated,
-                                            lastOpened = noteLastOpened
+                                            lastOpened = noteLastOpened,
+                                            scrollPos = currentScroll
                                         )
                                         db.trashedNoteDao().insert(
                                             TrashedNote(
@@ -312,7 +329,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             header = currentHeader,
                                             content = currentText,
                                             created = noteCreated,
-                                            lastOpened = noteLastOpened
+                                            lastOpened = noteLastOpened,
+                                            scrollPos = currentScroll
                                         )
                                         note.shareAsDocx(context)
                                     }
@@ -326,7 +344,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             header = currentHeader,
                                             content = currentText,
                                             created = noteCreated,
-                                            lastOpened = noteLastOpened
+                                            lastOpened = noteLastOpened,
+                                            scrollPos = currentScroll
                                         )
                                         note.shareAsPdf(context)
                                     }
@@ -362,6 +381,19 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         )
                     }
                 }
+
+                Text(
+                    text = "Page $currentPage/$totalPages",
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = if (readOnly) 16.dp else 80.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
         }
     }
@@ -382,7 +414,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = formattedHeader,
                             content = formattedText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            scrollPos = currentScroll
                         ).toEntity()
                     )
                 } else {
@@ -392,7 +425,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = formattedHeader,
                             content = formattedText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            scrollPos = currentScroll
                         ).toEntity()
                     )
                 }

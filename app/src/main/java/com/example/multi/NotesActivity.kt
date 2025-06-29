@@ -91,6 +91,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                     intent.putExtra(EXTRA_NOTE_HEADER, note.header)
                                     intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
                                     intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                    intent.putExtra(EXTRA_NOTE_SCROLL, note.scrollPos)
                                     context.startActivity(intent)
                                 }
                         ) {

@@ -6,5 +6,7 @@ data class Note(
     var header: String = "",
     var content: String,
     var created: Long = System.currentTimeMillis(),
-    var lastOpened: Long = System.currentTimeMillis()
+    var lastOpened: Long = System.currentTimeMillis(),
+    /** Vertical scroll offset when the note was last closed. */
+    var scrollPos: Int = 0
 )
