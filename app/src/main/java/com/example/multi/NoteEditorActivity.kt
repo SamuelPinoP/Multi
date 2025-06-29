@@ -48,6 +48,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.IntOffset
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import androidx.lifecycle.lifecycleScope
@@ -343,6 +344,24 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     val lineHeightPx = with(density) { (textSize.sp * 1.5f).toPx() }
                     val currentPage = ((scrollState.value / (lineHeightPx * 20)).toInt() + 1).coerceIn(1, totalPages)
 
+                    // Draw page markers every 20 lines
+                    for (page in 0 until totalPages) {
+                        Text(
+                            text = "Page ${page + 1}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .align(androidx.compose.ui.Alignment.TopEnd)
+                                .offset {
+                                    IntOffset(
+                                        0,
+                                        ((page * 20 * lineHeightPx) - scrollState.value).toInt()
+                                    )
+                                }
+                                .padding(end = 16.dp)
+                        )
+                    }
+
                     Surface(
                         modifier = Modifier
                             .align(androidx.compose.ui.Alignment.BottomCenter)
@@ -351,7 +370,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         shape = RoundedCornerShape(50)
                     ) {
                         Text(
-                            text = "$currentPage/$totalPages",
+                            text = "Page $currentPage",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
