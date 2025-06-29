@@ -338,26 +338,6 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         }
                     }
 
-                    val totalLines = headerState.value.lines().size + textState.value.lines().size
-                    val totalPages = ((totalLines - 1) / 20) + 1
-                    val lineHeightPx = with(density) { (textSize.sp * 1.5f).toPx() }
-                    val currentPage = ((scrollState.value / (lineHeightPx * 20)).toInt() + 1).coerceIn(1, totalPages)
-
-                    Surface(
-                        modifier = Modifier
-                            .align(androidx.compose.ui.Alignment.BottomCenter)
-                            .padding(bottom = if (!readOnly) 16.dp else 16.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text(
-                            text = "$currentPage/$totalPages",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                        )
-                    }
-
                     if (showSizeDialog) {
                         AlertDialog(
                             onDismissRequest = { showSizeDialog = false },
@@ -384,6 +364,26 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             }
                         )
                     }
+                }
+
+                val totalLines = headerState.value.lines().size + textState.value.lines().size
+                val totalPages = ((totalLines - 1) / 20) + 1
+                val lineHeightPx = with(density) { (textSize.sp * 1.5f).toPx() }
+                val currentPage = ((scrollState.value / (lineHeightPx * 20)).toInt() + 1).coerceIn(1, totalPages)
+
+                Surface(
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.BottomCenter)
+                        .padding(bottom = if (!readOnly) 16.dp else 16.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text(
+                        text = "Page $currentPage",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
                 }
             }
         }
