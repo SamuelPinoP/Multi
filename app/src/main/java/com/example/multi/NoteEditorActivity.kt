@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -96,6 +102,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var textSize by remember { mutableIntStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
+            val scrollState = rememberScrollState()
+            val headerBringIntoViewRequester = remember { BringIntoViewRequester() }
+            val textBringIntoViewRequester = remember { BringIntoViewRequester() }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
@@ -131,10 +140,17 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
             }
 
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)) {
-                Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .imePadding()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                ) {
                     Text(
                         text = "Created: ${noteCreated.toDateString()}",
                         style = MaterialTheme.typography.labelSmall
@@ -167,7 +183,15 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             },
                             enabled = !readOnly,
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .bringIntoViewRequester(headerBringIntoViewRequester)
+                                .onFocusChanged {
+                                    if (it.isFocused) {
+                                        scope.launch {
+                                            headerBringIntoViewRequester.bringIntoView()
+                                        }
+                                    }
+                                },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
@@ -198,7 +222,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 saved = false
                             },
                             enabled = !readOnly,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .bringIntoViewRequester(textBringIntoViewRequester)
+                                .onFocusChanged {
+                                    if (it.isFocused) {
+                                        scope.launch {
+                                            textBringIntoViewRequester.bringIntoView()
+                                        }
+                                    }
+                                },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
