@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
@@ -335,6 +337,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         }
                     }
 
+
                     if (showSizeDialog) {
                         AlertDialog(
                             onDismissRequest = { showSizeDialog = false },
@@ -361,6 +364,28 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             }
                         )
                     }
+
+                }
+                val totalLines = headerState.value.lines().size + textState.value.lines().size
+                val totalPages = ((totalLines + 19) / 20).coerceAtLeast(1)
+                val currentPage = if (scrollState.maxValue == 0) 1 else {
+                    val fraction = scrollState.value.toFloat() / scrollState.maxValue
+                    (fraction * totalPages).toInt() + 1
+                }.coerceIn(1, totalPages)
+
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 16.dp)
+                ) {
+                    Text(
+                        text = "$currentPage/$totalPages",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 }
             }
         }

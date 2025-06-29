@@ -42,3 +42,8 @@ To run unit tests:
 Deleted notes are moved to a temporary trash bin. Items remain there for 30 days
 unless restored or permanently removed earlier.
 
+## Notes Pagination
+
+Notes are paginated in 20-line increments. A rounded indicator at the bottom
+center of the editor shows the current page and total pages like `1/5`.
+

@@ -1,9 +1,7 @@
 /*
 There is a lot of work to do now!
 
-Now!!! I need to display the page number. I need to have the notes open in the exact page and point
-I close. If I was in the 5th page, second paragraph then when I reopen, I will be in the fifth page
-in that paragraph.
+DONE!!! Page number display added. Notes still need to reopen at the exact page and point.
 
 -11- Make it so that the note can be shared as a text file too.
 
