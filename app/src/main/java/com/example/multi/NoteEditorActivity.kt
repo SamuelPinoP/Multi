@@ -244,6 +244,27 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 capitalization = KeyboardCapitalization.Sentences
                             )
                         )
+
+                        val totalLines = headerState.value.lines().size + textState.value.lines().size
+                        val totalPages = ((totalLines - 1) / 20) + 1
+                        val lineHeightPx = with(density) { (textSize.sp * 1.5f).toPx() }
+                        val pageHeight = lineHeightPx * 20
+
+                        for (pageIndex in 0 until totalPages) {
+                            Text(
+                                text = "page ${pageIndex + 1}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .align(androidx.compose.ui.Alignment.TopEnd)
+                                    .padding(end = 8.dp)
+                                    .offset(
+                                        y = with(density) {
+                                            ((pageHeight * pageIndex) - scrollState.value).toDp()
+                                        }
+                                    )
+                            )
+                        }
                     }
                 }
 
