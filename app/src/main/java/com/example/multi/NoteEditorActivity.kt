@@ -41,6 +41,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.toArgb
+import android.graphics.Paint
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -244,6 +247,26 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 capitalization = KeyboardCapitalization.Sentences
                             )
                         )
+
+                        val totalLines = headerState.value.lines().size + textState.value.lines().size
+                        val totalPages = ((totalLines - 1) / 20) + 1
+                        val lineHeightPx = with(density) { (textSize.sp * 1.5f).toPx() }
+                        val labelPaint = remember {
+                            Paint().apply {
+                                isAntiAlias = true
+                                color = MaterialTheme.colorScheme.outline.toArgb()
+                            }
+                        }
+                        labelPaint.textSize = with(density) { 12.sp.toPx() }
+                        Canvas(modifier = Modifier.matchParentSize()) {
+                            val x = size.width - labelPaint.measureText("page $totalPages") - with(density) { 4.dp.toPx() }
+                            for (page in 1..totalPages) {
+                                val y = ((page - 1) * lineHeightPx * 20) + labelPaint.textSize
+                                if (y <= size.height) {
+                                    drawContext.canvas.nativeCanvas.drawText("page $page", x, y, labelPaint)
+                                }
+                            }
+                        }
                     }
                 }
 
