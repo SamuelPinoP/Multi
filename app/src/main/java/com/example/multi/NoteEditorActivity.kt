@@ -338,10 +338,12 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         }
                     }
 
-                    val totalLines = headerState.value.lines().size + textState.value.lines().size
+                    val totalLines = headerState.value.lines().size +
+                        textState.value.lines().size
                     val totalPages = ((totalLines - 1) / 20) + 1
                     val lineHeightPx = with(density) { (textSize.sp * 1.5f).toPx() }
-                    val currentPage = ((scrollState.value / (lineHeightPx * 20)).toInt() + 1).coerceIn(1, totalPages)
+                    val currentLine = (scrollState.value / lineHeightPx).toInt()
+                    val currentPage = (currentLine / 20 + 1).coerceIn(1, totalPages)
 
                     Surface(
                         modifier = Modifier
