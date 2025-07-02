@@ -5,6 +5,29 @@ Now!!! I need to display the page number for each page in the Notes. I need to h
 in the exact page and point I close. If I was in the 5th page, second paragraph then when I reopen, 
 I will be in the fifth page in that paragraph.
 
+-20 Think about having a second view to the notes activity. The medallion will be the view during
+night mode, or the user can change different views, from the current one to the medallion.
+
+-19- Make notes able to add addresses and display google maps.
+
+-18- Create a system that receives an intelligent command such as: Create event on Saturday 12. It
+will be camping with my friends Josh and Mara. Then it will add camping trip as header. Description
+given and the date given.
+
+-17- Allow Voice Notes as notes in multi.
+
+-16- Consider adding a new note button inside each note for users who might want to create a second
+note while writing one. Create a go back button to go back to the previous not and a go forward to 
+go to the next note.
+
+-15- Delete everything 30 days old in the trash when the Notes Activity is opened instead of when
+the trash is opened.
+
+-14- Add dark and light theme
+
+-13- Animation when or pic whenever the events are empty and there are no weekly activities. Instead
+of just having a text no events, add a sleepy bear or something.
+
 -12- Whenever I cut something it must be removed from the note asap. Currently when I cut something
 the note still keeps it. If the note becomes empty when I cut the text then the note must be
 automatically deleted.

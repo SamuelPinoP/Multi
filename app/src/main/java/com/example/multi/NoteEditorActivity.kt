@@ -345,13 +345,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
                     Surface(
                         modifier = Modifier
-                            .align(androidx.compose.ui.Alignment.BottomCenter)
-                            .padding(bottom = if (!readOnly) 16.dp else 16.dp),
+                            .align(androidx.compose.ui.Alignment.TopCenter)
+                            .padding(top = 0.dp),
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
                         shape = RoundedCornerShape(50)
                     ) {
                         Text(
-                            text = "$currentPage/$totalPages",
+                            text = "Page $currentPage/$totalPages",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
