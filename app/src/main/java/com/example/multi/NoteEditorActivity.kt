@@ -209,7 +209,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
                     androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                    Box(modifier = Modifier.weight(1f)) {
+                    Box {
                         if (textState.value.isEmpty()) {
                             Text(
                                 text = "Start writing...",
@@ -227,7 +227,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             },
                             enabled = !readOnly,
                             modifier = Modifier
-                                .fillMaxSize()
+                                .fillMaxWidth()
                                 .bringIntoViewRequester(textBringIntoView)
                                 .onFocusEvent {
                                     if (it.isFocused) {
@@ -244,6 +244,10 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 capitalization = KeyboardCapitalization.Sentences
                             )
                         )
+                    }
+
+                    if (!readOnly) {
+                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
 
