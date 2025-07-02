@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -154,6 +155,23 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         .fillMaxSize()
                         .verticalScroll(scrollState)
                         .imePadding()
+                        .drawBehind {
+                            val pageLines = 20
+                            val lineHeightPx = textSize.sp.toPx() * 1.5f
+                            val totalLines = headerState.value.lines().size + textState.value.lines().size
+                            val pages = (totalLines - 1) / pageLines
+                            for (i in 1..pages) {
+                                val y = i * pageLines * lineHeightPx - scrollState.value
+                                if (y in 0f..size.height) {
+                                    drawLine(
+                                        color = MaterialTheme.colorScheme.outline,
+                                        start = androidx.compose.ui.geometry.Offset(0f, y),
+                                        end = androidx.compose.ui.geometry.Offset(size.width, y),
+                                        strokeWidth = 1.dp.toPx()
+                                    )
+                                }
+                            }
+                        }
                 ) {
                     Text(
                         text = "Created: ${noteCreated.toDateString()}",
