@@ -59,6 +59,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
@@ -109,6 +111,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
             val density = LocalDensity.current
+            val lineColor = MaterialTheme.colorScheme.outlineVariant
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
@@ -154,6 +157,22 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         .fillMaxSize()
                         .verticalScroll(scrollState)
                         .imePadding()
+                        .drawBehind {
+                            val headerLines = headerState.value.lines().size.coerceAtMost(3)
+                            val textLines = textState.value.lines().size
+                            val lineHeight = with(density) { (textSize.sp * 1.5f).toPx() }
+                            val strokeWidth = with(density) { 1.dp.toPx() }
+                            val divisions = (headerLines + textLines) / 20
+                            for (i in 1..divisions) {
+                                val y = (headerLines + i * 20) * lineHeight
+                                drawLine(
+                                    color = lineColor,
+                                    start = Offset(0f, y),
+                                    end = Offset(size.width, y),
+                                    strokeWidth = strokeWidth
+                                )
+                            }
+                        }
                 ) {
                     Text(
                         text = "Created: ${noteCreated.toDateString()}",
