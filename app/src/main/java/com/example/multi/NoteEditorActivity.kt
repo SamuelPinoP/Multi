@@ -2,6 +2,7 @@ package com.example.multi
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,6 +45,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -217,33 +220,57 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        BasicTextField(
-                            value = textState.value,
-                            onValueChange = {
-                                val formatted = it.capitalizeSentences()
-                                textState.value = formatted
-                                currentText = formatted
-                                saved = false
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .bringIntoViewRequester(textBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            textBringIntoView.bringIntoView()
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            BasicTextField(
+                                value = textState.value,
+                                onValueChange = {
+                                    val formatted = it.capitalizeSentences()
+                                    textState.value = formatted
+                                    currentText = formatted
+                                    saved = false
+                                },
+                                enabled = !readOnly,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .bringIntoViewRequester(textBringIntoView)
+                                    .onFocusEvent {
+                                        if (it.isFocused) {
+                                            scope.launch {
+                                                textBringIntoView.bringIntoView()
+                                            }
+                                        }
+                                    },
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = textSize.sp
+                                ),
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                )
+                            )
+                            Canvas(modifier = Modifier.matchParentSize()) {
+                                val headerLines = headerState.value.lines().size
+                                val totalLines = headerLines + textState.value.lines().size
+                                val lineHeight = (textSize.sp * 1.5f).toPx()
+                                val pages = (totalLines - 1) / 20
+                                val dash = 6.dp.toPx()
+                                for (i in 1..pages) {
+                                    val offsetLines = i * 20 - headerLines
+                                    if (offsetLines > 0) {
+                                        val y = offsetLines * lineHeight
+                                        if (y < size.height) {
+                                            drawLine(
+                                                color = MaterialTheme.colorScheme.outlineVariant,
+                                                start = Offset(0f, y),
+                                                end = Offset(size.width, y),
+                                                strokeWidth = 1.dp.toPx(),
+                                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash, dash))
+                                            )
                                         }
                                     }
-                                },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            )
-                        )
+                                }
+                            }
+                        }
                     }
                 }
 
