@@ -17,7 +17,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
@@ -244,6 +246,20 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 capitalization = KeyboardCapitalization.Sentences
                             )
                         )
+
+                        // Draw a divider line every 20 lines of text to indicate page breaks
+                        val dividerColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        Canvas(modifier = Modifier.matchParentSize()) {
+                            val lineHeight = with(density) { (textSize.sp * 1.5f).toPx() }
+                            val pages = textState.value.lines().size / 20
+                            val stroke = 1.dp.toPx()
+                            for (i in 1..pages) {
+                                val y = i * 20 * lineHeight
+                                if (y < size.height) {
+                                    drawLine(dividerColor, Offset(0f, y), Offset(size.width, y), strokeWidth = stroke)
+                                }
+                            }
+                        }
                     }
                 }
 
