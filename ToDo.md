@@ -5,6 +5,10 @@ Now!!! I need to display the page number for each page in the Notes. I need to h
 in the exact page and point I close. If I was in the 5th page, second paragraph then when I reopen, 
 I will be in the fifth page in that paragraph.
 
+-22- The header should be a part of the first page.
+
+-21- Add divisions among pages.
+
 -20 Think about having a second view to the notes activity. The medallion will be the view during
 night mode, or the user can change different views, from the current one to the medallion.
 
