@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TextRange
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
@@ -43,7 +45,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,8 @@ import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsDocx
 import com.example.multi.util.shareAsPdf
+import com.example.multi.util.loadNoteState
+import com.example.multi.util.saveNoteState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -76,6 +79,10 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var currentHeader: String = ""
     private var currentText: String = ""
     private var saved = false
+    private var savedScroll: Int = 0
+    private var savedCursor: Int = 0
+    private var currentScroll: Int = 0
+    private var currentCursor: Int = 0
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
@@ -85,6 +92,12 @@ class NoteEditorActivity : SegmentActivity("Note") {
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
         noteLastOpened = System.currentTimeMillis()
+        loadNoteState(noteId).let {
+            savedScroll = it.first
+            savedCursor = it.second
+            currentScroll = savedScroll
+            currentCursor = savedCursor
+        }
         if (noteId != 0L && !readOnly) {
             lifecycleScope.launch {
                 val dao = EventDatabase.getInstance(this@NoteEditorActivity).noteDao()
@@ -100,23 +113,25 @@ class NoteEditorActivity : SegmentActivity("Note") {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val scrollState = rememberScrollState()
+            val scrollState = rememberScrollState(savedScroll)
             val headerBringIntoView = remember { BringIntoViewRequester() }
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
-            val textState = remember { mutableStateOf(currentText) }
+            val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(savedCursor))) }
+
+            LaunchedEffect(scrollState.value) { currentScroll = scrollState.value }
+            LaunchedEffect(textState.value.selection) { currentCursor = textState.value.selection.start }
             var textSize by remember { mutableIntStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
-            val density = LocalDensity.current
 
-            LaunchedEffect(headerState.value, textState.value) {
-                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
+            LaunchedEffect(headerState.value, textState.value.text) {
+                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
                     delay(500)
                     val dao = EventDatabase.getInstance(context).noteDao()
                     withContext(Dispatchers.IO) {
                         val formattedHeader = headerState.value.trim().capitalizeSentences()
-                        val formattedContent = textState.value.trim().capitalizeSentences()
+                        val formattedContent = textState.value.text.trim().capitalizeSentences()
                         if (noteId == 0L) {
                             noteId = dao.insert(
                                 Note(
@@ -140,7 +155,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     }
                     saved = true
                     currentHeader = headerState.value
-                    currentText = textState.value
+                    currentText = textState.value.text
                 }
             }
 
@@ -210,7 +225,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                     Box(modifier = Modifier.weight(1f)) {
-                        if (textState.value.isEmpty()) {
+                        if (textState.value.text.isEmpty()) {
                             Text(
                                 text = "Start writing...",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
@@ -220,9 +235,11 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         BasicTextField(
                             value = textState.value,
                             onValueChange = {
-                                val formatted = it.capitalizeSentences()
-                                textState.value = formatted
+                                val formatted = it.text.capitalizeSentences()
+                                val newValue = TextFieldValue(formatted, it.selection)
+                                textState.value = newValue
                                 currentText = formatted
+                                currentCursor = newValue.selection.start
                                 saved = false
                             },
                             enabled = !readOnly,
@@ -371,6 +388,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     override fun onStop() {
         super.onStop()
+        saveNoteState(noteId, currentScroll, currentCursor)
         val text = currentText.trim()
         val header = currentHeader.trim()
         if (!readOnly && !saved && (text.isNotEmpty() || header.isNotEmpty())) {
