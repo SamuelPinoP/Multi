@@ -1,15 +1,20 @@
 /*
 There is a lot of work to do now!
 
-Now!!! I need to display the page number for each page in the Notes. I need to have the notes open 
-in the exact page and point I close. If I was in the 5th page, second paragraph then when I reopen, 
-I will be in the fifth page in that paragraph.
+-26- The keyboard still covers some of the note. If I put the cursor in the bottom of the note the
+keyboard doesn't adjust to not cover it until I type something. It should adjust right after I put 
+the cursor there.
+
+-25- When reopening a note, I want the scroll position to automatically adjust so that the line or 
+paragraph where the cursor was last placed appears centered in the visible area of the note editor. 
+Currently, the note opens with the cursor’s position somewhere nearby, but not centered. Please 
+update the behavior so that, upon opening a note, the cursor’s location is always vertically 
+centered in the viewport.
 
 -24- Architecture – Introducing ViewModel and repository layers for notes would better separate UI 
 and data logic.
 
--23- State restoration – Persist scroll position and cursor location so a note reopens exactly where 
-it was closed. Bulk operations – The code currently handles only single-note share/delete; 
+-23- Bulk operations – The code currently handles only single-note share/delete; 
 supporting multi-select would improve usability.
 
 -22- The header should be a part of the first page.
