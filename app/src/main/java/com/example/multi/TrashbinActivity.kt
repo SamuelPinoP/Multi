@@ -149,7 +149,9 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                                         header = note.header,
                                                         content = note.content,
                                                         created = note.created,
-                                                        lastOpened = System.currentTimeMillis()
+                                                        lastOpened = System.currentTimeMillis(),
+                                                        scroll = 0,
+                                                        cursor = 0
                                                     ).toEntity()
                                                 )
                                                 db.trashedNoteDao().delete(note.toEntity())

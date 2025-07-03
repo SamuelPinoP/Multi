@@ -46,6 +46,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TextRange
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
@@ -66,6 +68,8 @@ const val EXTRA_NOTE_CREATED = "extra_note_created"
 const val EXTRA_NOTE_HEADER = "extra_note_header"
 const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
 const val EXTRA_NOTE_DELETED = "extra_note_deleted"
+const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
+const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -75,6 +79,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var readOnly: Boolean = false
     private var currentHeader: String = ""
     private var currentText: String = ""
+    private var noteScroll: Int = 0
+    private var noteCursor: Int = 0
     private var saved = false
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
@@ -84,6 +90,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
         readOnly = intent.getBooleanExtra(EXTRA_NOTE_READ_ONLY, false)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        noteScroll = intent.getIntExtra(EXTRA_NOTE_SCROLL, 0)
+        noteCursor = intent.getIntExtra(EXTRA_NOTE_CURSOR, 0)
         noteLastOpened = System.currentTimeMillis()
         if (noteId != 0L && !readOnly) {
             lifecycleScope.launch {
@@ -100,30 +108,35 @@ class NoteEditorActivity : SegmentActivity("Note") {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val scrollState = rememberScrollState()
+            val scrollState = rememberScrollState(initial = noteScroll)
             val headerBringIntoView = remember { BringIntoViewRequester() }
             val textBringIntoView = remember { BringIntoViewRequester() }
-            val headerState = remember { mutableStateOf(currentHeader) }
-            val textState = remember { mutableStateOf(currentText) }
+            val headerState = remember { mutableStateOf(TextFieldValue(currentHeader)) }
+            val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
             var textSize by remember { mutableIntStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
             val density = LocalDensity.current
 
+            noteScroll = scrollState.value
+            noteCursor = textState.value.selection.start
+
             LaunchedEffect(headerState.value, textState.value) {
-                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.isNotBlank())) {
+                if (!readOnly && !saved && (headerState.value.text.isNotBlank() || textState.value.text.isNotBlank())) {
                     delay(500)
                     val dao = EventDatabase.getInstance(context).noteDao()
                     withContext(Dispatchers.IO) {
-                        val formattedHeader = headerState.value.trim().capitalizeSentences()
-                        val formattedContent = textState.value.trim().capitalizeSentences()
+                        val formattedHeader = headerState.value.text.trim().capitalizeSentences()
+                        val formattedContent = textState.value.text.trim().capitalizeSentences()
                         if (noteId == 0L) {
                             noteId = dao.insert(
                                 Note(
                                     header = formattedHeader,
                                     content = formattedContent,
                                     created = noteCreated,
-                                    lastOpened = noteLastOpened
+                                    lastOpened = noteLastOpened,
+                                    scroll = noteScroll,
+                                    cursor = noteCursor
                                 ).toEntity()
                             )
                         } else {
@@ -133,14 +146,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     header = formattedHeader,
                                     content = formattedContent,
                                     created = noteCreated,
-                                    lastOpened = noteLastOpened
+                                    lastOpened = noteLastOpened,
+                                    scroll = noteScroll,
+                                    cursor = noteCursor
                                 ).toEntity()
                             )
                         }
                     }
                     saved = true
-                    currentHeader = headerState.value
-                    currentText = textState.value
+                    currentHeader = headerState.value.text
+                    currentText = textState.value.text
                 }
             }
 
@@ -168,7 +183,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                     Box {
-                        if (headerState.value.isEmpty()) {
+                        if (headerState.value.text.isEmpty()) {
                             Text(
                                 text = "Header",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
@@ -178,9 +193,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         BasicTextField(
                             value = headerState.value,
                             onValueChange = {
-                                if (it.lines().size <= 3) {
-                                    val formatted = it.capitalizeSentences()
-                                    headerState.value = formatted
+                                if (it.text.lines().size <= 3) {
+                                    val formatted = it.text.capitalizeSentences()
+                                    headerState.value = it.copy(text = formatted)
                                     currentHeader = formatted
                                     saved = false
                                 }
@@ -210,7 +225,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                     Box(modifier = Modifier.weight(1f)) {
-                        if (textState.value.isEmpty()) {
+                        if (textState.value.text.isEmpty()) {
                             Text(
                                 text = "Start writing...",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
@@ -220,8 +235,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         BasicTextField(
                             value = textState.value,
                             onValueChange = {
-                                val formatted = it.capitalizeSentences()
-                                textState.value = formatted
+                                val formatted = it.text.capitalizeSentences()
+                                textState.value = it.copy(text = formatted)
                                 currentText = formatted
                                 saved = false
                             },
@@ -266,7 +281,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             header = currentHeader,
                                             content = currentText,
                                             created = noteCreated,
-                                            lastOpened = noteLastOpened
+                                            lastOpened = noteLastOpened,
+                                            scroll = noteScroll,
+                                            cursor = noteCursor
                                         )
                                         db.trashedNoteDao().insert(
                                             TrashedNote(
@@ -315,7 +332,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             header = currentHeader,
                                             content = currentText,
                                             created = noteCreated,
-                                            lastOpened = noteLastOpened
+                                            lastOpened = noteLastOpened,
+                                            scroll = noteScroll,
+                                            cursor = noteCursor
                                         )
                                         note.shareAsDocx(context)
                                     }
@@ -329,7 +348,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             header = currentHeader,
                                             content = currentText,
                                             created = noteCreated,
-                                            lastOpened = noteLastOpened
+                                            lastOpened = noteLastOpened,
+                                            scroll = noteScroll,
+                                            cursor = noteCursor
                                         )
                                         note.shareAsPdf(context)
                                     }
@@ -385,7 +406,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = formattedHeader,
                             content = formattedText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            scroll = noteScroll,
+                            cursor = noteCursor
                         ).toEntity()
                     )
                 } else {
@@ -395,7 +418,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = formattedHeader,
                             content = formattedText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            scroll = noteScroll,
+                            cursor = noteCursor
                         ).toEntity()
                     )
                 }
