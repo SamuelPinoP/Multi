@@ -5,6 +5,13 @@ Now!!! I need to display the page number for each page in the Notes. I need to h
 in the exact page and point I close. If I was in the 5th page, second paragraph then when I reopen, 
 I will be in the fifth page in that paragraph.
 
+-24- Architecture – Introducing ViewModel and repository layers for notes would better separate UI 
+and data logic.
+
+-23- State restoration – Persist scroll position and cursor location so a note reopens exactly where 
+it was closed. Bulk operations – The code currently handles only single-note share/delete; 
+supporting multi-select would improve usability.
+
 -22- The header should be a part of the first page.
 
 -21- Add divisions among pages.
