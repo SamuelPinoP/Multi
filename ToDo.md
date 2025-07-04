@@ -1,9 +1,9 @@
 /*
 There is a lot of work to do now!
 
--26- The keyboard still covers some of the note. If I put the cursor in the bottom of the note the
-keyboard doesn't adjust to not cover it until I type something. It should adjust right after I put 
-the cursor there.
+-26- ~~The keyboard still covers some of the note. If I put the cursor in the bottom of the note the
+keyboard doesn't adjust to not cover it until I type something. It should adjust right after I put
+the cursor there.~~
 
 -25- When reopening a note, I want the scroll position to automatically adjust so that the line or 
 paragraph where the cursor was last placed appears centered in the visible area of the note editor. 

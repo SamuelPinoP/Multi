@@ -14,6 +14,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -113,13 +115,30 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
+            var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
             var textSize by remember { mutableIntStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
             val density = LocalDensity.current
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
-            LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
+            LaunchedEffect(textState.value.selection, textLayout) {
+                noteCursor = textState.value.selection.start
+                delay(100)
+                val layout = textLayout
+                if (layout != null) {
+                    val cursorRect = layout.getCursorRect(textState.value.selection.start)
+                    val centered = Rect(
+                        cursorRect.left,
+                        cursorRect.center.y - layout.size.height / 2f,
+                        cursorRect.right,
+                        cursorRect.center.y + layout.size.height / 2f
+                    )
+                    textBringIntoView.bringIntoView(centered)
+                } else {
+                    textBringIntoView.bringIntoView()
+                }
+            }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
@@ -254,6 +273,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                         }
                                     }
                                 },
+                            onTextLayout = { textLayout = it },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
