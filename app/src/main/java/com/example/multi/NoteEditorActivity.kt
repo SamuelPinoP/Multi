@@ -43,6 +43,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -117,6 +120,11 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
             val density = LocalDensity.current
+            var rootPos by remember { mutableIntStateOf(0) }
+            var rootHeight by remember { mutableIntStateOf(0) }
+            var textPos by remember { mutableIntStateOf(0) }
+            var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+            var centered by remember { mutableStateOf(false) }
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
@@ -161,10 +169,24 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
             }
 
+            LaunchedEffect(layoutResult, rootHeight, textPos) {
+                if (!centered && layoutResult != null && rootHeight > 0 && textPos > 0) {
+                    val cursorRect = layoutResult!!.getCursorRect(textState.value.selection.start)
+                    val cursorCenter = (textPos - rootPos) + cursorRect.top + cursorRect.height / 2
+                    val target = (cursorCenter - rootHeight / 2).coerceAtLeast(0f)
+                    scrollState.scrollTo(target.toInt())
+                    centered = true
+                }
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
+                    .onGloballyPositioned { coords ->
+                        rootHeight = coords.size.height
+                        rootPos = coords.positionInWindow().y.toInt()
+                    }
             ) {
                 Column(
                     modifier = Modifier
@@ -226,7 +248,11 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
                     androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                    Box(modifier = Modifier.weight(1f)) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .onGloballyPositioned { textPos = it.positionInWindow().y.toInt() }
+                    ) {
                         if (textState.value.text.isEmpty()) {
                             Text(
                                 text = "Start writing...",
@@ -254,6 +280,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                         }
                                     }
                                 },
+                            onTextLayout = { layoutResult = it },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
