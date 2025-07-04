@@ -1,6 +1,7 @@
 package com.example.multi
 
 import android.content.Intent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -44,6 +45,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import com.example.multi.data.toEntity
 
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
@@ -57,6 +59,7 @@ class NotesActivity : SegmentActivity("Notes") {
         }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
