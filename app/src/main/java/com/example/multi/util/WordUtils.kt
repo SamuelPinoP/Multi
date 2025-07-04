@@ -41,3 +41,22 @@ fun Note.shareAsDocx(context: Context) {
     }
     context.startActivity(Intent.createChooser(intent, null))
 }
+
+/** Share multiple [notes] as separate Word documents using a share intent. */
+fun shareNotesAsDocx(notes: List<Note>, context: Context) {
+    if (notes.isEmpty()) return
+    val uris = notes.map {
+        val file = it.writeToDocx(context)
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+    }
+    val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+        type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, null))
+}

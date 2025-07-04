@@ -64,3 +64,22 @@ fun Note.shareAsPdf(context: Context) {
     }
     context.startActivity(Intent.createChooser(intent, null))
 }
+
+/** Share multiple [notes] as separate PDF documents using a share intent. */
+fun shareNotesAsPdf(notes: List<Note>, context: Context) {
+    if (notes.isEmpty()) return
+    val uris = notes.map {
+        val file = it.writeToPdf(context)
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+    }
+    val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+        type = "application/pdf"
+        putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, null))
+}
