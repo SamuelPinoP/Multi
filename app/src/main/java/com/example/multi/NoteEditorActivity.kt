@@ -17,6 +17,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TextRange
 import androidx.compose.ui.focus.onFocusEvent
@@ -43,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -117,9 +123,27 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
             val density = LocalDensity.current
+            var editorHeight by remember { mutableIntStateOf(0) }
+            var textCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+            var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
-            LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
+            LaunchedEffect(textState.value.selection, textLayout, textCoords, editorHeight) {
+                noteCursor = textState.value.selection.start
+                val layout = textLayout
+                val coords = textCoords
+                if (layout != null && coords != null && editorHeight > 0) {
+                    val imeBottom = WindowInsets.ime.getBottom(density)
+                    val visibleHeight = editorHeight - imeBottom
+                    val cursorBox = layout.getCursorRect(textState.value.selection.start)
+                    val cursorCenter = coords.positionInRoot().y + cursorBox.top + cursorBox.height / 2
+                    val target = (cursorCenter - visibleHeight / 2).toInt().coerceAtLeast(0)
+                    val finalTarget = target.coerceIn(0, scrollState.maxValue)
+                    if (finalTarget != scrollState.value) {
+                        scrollState.animateScrollTo(finalTarget)
+                    }
+                }
+            }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
@@ -165,6 +189,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
+                    .onSizeChanged { editorHeight = it.height }
             ) {
                 Column(
                     modifier = Modifier
@@ -247,6 +272,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             modifier = Modifier
                                 .fillMaxSize()
                                 .bringIntoViewRequester(textBringIntoView)
+                                .onGloballyPositioned { textCoords = it }
                                 .onFocusEvent {
                                     if (it.isFocused) {
                                         scope.launch {
@@ -254,6 +280,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                         }
                                     }
                                 },
+                            onTextLayout = { textLayout = it },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
