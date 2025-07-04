@@ -17,6 +17,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TextRange
 import androidx.compose.ui.focus.onFocusEvent
@@ -161,10 +165,15 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
             }
 
+            var editorHeight by remember { mutableStateOf(0) }
+            val textLayoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+            var textFieldOffset by remember { mutableStateOf(0f) }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
+                    .onSizeChanged { editorHeight = it.height }
             ) {
                 Column(
                     modifier = Modifier
@@ -247,6 +256,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             modifier = Modifier
                                 .fillMaxSize()
                                 .bringIntoViewRequester(textBringIntoView)
+                                .onGloballyPositioned { coords ->
+                                    textFieldOffset = coords.positionInParent().y
+                                }
                                 .onFocusEvent {
                                     if (it.isFocused) {
                                         scope.launch {
@@ -254,6 +266,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                         }
                                     }
                                 },
+                            onTextLayout = { layout ->
+                                textLayoutResult.value = layout
+                            },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
@@ -262,6 +277,18 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 capitalization = KeyboardCapitalization.Sentences
                             )
                         )
+
+                        LaunchedEffect(
+                            textState.value.selection,
+                            textLayoutResult.value,
+                            editorHeight,
+                            textFieldOffset
+                        ) {
+                            val layout = textLayoutResult.value ?: return@LaunchedEffect
+                            val cursorRect = layout.getCursorRect(textState.value.selection.start)
+                            val target = (textFieldOffset + cursorRect.top - editorHeight / 2f).coerceAtLeast(0f)
+                            scrollState.animateScrollTo(target.toInt())
+                        }
                     }
                 }
 
