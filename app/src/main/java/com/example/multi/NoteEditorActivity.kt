@@ -15,8 +15,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TextRange
 import androidx.compose.ui.focus.onFocusEvent
@@ -111,6 +115,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val scrollState = rememberScrollState(initial = noteScroll)
             val headerBringIntoView = remember { BringIntoViewRequester() }
             val textBringIntoView = remember { BringIntoViewRequester() }
+            val editorCoords = remember { mutableStateOf<LayoutCoordinates?>(null) }
+            var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
             var textSize by remember { mutableIntStateOf(20) }
@@ -120,6 +126,23 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
+
+            LaunchedEffect(textState.value.selection, textLayout, editorCoords.value) {
+                val layout = textLayout
+                val coords = editorCoords.value
+                if (layout != null && coords != null) {
+                    val rect = layout.getCursorRect(textState.value.selection.start)
+                    val halfHeight = coords.size.height / 2f
+                    textBringIntoView.bringIntoView(
+                        Rect(
+                            left = rect.left,
+                            top = rect.top - halfHeight,
+                            right = rect.right,
+                            bottom = rect.bottom + halfHeight
+                        )
+                    )
+                }
+            }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
@@ -165,6 +188,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
+                    .onGloballyPositioned { editorCoords.value = it }
             ) {
                 Column(
                     modifier = Modifier
@@ -254,6 +278,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                         }
                                     }
                                 },
+                            onTextLayout = { textLayout = it },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
