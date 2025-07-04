@@ -17,9 +17,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TextRange
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
@@ -45,7 +48,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -116,10 +118,25 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var textSize by remember { mutableIntStateOf(20) }
             var showSizeDialog by remember { mutableStateOf(false) }
             var shareMenuExpanded by remember { mutableStateOf(false) }
-            val density = LocalDensity.current
+            var editorHeight by remember { mutableIntStateOf(0) }
+            var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
+            LaunchedEffect(textState.value.selection, editorHeight, textLayoutResult) {
+                val layout = textLayoutResult ?: return@LaunchedEffect
+                if (editorHeight > 0) {
+                    val cursorRect = layout.getCursorRect(textState.value.selection.start)
+                    val centerOffset = editorHeight / 2f
+                    val centerRect = Rect(
+                        0f,
+                        cursorRect.top - centerOffset,
+                        layout.size.width.toFloat(),
+                        cursorRect.bottom + centerOffset
+                    )
+                    textBringIntoView.bringIntoView(centerRect)
+                }
+            }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
@@ -165,6 +182,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
+                    .onSizeChanged { editorHeight = it.height }
             ) {
                 Column(
                     modifier = Modifier
@@ -253,7 +271,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             textBringIntoView.bringIntoView()
                                         }
                                     }
-                                },
+                                }
+                                .onTextLayout { textLayoutResult = it },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
