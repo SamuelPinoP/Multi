@@ -10,7 +10,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
-import androidx.compose.foundation.clickable
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -68,6 +68,11 @@ class NotesActivity : SegmentActivity("Notes") {
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+
+        BackHandler(enabled = selectionMode) {
+            selectedIds.clear()
+            selectionMode = false
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             if (notes.isEmpty()) {
