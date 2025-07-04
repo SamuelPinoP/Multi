@@ -10,7 +10,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as M3Text
@@ -21,6 +24,10 @@ import androidx.compose.material.icons.filled.Note
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,6 +36,9 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.util.toDateString
+import com.example.multi.util.shareAsDocx
+import com.example.multi.util.shareAsPdf
+import com.example.multi.TrashedNote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -50,6 +60,9 @@ class NotesActivity : SegmentActivity("Notes") {
     override fun SegmentContent() {
         val context = LocalContext.current
         val notes = remember { this@NotesActivity.notes }
+        val scope = rememberCoroutineScope()
+        var selectionMode by remember { mutableStateOf(false) }
+        val selectedIds = remember { mutableStateListOf<Long>() }
 
         Box(modifier = Modifier.fillMaxSize()) {
             if (notes.isEmpty()) {
@@ -77,6 +90,7 @@ class NotesActivity : SegmentActivity("Notes") {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(notes) { note ->
+                        val isSelected = note.id in selectedIds
                         ElevatedCard(
                             elevation = CardDefaults.elevatedCardElevation(),
                             colors = CardDefaults.elevatedCardColors(
@@ -85,21 +99,44 @@ class NotesActivity : SegmentActivity("Notes") {
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
-                                    val intent = Intent(context, NoteEditorActivity::class.java)
-                                    intent.putExtra(EXTRA_NOTE_ID, note.id)
-                                    intent.putExtra(EXTRA_NOTE_HEADER, note.header)
-                                    intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
-                                    intent.putExtra(EXTRA_NOTE_CREATED, note.created)
-                                    intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
-                                    intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
-                                    context.startActivity(intent)
-                                }
+                                .combinedClickable(
+                                    onClick = {
+                                        if (selectionMode) {
+                                            if (isSelected) selectedIds.remove(note.id) else selectedIds.add(note.id)
+                                            if (selectedIds.isEmpty()) selectionMode = false
+                                        } else {
+                                            val intent = Intent(context, NoteEditorActivity::class.java)
+                                            intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                            intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                            intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                            intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                            intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
+                                            intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                            context.startActivity(intent)
+                                        }
+                                    },
+                                    onLongClick = {
+                                        if (!selectionMode) {
+                                            selectionMode = true
+                                            selectedIds.add(note.id)
+                                        }
+                                    }
+                                )
                         ) {
                             Row(
                                 modifier = Modifier.padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                if (selectionMode) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = {
+                                            if (it) selectedIds.add(note.id) else selectedIds.remove(note.id)
+                                            if (selectedIds.isEmpty()) selectionMode = false
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                }
                                 Surface(
                                     shape = CircleShape,
                                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -143,31 +180,94 @@ class NotesActivity : SegmentActivity("Notes") {
                 }
             }
 
-            ExtendedFloatingActionButton(
-                onClick = {
-                    context.startActivity(Intent(context, NoteEditorActivity::class.java))
-                },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { M3Text("New Note") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 80.dp)
-            )
+            if (selectedIds.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 80.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    androidx.compose.material3.FloatingActionButton(
+                        onClick = {
+                            val targets = notes.filter { it.id in selectedIds }
+                            targets.shareAsDocx(context)
+                            selectionMode = false
+                            selectedIds.clear()
+                        },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null)
+                    }
 
-            ExtendedFloatingActionButton(
-                onClick = {
-                    context.startActivity(Intent(context, TrashbinActivity::class.java))
-                },
-                icon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                text = { M3Text("Trash") },
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 16.dp, bottom = 80.dp)
-            )
+                    androidx.compose.material3.FloatingActionButton(
+                        onClick = {
+                            val targets = notes.filter { it.id in selectedIds }
+                            targets.shareAsPdf(context)
+                            selectionMode = false
+                            selectedIds.clear()
+                        },
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null)
+                    }
+
+                    androidx.compose.material3.FloatingActionButton(
+                        onClick = {
+                            val targets = notes.filter { it.id in selectedIds }
+                            scope.launch {
+                                val db = EventDatabase.getInstance(context)
+                                targets.forEach { note ->
+                                    withContext(Dispatchers.IO) {
+                                        db.trashedNoteDao().insert(
+                                            TrashedNote(
+                                                header = note.header,
+                                                content = note.content,
+                                                created = note.created
+                                            ).toEntity()
+                                        )
+                                        db.noteDao().delete(note.toEntity())
+                                    }
+                                }
+                            }
+                            notes.removeAll { it.id in selectedIds }
+                            selectionMode = false
+                            selectedIds.clear()
+                        },
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null)
+                    }
+                }
+            } else {
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        context.startActivity(Intent(context, NoteEditorActivity::class.java))
+                    },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { M3Text("New Note") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 80.dp)
+                )
+
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        context.startActivity(Intent(context, TrashbinActivity::class.java))
+                    },
+                    icon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                    text = { M3Text("Trash") },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, bottom = 80.dp)
+                )
+            }
         }
     }
 }
