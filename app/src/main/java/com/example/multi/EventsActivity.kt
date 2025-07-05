@@ -45,6 +45,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.KizCalendarActivity
+import com.example.multi.util.insertDefaultEventsIfEmpty
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -78,6 +79,7 @@ private fun EventsScreen(initialDate: String? = null) {
 
     LaunchedEffect(Unit) {
         val dao = EventDatabase.getInstance(context).eventDao()
+        withContext(Dispatchers.IO) { insertDefaultEventsIfEmpty(dao) }
         val stored = withContext(Dispatchers.IO) { dao.getEvents() }
         events.clear()
         events.addAll(stored.map { it.toModel() })

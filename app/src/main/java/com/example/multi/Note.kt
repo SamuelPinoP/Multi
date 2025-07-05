@@ -10,3 +10,9 @@ data class Note(
     var scroll: Int = 0,
     var cursor: Int = 0
 )
+
+/** Title derived from the note header or content. */
+fun Note.shareTitle(): String {
+    val source = if (header.isNotBlank()) header else content
+    return source.trim().split(Regex("\\s+")).take(2).joinToString(" ").ifBlank { "Note" }
+}

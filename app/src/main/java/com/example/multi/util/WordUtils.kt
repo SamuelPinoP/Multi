@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import com.example.multi.Note
+import com.example.multi.shareTitle
 import org.apache.poi.xwpf.usermodel.XWPFDocument
 import java.io.File
 import java.io.FileOutputStream
@@ -37,6 +38,7 @@ fun Note.shareAsDocx(context: Context) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_SUBJECT, shareTitle())
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     context.startActivity(Intent.createChooser(intent, null))

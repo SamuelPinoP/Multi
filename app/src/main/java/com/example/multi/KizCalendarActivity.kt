@@ -52,6 +52,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.ui.graphics.Color
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
+import com.example.multi.util.insertDefaultEventsIfEmpty
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -69,6 +70,7 @@ private fun KizCalendarScreen() {
 
     LaunchedEffect(Unit) {
         val dao = EventDatabase.getInstance(context).eventDao()
+        withContext(Dispatchers.IO) { insertDefaultEventsIfEmpty(dao) }
         val stored = withContext(Dispatchers.IO) { dao.getEvents() }
         events.clear()
         events.addAll(stored.map { it.toModel() }.filter { it.date != null })

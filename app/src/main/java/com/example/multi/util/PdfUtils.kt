@@ -9,6 +9,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.core.content.FileProvider
 import com.example.multi.Note
+import com.example.multi.shareTitle
 import java.io.File
 import java.io.FileOutputStream
 
@@ -60,6 +61,7 @@ fun Note.shareAsPdf(context: Context) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "application/pdf"
         putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_SUBJECT, shareTitle())
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     context.startActivity(Intent.createChooser(intent, null))
