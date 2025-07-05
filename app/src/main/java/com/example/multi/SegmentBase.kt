@@ -86,6 +86,7 @@ fun SegmentScreen(
         Box(
             modifier = Modifier
                 .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
