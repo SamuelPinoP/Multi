@@ -270,6 +270,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     Row(
                         modifier = Modifier
                             .align(androidx.compose.ui.Alignment.BottomCenter)
+                            .navigationBarsPadding()
                             .padding(bottom = 80.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {

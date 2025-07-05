@@ -247,6 +247,7 @@ private fun WeeklyGoalsScreen() {
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
                 .padding(end = 16.dp, bottom = 80.dp)
         )
 
@@ -304,6 +305,7 @@ private fun WeeklyGoalsScreen() {
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .padding(bottom = 64.dp)
         )
     }

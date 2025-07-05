@@ -149,6 +149,7 @@ private fun EventsScreen(initialDate: String? = null) {
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .padding(bottom = 68.dp, start = 16.dp, end = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -222,6 +223,7 @@ private fun EventsScreen(initialDate: String? = null) {
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .padding(bottom = 124.dp)
         )
     }

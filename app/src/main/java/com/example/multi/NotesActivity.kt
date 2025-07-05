@@ -196,12 +196,13 @@ class NotesActivity : SegmentActivity("Notes") {
             }
 
             if (selectionMode) {
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                     ExtendedFloatingActionButton(
                         onClick = {
                             val targets = notes.filter { it.id in selectedIds }
@@ -288,6 +289,7 @@ class NotesActivity : SegmentActivity("Notes") {
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
                         .padding(end = 16.dp, bottom = 80.dp)
                 )
 
@@ -301,6 +303,7 @@ class NotesActivity : SegmentActivity("Notes") {
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
+                        .navigationBarsPadding()
                         .padding(start = 16.dp, bottom = 80.dp)
                 )
             }
