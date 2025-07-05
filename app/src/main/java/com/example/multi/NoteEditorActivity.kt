@@ -14,7 +14,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsWithImePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.text.input.TextFieldValue
@@ -170,7 +170,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(scrollState)
-                        .imePadding()
+                        .navigationBarsWithImePadding()
                 ) {
                     Text(
                         text = "Created: ${noteCreated.toDateString()}",
@@ -270,7 +270,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     Row(
                         modifier = Modifier
                             .align(androidx.compose.ui.Alignment.BottomCenter)
-                            .padding(bottom = 80.dp),
+                            .navigationBarsWithImePadding()
+                            .padding(bottom = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         if (noteId != 0L) {
