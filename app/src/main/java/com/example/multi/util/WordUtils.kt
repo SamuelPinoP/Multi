@@ -37,6 +37,8 @@ fun Note.shareAsDocx(context: Context) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_TITLE, shareTitle())
+        putExtra(Intent.EXTRA_SUBJECT, shareTitle())
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     context.startActivity(Intent.createChooser(intent, null))

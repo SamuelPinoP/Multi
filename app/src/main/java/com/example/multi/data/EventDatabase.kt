@@ -16,6 +16,9 @@ import com.example.multi.Note
 import com.example.multi.TrashedNote
 import com.example.multi.WeeklyGoal
 import com.example.multi.WeeklyGoalRecord
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 @Entity(tableName = "events")
 data class EventEntity(
@@ -162,6 +165,19 @@ abstract class EventDatabase : RoomDatabase() {
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    val dao = instance.eventDao()
+                    if (dao.getEvents().isEmpty()) {
+                        val notable = listOf(
+                            EventEntity(title = "Independence Day", description = "US Holiday", date = "2024-07-04"),
+                            EventEntity(title = "Presidents Day", description = "US Holiday", date = "2024-02-19"),
+                            EventEntity(title = "Super Bowl", description = "NFL Championship", date = "2024-02-11")
+                        )
+                        notable.forEach { dao.insert(it) }
+                    }
+                }
+
                 instance
             }
         }

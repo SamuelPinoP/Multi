@@ -18,3 +18,7 @@ fun String.capitalizeSentences(): String {
     }
     return result.toString()
 }
+
+/** Return the first two words of this string. */
+fun String.firstTwoWords(): String =
+    trim().split("\s+".toRegex()).take(2).joinToString(" ")
