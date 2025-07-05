@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -23,6 +22,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,8 +46,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -263,110 +269,138 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             )
                         )
                     }
-                }
-
-
                 if (!readOnly) {
-                    Row(
+                    var fabExpanded by remember { mutableStateOf(false) }
+
+                    Box(
                         modifier = Modifier
-                            .align(androidx.compose.ui.Alignment.BottomCenter)
-                            .padding(bottom = 80.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp, bottom = 80.dp)
                     ) {
-                        if (noteId != 0L) {
-                            FloatingActionButton(
-                                onClick = {
-                                    saved = true
-                                    scope.launch(Dispatchers.IO) {
-                                        val db = EventDatabase.getInstance(context)
-                                        val note = Note(
-                                            id = noteId,
-                                            header = currentHeader,
-                                            content = currentText,
-                                            created = noteCreated,
-                                            lastOpened = noteLastOpened
-                                        )
-                                        db.trashedNoteDao().insert(
-                                            TrashedNote(
-                                                header = note.header,
-                                                content = note.content,
-                                                created = note.created
-                                            ).toEntity()
-                                        )
-                                        db.noteDao().delete(note.toEntity())
-                                    }
-                                    (context as? android.app.Activity)?.finish()
-                                },
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            ) {
-                                Icon(Icons.Default.Delete, contentDescription = null)
-                            }
-                        }
-
-                        FloatingActionButton(
-                            onClick = { showSizeDialog = true },
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Icon(Icons.Default.FormatSize, contentDescription = null)
+                            AnimatedVisibility(
+                                visible = fabExpanded && noteId != 0L,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
+                                FloatingActionButton(
+                                    onClick = {
+                                        saved = true
+                                        scope.launch(Dispatchers.IO) {
+                                            val db = EventDatabase.getInstance(context)
+                                            val note = Note(
+                                                id = noteId,
+                                                header = currentHeader,
+                                                content = currentText,
+                                                created = noteCreated,
+                                                lastOpened = noteLastOpened
+                                            )
+                                            db.trashedNoteDao().insert(
+                                                TrashedNote(
+                                                    header = note.header,
+                                                    content = note.content,
+                                                    created = note.created
+                                                ).toEntity()
+                                            )
+                                            db.noteDao().delete(note.toEntity())
+                                        }
+                                        (context as? android.app.Activity)?.finish()
+                                    },
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete")
+                                }
+                            }
+
+                            AnimatedVisibility(
+                                visible = fabExpanded,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
+                                FloatingActionButton(
+                                    onClick = { showSizeDialog = true },
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                ) {
+                                    Icon(Icons.Default.FormatSize, contentDescription = "Text Size")
+                                }
+                            }
+
+                            AnimatedVisibility(
+                                visible = fabExpanded,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
+                                Box {
+                                    FloatingActionButton(
+                                        onClick = { shareMenuExpanded = true },
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    ) {
+                                        Icon(Icons.Default.Share, contentDescription = "Share")
+                                    }
+                                    DropdownMenu(
+                                        expanded = shareMenuExpanded,
+                                        onDismissRequest = { shareMenuExpanded = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Word") },
+                                            onClick = {
+                                                shareMenuExpanded = false
+                                                val note = Note(
+                                                    id = noteId,
+                                                    header = currentHeader,
+                                                    content = currentText,
+                                                    created = noteCreated,
+                                                    lastOpened = noteLastOpened
+                                                )
+                                                note.shareAsDocx(context)
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Text File") },
+                                            onClick = {
+                                                shareMenuExpanded = false
+                                                val note = Note(
+                                                    id = noteId,
+                                                    header = currentHeader,
+                                                    content = currentText,
+                                                    created = noteCreated,
+                                                    lastOpened = noteLastOpened
+                                                )
+                                                note.shareAsTxt(context)
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("PDF") },
+                                            onClick = {
+                                                shareMenuExpanded = false
+                                                val note = Note(
+                                                    id = noteId,
+                                                    header = currentHeader,
+                                                    content = currentText,
+                                                    created = noteCreated,
+                                                    lastOpened = noteLastOpened
+                                                )
+                                                note.shareAsPdf(context)
+                                            }
+                                        )
+                                    }
+                                }
+                            }
                         }
 
-                        Box {
-                            FloatingActionButton(
-                                onClick = { shareMenuExpanded = true },
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            ) {
-                                Icon(Icons.Default.Share, contentDescription = null)
-                            }
-                            DropdownMenu(
-                                expanded = shareMenuExpanded,
-                                onDismissRequest = { shareMenuExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Word") },
-                                    onClick = {
-                                        shareMenuExpanded = false
-                                        val note = Note(
-                                            id = noteId,
-                                            header = currentHeader,
-                                            content = currentText,
-                                            created = noteCreated,
-                                            lastOpened = noteLastOpened
-                                        )
-                                        note.shareAsDocx(context)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Text File") },
-                                    onClick = {
-                                        shareMenuExpanded = false
-                                        val note = Note(
-                                            id = noteId,
-                                            header = currentHeader,
-                                            content = currentText,
-                                            created = noteCreated,
-                                            lastOpened = noteLastOpened
-                                        )
-                                        note.shareAsTxt(context)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("PDF") },
-                                    onClick = {
-                                        shareMenuExpanded = false
-                                        val note = Note(
-                                            id = noteId,
-                                            header = currentHeader,
-                                            content = currentText,
-                                            created = noteCreated,
-                                            lastOpened = noteLastOpened
-                                        )
-                                        note.shareAsPdf(context)
-                                    }
-                                )
-                            }
+                        val rotation by animateFloatAsState(if (fabExpanded) 45f else 0f, label = "fab")
+                        FloatingActionButton(
+                            onClick = { fabExpanded = !fabExpanded },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ) {
+                            Icon(Icons.Default.Add, modifier = Modifier.rotate(rotation), contentDescription = "Actions")
                         }
                     }
 
