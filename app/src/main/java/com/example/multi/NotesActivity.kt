@@ -54,8 +54,10 @@ class NotesActivity : SegmentActivity("Notes") {
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch {
-            val dao = EventDatabase.getInstance(this@NotesActivity).noteDao()
-            val stored = withContext(Dispatchers.IO) { dao.getNotes() }
+            val db = EventDatabase.getInstance(this@NotesActivity)
+            val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+            withContext(Dispatchers.IO) { db.trashedNoteDao().deleteExpired(threshold) }
+            val stored = withContext(Dispatchers.IO) { db.noteDao().getNotes() }
             notes.clear(); notes.addAll(stored.map { it.toModel() })
         }
     }
