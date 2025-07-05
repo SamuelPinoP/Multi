@@ -38,6 +38,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,6 +50,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import com.example.multi.util.capitalizeSentences
 
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -349,8 +352,11 @@ private fun WeeklyGoalDialog(
                 Text("Header", style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(
                     value = header,
-                    onValueChange = { header = it },
-                    modifier = Modifier.fillMaxWidth()
+                    onValueChange = { header = it.capitalizeSentences() },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        capitalization = KeyboardCapitalization.Sentences
+                    )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Frequency", style = MaterialTheme.typography.bodySmall)
