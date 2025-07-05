@@ -12,7 +12,7 @@ fun String.capitalizeSentences(): String {
             c
         }
         result.append(ch)
-        if (c == '.' || c == '!' || c == '?' || c == '\n') {
+        if (c == '.' || c == '!' || c == '?' || c == ';' || c == '\n') {
             capitalizeNext = true
         }
     }

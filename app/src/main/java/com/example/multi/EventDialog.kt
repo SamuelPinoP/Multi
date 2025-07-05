@@ -30,7 +30,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import com.example.multi.util.capitalizeSentences
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,9 +49,9 @@ fun EventDialog(
     var selectedDate by remember { mutableStateOf(initial.date) }
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
-    var repeatOption by remember { mutableStateOf("Every") }
+    var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember {
-        mutableStateListOf<Boolean>().apply { repeat(7) { add(isNew) } }
+        mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
     val previewDate by remember {
         derivedStateOf {
@@ -63,13 +66,17 @@ fun EventDialog(
             )
             val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
             if (selectedNames.isNotEmpty()) {
-                val prefix = if (repeatOption == "Every") "Every" else "Every other"
+                val prefix = when (repeatOption) {
+                    "Every" -> "Every"
+                    "Every other" -> "Every other"
+                    else -> ""
+                }
                 val dayString = when (selectedNames.size) {
                     1 -> selectedNames.first()
                     2 -> "${selectedNames[0]} and ${selectedNames[1]}"
                     else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
                 }
-                "$prefix $dayString"
+                if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
             } else {
                 selectedDate
             }
@@ -92,13 +99,17 @@ fun EventDialog(
                     )
                     val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
                     val finalDate = if (selectedNames.isNotEmpty()) {
-                        val prefix = if (repeatOption == "Every") "Every" else "Every other"
+                        val prefix = when (repeatOption) {
+                            "Every" -> "Every"
+                            "Every other" -> "Every other"
+                            else -> ""
+                        }
                         val dayString = when (selectedNames.size) {
                             1 -> selectedNames.first()
                             2 -> "${selectedNames[0]} and ${selectedNames[1]}"
                             else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
                         }
-                        "$prefix $dayString"
+                        if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
                     } else {
                         selectedDate
                     }
@@ -119,16 +130,22 @@ fun EventDialog(
             Column {
                 OutlinedTextField(
                     value = title,
-                    onValueChange = { title = it },
+                    onValueChange = { title = it.capitalizeSentences() },
                     label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        capitalization = KeyboardCapitalization.Sentences
+                    )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = description,
-                    onValueChange = { description = it },
+                    onValueChange = { description = it.capitalizeSentences() },
                     label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        capitalization = KeyboardCapitalization.Sentences
+                    )
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {

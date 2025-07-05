@@ -178,7 +178,7 @@ private fun EventsScreen(initialDate: String? = null) {
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
-            val event = if (isNew) Event(0L, "", "", newDate) else events[index]
+            val event = if (isNew) Event(0L, "", "", null) else events[index]
             EventDialog(
                 initial = event,
                 onDismiss = {
