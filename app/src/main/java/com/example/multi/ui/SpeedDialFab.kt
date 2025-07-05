@@ -53,7 +53,7 @@ fun SpeedDialFab(
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
                 ) {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Delete,
+                        imageVector = Icons.Default.Delete,
                         contentDescription = "Delete"
                     )
                 }
@@ -63,7 +63,7 @@ fun SpeedDialFab(
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                 ) {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.FormatSize,
+                        imageVector = Icons.Default.FormatSize,
                         contentDescription = "Text Size"
                     )
                 }
@@ -73,7 +73,7 @@ fun SpeedDialFab(
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Share,
+                        imageVector = Icons.Default.Share,
                         contentDescription = "Share"
                     )
                 }
