@@ -213,7 +213,8 @@ private fun EventsScreen(initialDate: String? = null) {
                             newDate = null
                         }
                     }
-                }
+                },
+                isNew = isNew
             )
         }
 

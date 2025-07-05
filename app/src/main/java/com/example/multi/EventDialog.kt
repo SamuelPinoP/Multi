@@ -38,7 +38,8 @@ fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
     onSave: (String, String, String?) -> Unit,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    isNew: Boolean = false,
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
@@ -46,7 +47,9 @@ fun EventDialog(
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf("Every") }
-    val dayChecks = remember { mutableStateListOf(false, false, false, false, false, false, false) }
+    val dayChecks = remember {
+        mutableStateListOf<Boolean>().apply { repeat(7) { add(isNew) } }
+    }
     val previewDate by remember {
         derivedStateOf {
             val daysFull = listOf(

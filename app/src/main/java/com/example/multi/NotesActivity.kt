@@ -40,6 +40,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
+import com.example.multi.util.shareNotesAsTxt
 import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -249,6 +250,16 @@ class NotesActivity : SegmentActivity("Notes") {
                                     shareMenuExpanded = false
                                     val targets = notes.filter { it.id in selectedIds }
                                     shareNotesAsDocx(targets, context)
+                                    selectedIds.clear()
+                                    selectionMode = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { M3Text("Text File") },
+                                onClick = {
+                                    shareMenuExpanded = false
+                                    val targets = notes.filter { it.id in selectedIds }
+                                    shareNotesAsTxt(targets, context)
                                     selectedIds.clear()
                                     selectionMode = false
                                 }

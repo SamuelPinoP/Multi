@@ -56,6 +56,7 @@ import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsDocx
 import com.example.multi.util.shareAsPdf
+import com.example.multi.util.shareAsTxt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -335,6 +336,20 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                             lastOpened = noteLastOpened
                                         )
                                         note.shareAsDocx(context)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Text File") },
+                                    onClick = {
+                                        shareMenuExpanded = false
+                                        val note = Note(
+                                            id = noteId,
+                                            header = currentHeader,
+                                            content = currentText,
+                                            created = noteCreated,
+                                            lastOpened = noteLastOpened
+                                        )
+                                        note.shareAsTxt(context)
                                     }
                                 )
                                 DropdownMenuItem(
