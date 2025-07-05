@@ -306,7 +306,8 @@ private fun KizCalendarScreen() {
                         events.add(Event(id, title, desc, date))
                         context.startActivity(android.content.Intent(context, EventsActivity::class.java))
                     }
-                }
+                },
+                isNew = true
             )
         }
 
@@ -336,7 +337,8 @@ private fun KizCalendarScreen() {
                             events.removeAt(idx)
                         }
                     }
-                }
+                },
+                isNew = false
             )
         }
     }
