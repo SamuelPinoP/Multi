@@ -1,5 +1,10 @@
 package com.example.multi
 
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +13,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.background
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
@@ -17,14 +26,28 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.focus.onFocusEvent
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,7 +58,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -49,7 +71,6 @@ import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsDocx
 import com.example.multi.util.shareAsPdf
 import com.example.multi.util.shareAsTxt
-import com.example.multi.ui.SpeedDialFab
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -64,7 +85,7 @@ const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
 
-class NoteEditorActivity : SegmentActivity("Note") {
+class NoteEditorActivity : ComponentActivity() {
     private var noteId: Long = 0L
     private var noteCreated: Long = System.currentTimeMillis()
     private var noteLastOpened: Long = System.currentTimeMillis()
@@ -75,8 +96,12 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var currentHeader: String = ""
     private var currentText: String = ""
     private var saved = false
+    private var textSize by mutableIntStateOf(20)
+    private var showSizeDialog by mutableStateOf(false)
+    private var shareMenuExpanded by mutableStateOf(false)
+    private var overflowExpanded by mutableStateOf(false)
 
-    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
         noteCreated = intent.getLongExtra(EXTRA_NOTE_CREATED, noteCreated)
         noteDeleted = intent.getLongExtra(EXTRA_NOTE_DELETED, 0L)
@@ -93,252 +118,184 @@ class NoteEditorActivity : SegmentActivity("Note") {
             }
         }
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            MultiTheme {
+                NoteEditorScreen()
+            }
+        }
     }
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    override fun SegmentContent() {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            val context = LocalContext.current
-            val scope = rememberCoroutineScope()
-            val scrollState = rememberScrollState(initial = noteScroll)
-            val headerBringIntoView = remember { BringIntoViewRequester() }
-            val textBringIntoView = remember { BringIntoViewRequester() }
-            val headerState = remember { mutableStateOf(currentHeader) }
-            val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
-            var textSize by remember { mutableIntStateOf(20) }
-            var showSizeDialog by remember { mutableStateOf(false) }
-            var shareMenuExpanded by remember { mutableStateOf(false) }
-            val density = LocalDensity.current
+    fun NoteEditorScreen() {
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        val scrollState = rememberScrollState(initial = noteScroll)
+        val headerBringIntoView = remember { BringIntoViewRequester() }
+        val textBringIntoView = remember { BringIntoViewRequester() }
+        val headerState = remember { mutableStateOf(currentHeader) }
+        val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
 
-            LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
-            LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
+        LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
+        LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
 
-            LaunchedEffect(headerState.value, textState.value) {
-                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
-                    delay(500)
-                    val dao = EventDatabase.getInstance(context).noteDao()
-                    withContext(Dispatchers.IO) {
-                        val formattedHeader = headerState.value.trim().capitalizeSentences()
-                        val formattedContent = textState.value.text.trim().capitalizeSentences()
-                        if (noteId == 0L) {
-                            noteId = dao.insert(
-                                Note(
-                                    header = formattedHeader,
-                                    content = formattedContent,
-                                    created = noteCreated,
-                                    lastOpened = noteLastOpened,
-                                    scroll = scrollState.value,
-                                    cursor = textState.value.selection.start
-                                ).toEntity()
-                            )
-                        } else {
-                            dao.update(
-                                Note(
-                                    id = noteId,
-                                    header = formattedHeader,
-                                    content = formattedContent,
-                                    created = noteCreated,
-                                    lastOpened = noteLastOpened,
-                                    scroll = scrollState.value,
-                                    cursor = textState.value.selection.start
-                                ).toEntity()
-                            )
-                        }
+        LaunchedEffect(headerState.value, textState.value) {
+            if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
+                delay(500)
+                val dao = EventDatabase.getInstance(context).noteDao()
+                withContext(Dispatchers.IO) {
+                    val formattedHeader = headerState.value.trim().capitalizeSentences()
+                    val formattedContent = textState.value.text.trim().capitalizeSentences()
+                    if (noteId == 0L) {
+                        noteId = dao.insert(
+                            Note(
+                                header = formattedHeader,
+                                content = formattedContent,
+                                created = noteCreated,
+                                lastOpened = noteLastOpened,
+                                scroll = scrollState.value,
+                                cursor = textState.value.selection.start
+                            ).toEntity()
+                        )
+                    } else {
+                        dao.update(
+                            Note(
+                                id = noteId,
+                                header = formattedHeader,
+                                content = formattedContent,
+                                created = noteCreated,
+                                lastOpened = noteLastOpened,
+                                scroll = scrollState.value,
+                                cursor = textState.value.selection.start
+                            ).toEntity()
+                        )
                     }
-                    saved = true
-                    currentHeader = headerState.value
-                    currentText = textState.value.text
-                    noteScroll = scrollState.value
-                    noteCursor = textState.value.selection.start
                 }
+                saved = true
+                currentHeader = headerState.value
+                currentText = textState.value.text
+                noteScroll = scrollState.value
+                noteCursor = textState.value.selection.start
             }
+        }
 
+        Scaffold(
+            contentWindowInsets = WindowInsets.safeDrawing,
+            topBar = { NoteEditorTopBar() }
+        ) { innerPadding ->
             Box(
                 modifier = Modifier
+                    .padding(innerPadding)
+                    .consumeWindowInsets(innerPadding)
                     .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .imePadding()
-                ) {
-                    Text(
-                        text = "Created: ${noteCreated.toDateString()}",
-                        style = MaterialTheme.typography.labelSmall
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        )
                     )
-                    if (readOnly && noteDeleted != 0L) {
-                        val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
+            ) {
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
+                            .imePadding()
+                    ) {
                         Text(
-                            text = "Days remaining: $daysLeft",
+                            text = "Created: ${noteCreated.toDateString()}",
                             style = MaterialTheme.typography.labelSmall
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    Box {
-                        if (headerState.value.isEmpty()) {
+                        if (readOnly && noteDeleted != 0L) {
+                            val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
                             Text(
-                                text = "Header",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "Days remaining: $daysLeft",
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        Box {
+                            if (headerState.value.isEmpty()) {
+                                Text(
+                                    text = "Header",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            BasicTextField(
+                                value = headerState.value,
+                                onValueChange = {
+                                    if (it.lines().size <= 3) {
+                                        val formatted = it.capitalizeSentences()
+                                        headerState.value = formatted
+                                        currentHeader = formatted
+                                        saved = false
+                                    }
+                                },
+                                enabled = !readOnly,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .bringIntoViewRequester(headerBringIntoView)
+                                    .onFocusEvent {
+                                        if (it.isFocused) {
+                                            scope.launch {
+                                                headerBringIntoView.bringIntoView()
+                                            }
+                                        }
+                                    },
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = textSize.sp
+                                ),
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                ),
+                                maxLines = 3
                             )
                         }
-                        BasicTextField(
-                            value = headerState.value,
-                            onValueChange = {
-                                if (it.lines().size <= 3) {
-                                    val formatted = it.capitalizeSentences()
-                                    headerState.value = formatted
-                                    currentHeader = formatted
+
+                        androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                        Box(modifier = Modifier.weight(1f)) {
+                            if (textState.value.text.isEmpty()) {
+                                Text(
+                                    text = "Start writing...",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            BasicTextField(
+                                value = textState.value,
+                                onValueChange = {
+                                    val formatted = it.text.capitalizeSentences()
+                                    textState.value = it.copy(text = formatted)
+                                    currentText = formatted
+                                    noteCursor = it.selection.start
                                     saved = false
-                                }
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .bringIntoViewRequester(headerBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            headerBringIntoView.bringIntoView()
-                                        }
-                                    }
                                 },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            ),
-                            maxLines = 3
-                        )
-                    }
-
-                    androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (textState.value.text.isEmpty()) {
-                            Text(
-                                text = "Start writing...",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        BasicTextField(
-                            value = textState.value,
-                            onValueChange = {
-                                val formatted = it.text.capitalizeSentences()
-                                textState.value = it.copy(text = formatted)
-                                currentText = formatted
-                                noteCursor = it.selection.start
-                                saved = false
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .bringIntoViewRequester(textBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            textBringIntoView.bringIntoView()
+                                enabled = !readOnly,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .bringIntoViewRequester(textBringIntoView)
+                                    .onFocusEvent {
+                                        if (it.isFocused) {
+                                            scope.launch {
+                                                textBringIntoView.bringIntoView()
+                                            }
                                         }
-                                    }
-                                },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            )
-                        )
-                    }
-                }
-
-
-                if (!readOnly) {
-                    Box(
-                        modifier = Modifier
-                            .align(androidx.compose.ui.Alignment.BottomEnd)
-                            .padding(end = 16.dp, bottom = 80.dp)
-                    ) {
-                        SpeedDialFab(
-                            onDelete = {
-                                if (noteId != 0L) {
-                                    saved = true
-                                    scope.launch(Dispatchers.IO) {
-                                        val db = EventDatabase.getInstance(context)
-                                        val note = Note(
-                                            id = noteId,
-                                            header = currentHeader,
-                                            content = currentText,
-                                            created = noteCreated,
-                                            lastOpened = noteLastOpened
-                                        )
-                                        db.trashedNoteDao().insert(
-                                            TrashedNote(
-                                                header = note.header,
-                                                content = note.content,
-                                                created = note.created
-                                            ).toEntity()
-                                        )
-                                        db.noteDao().delete(note.toEntity())
-                                    }
-                                    (context as? android.app.Activity)?.finish()
-                                }
-                            },
-                            onTextSize = { showSizeDialog = true },
-                            onShare = { shareMenuExpanded = true }
-                        )
-
-                        DropdownMenu(
-                            expanded = shareMenuExpanded,
-                            onDismissRequest = { shareMenuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Word") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val note = Note(
-                                        id = noteId,
-                                        header = currentHeader,
-                                        content = currentText,
-                                        created = noteCreated,
-                                        lastOpened = noteLastOpened
-                                    )
-                                    note.shareAsDocx(context)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Text File") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val note = Note(
-                                        id = noteId,
-                                        header = currentHeader,
-                                        content = currentText,
-                                        created = noteCreated,
-                                        lastOpened = noteLastOpened
-                                    )
-                                    note.shareAsTxt(context)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("PDF") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val note = Note(
-                                        id = noteId,
-                                        header = currentHeader,
-                                        content = currentText,
-                                        created = noteCreated,
-                                        lastOpened = noteLastOpened
-                                    )
-                                    note.shareAsPdf(context)
-                                }
+                                    },
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = textSize.sp
+                                ),
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                )
                             )
                         }
                     }
@@ -346,9 +303,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     if (showSizeDialog) {
                         AlertDialog(
                             onDismissRequest = { showSizeDialog = false },
-                            confirmButton = {
-                                TextButton(onClick = { showSizeDialog = false }) { Text("Close") }
-                            },
+                            confirmButton = { TextButton(onClick = { showSizeDialog = false }) { Text("Close") } },
                             title = { Text("Select Text Size") },
                             text = {
                                 Column {
@@ -372,6 +327,132 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
             }
         }
+    }
+
+    @Composable
+    fun NoteEditorTopBar() {
+        val context = LocalContext.current
+        CenterAlignedTopAppBar(
+            modifier = Modifier
+                .height(80.dp)
+                .shadow(4.dp, RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+                .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ),
+            title = {
+                Text(
+                    text = "Note",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            navigationIcon = {},
+            actions = {
+                Box {
+                    IconButton(onClick = { shareMenuExpanded = true }) {
+                        Icon(Icons.Default.Share, contentDescription = "Share")
+                    }
+                    DropdownMenu(
+                        expanded = shareMenuExpanded,
+                        onDismissRequest = { shareMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Word") },
+                            onClick = {
+                                shareMenuExpanded = false
+                                val note = Note(
+                                    id = noteId,
+                                    header = currentHeader,
+                                    content = currentText,
+                                    created = noteCreated,
+                                    lastOpened = noteLastOpened
+                                )
+                                note.shareAsDocx(context)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Text File") },
+                            onClick = {
+                                shareMenuExpanded = false
+                                val note = Note(
+                                    id = noteId,
+                                    header = currentHeader,
+                                    content = currentText,
+                                    created = noteCreated,
+                                    lastOpened = noteLastOpened
+                                )
+                                note.shareAsTxt(context)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("PDF") },
+                            onClick = {
+                                shareMenuExpanded = false
+                                val note = Note(
+                                    id = noteId,
+                                    header = currentHeader,
+                                    content = currentText,
+                                    created = noteCreated,
+                                    lastOpened = noteLastOpened
+                                )
+                                note.shareAsPdf(context)
+                            }
+                        )
+                    }
+                }
+
+                Box {
+                    IconButton(onClick = { overflowExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+                    }
+                    DropdownMenu(
+                        expanded = overflowExpanded,
+                        onDismissRequest = { overflowExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Text Size") },
+                            onClick = {
+                                overflowExpanded = false
+                                showSizeDialog = true
+                            }
+                        )
+                        if (!readOnly && noteId != 0L) {
+                            DropdownMenuItem(
+                                text = { Text("Delete") },
+                                onClick = {
+                                    overflowExpanded = false
+                                    saved = true
+                                    lifecycleScope.launch(Dispatchers.IO) {
+                                        val db = EventDatabase.getInstance(context)
+                                        val note = Note(
+                                            id = noteId,
+                                            header = currentHeader,
+                                            content = currentText,
+                                            created = noteCreated,
+                                            lastOpened = noteLastOpened
+                                        )
+                                        db.trashedNoteDao().insert(
+                                            TrashedNote(
+                                                header = note.header,
+                                                content = note.content,
+                                                created = note.created
+                                            ).toEntity()
+                                        )
+                                        db.noteDao().delete(note.toEntity())
+                                    }
+                                    finish()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        )
     }
 
     override fun onStop() {
