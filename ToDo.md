@@ -1,16 +1,16 @@
 /*
-- Clean the UI and make it look better, use dropdown menus instead of having buttons blocking my UI.
 
-- Make every new event to come with every day selected by default. right now no day is selected yet 
-every is marked.
+- The lower part of the screen that has the back button, minimazing circle and the third button 
+right now  covers my Calendar display.
+
+- I need to fix and improve the app. Debug it!
+
+- Clean the UI and make it look better, use dropdown menus instead of having buttons blocking my UI.
 
 - Implement the desired Calendar View API to the Weekly Goals Record.
 
 - Architecture – Introducing ViewModel and repository layers for notes would better separate UI 
 and data logic.
-
-- When the user selects two items and then clicks the back arrow, the items should be deselected, 
-but the app should remain on the current screen instead of navigating back to the previous activity.
 
 - Make notes able to add addresses and display google maps. Same with events.
 
@@ -29,8 +29,6 @@ of just having a text no events, add a sleepy bear or something.
 - Whenever I cut something it must be removed from the note asap. Currently when I cut something
 the note still keeps it. If the note becomes empty when I cut the text then the note must be
 automatically deleted.
-
-- Make it so that the note can be shared as a text file too.
 
 - I want the note to have a proper title when I share it. It will be shared with the name of the
 first 2 words in the note as a title.
