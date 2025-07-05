@@ -57,6 +57,7 @@ fun SegmentScreen(
     content: @Composable () -> Unit
 ) {
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             CenterAlignedTopAppBar(
                 modifier = Modifier
