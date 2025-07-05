@@ -49,7 +49,12 @@ import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsDocx
 import com.example.multi.util.shareAsPdf
 import com.example.multi.util.shareAsTxt
-import com.example.multi.ui.SpeedDialFab
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -75,6 +80,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var currentHeader: String = ""
     private var currentText: String = ""
     private var saved = false
+
+    private val textSizeState = mutableIntStateOf(20)
+    private val showSizeDialogState = mutableStateOf(false)
+    private val shareMenuExpandedState = mutableStateOf(false)
+    private val overflowMenuExpandedState = mutableStateOf(false)
+
+    private var textSize by textSizeState
+    private var showSizeDialog by showSizeDialogState
+    private var shareMenuExpanded by shareMenuExpandedState
+    private var overflowMenuExpanded by overflowMenuExpandedState
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
@@ -106,9 +121,10 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
-            var textSize by remember { mutableIntStateOf(20) }
-            var showSizeDialog by remember { mutableStateOf(false) }
-            var shareMenuExpanded by remember { mutableStateOf(false) }
+            var textSize by textSizeState
+            var showSizeDialog by showSizeDialogState
+            var shareMenuExpanded by shareMenuExpandedState
+            var overflowMenuExpanded by overflowMenuExpandedState
             val density = LocalDensity.current
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
@@ -260,89 +276,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
 
                 if (!readOnly) {
-                    Box(
-                        modifier = Modifier
-                            .align(androidx.compose.ui.Alignment.BottomEnd)
-                            .padding(end = 16.dp, bottom = 80.dp)
-                    ) {
-                        SpeedDialFab(
-                            onDelete = {
-                                if (noteId != 0L) {
-                                    saved = true
-                                    scope.launch(Dispatchers.IO) {
-                                        val db = EventDatabase.getInstance(context)
-                                        val note = Note(
-                                            id = noteId,
-                                            header = currentHeader,
-                                            content = currentText,
-                                            created = noteCreated,
-                                            lastOpened = noteLastOpened
-                                        )
-                                        db.trashedNoteDao().insert(
-                                            TrashedNote(
-                                                header = note.header,
-                                                content = note.content,
-                                                created = note.created
-                                            ).toEntity()
-                                        )
-                                        db.noteDao().delete(note.toEntity())
-                                    }
-                                    (context as? android.app.Activity)?.finish()
-                                }
-                            },
-                            onTextSize = { showSizeDialog = true },
-                            onShare = { shareMenuExpanded = true }
-                        )
-
-                        DropdownMenu(
-                            expanded = shareMenuExpanded,
-                            onDismissRequest = { shareMenuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Word") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val note = Note(
-                                        id = noteId,
-                                        header = currentHeader,
-                                        content = currentText,
-                                        created = noteCreated,
-                                        lastOpened = noteLastOpened
-                                    )
-                                    note.shareAsDocx(context)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Text File") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val note = Note(
-                                        id = noteId,
-                                        header = currentHeader,
-                                        content = currentText,
-                                        created = noteCreated,
-                                        lastOpened = noteLastOpened
-                                    )
-                                    note.shareAsTxt(context)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("PDF") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val note = Note(
-                                        id = noteId,
-                                        header = currentHeader,
-                                        content = currentText,
-                                        created = noteCreated,
-                                        lastOpened = noteLastOpened
-                                    )
-                                    note.shareAsPdf(context)
-                                }
-                            )
-                        }
-                    }
-
+                    // Top bar actions handle share and delete. Only dialog is shown here.
                     if (showSizeDialog) {
                         AlertDialog(
                             onDismissRequest = { showSizeDialog = false },
@@ -370,6 +304,112 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         )
                     }
                 }
+
+            }
+        }
+    }
+
+    @Composable
+    override fun SegmentActions() {
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+
+        Box {
+            IconButton(onClick = { shareMenuExpanded = true }) {
+                Icon(Icons.Default.Share, contentDescription = "Share")
+            }
+            DropdownMenu(
+                expanded = shareMenuExpanded,
+                onDismissRequest = { shareMenuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Word") },
+                    onClick = {
+                        shareMenuExpanded = false
+                        val note = Note(
+                            id = noteId,
+                            header = currentHeader,
+                            content = currentText,
+                            created = noteCreated,
+                            lastOpened = noteLastOpened
+                        )
+                        note.shareAsDocx(context)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Text File") },
+                    onClick = {
+                        shareMenuExpanded = false
+                        val note = Note(
+                            id = noteId,
+                            header = currentHeader,
+                            content = currentText,
+                            created = noteCreated,
+                            lastOpened = noteLastOpened
+                        )
+                        note.shareAsTxt(context)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("PDF") },
+                    onClick = {
+                        shareMenuExpanded = false
+                        val note = Note(
+                            id = noteId,
+                            header = currentHeader,
+                            content = currentText,
+                            created = noteCreated,
+                            lastOpened = noteLastOpened
+                        )
+                        note.shareAsPdf(context)
+                    }
+                )
+            }
+        }
+
+        Box {
+            IconButton(onClick = { overflowMenuExpanded = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+            }
+            DropdownMenu(
+                expanded = overflowMenuExpanded,
+                onDismissRequest = { overflowMenuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Text Size") },
+                    onClick = {
+                        overflowMenuExpanded = false
+                        showSizeDialog = true
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    onClick = {
+                        overflowMenuExpanded = false
+                        if (noteId != 0L) {
+                            saved = true
+                            scope.launch(Dispatchers.IO) {
+                                val db = EventDatabase.getInstance(context)
+                                val note = Note(
+                                    id = noteId,
+                                    header = currentHeader,
+                                    content = currentText,
+                                    created = noteCreated,
+                                    lastOpened = noteLastOpened
+                                )
+                                db.trashedNoteDao().insert(
+                                    TrashedNote(
+                                        header = note.header,
+                                        content = note.content,
+                                        created = note.created
+                                    ).toEntity()
+                                )
+                                db.noteDao().delete(note.toEntity())
+                            }
+                            (context as? android.app.Activity)?.finish()
+                        }
+                    }
+                )
             }
         }
     }

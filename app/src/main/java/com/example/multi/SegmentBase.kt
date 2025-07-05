@@ -31,6 +31,9 @@ open class SegmentActivity(
         Text(segmentTitle)
     }
 
+    @Composable
+    open fun SegmentActions() {}
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -39,7 +42,8 @@ open class SegmentActivity(
                 SegmentScreen(
                     title = segmentTitle,
                     onBack = { finish() },
-                    onClose = { finishAffinity() }
+                    onClose = { finishAffinity() },
+                    actions = { SegmentActions() }
                 ) {
                     SegmentContent()
                 }
@@ -54,6 +58,7 @@ fun SegmentScreen(
     title: String,
     onBack: () -> Unit,
     onClose: () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable () -> Unit
 ) {
     Scaffold(
@@ -79,7 +84,7 @@ fun SegmentScreen(
                     )
                 },
                 navigationIcon = {},
-                actions = {}
+                actions = { actions() }
             )
         }
     ) { innerPadding ->
