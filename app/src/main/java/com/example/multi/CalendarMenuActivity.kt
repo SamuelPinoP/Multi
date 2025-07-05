@@ -51,6 +51,7 @@ class CalendarMenuActivity : ComponentActivity() {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
                         .background(
                             Brush.verticalGradient(
                                 listOf(

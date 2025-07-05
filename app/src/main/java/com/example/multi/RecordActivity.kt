@@ -68,6 +68,7 @@ fun RecordScreen() {
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             CenterAlignedTopAppBar(
                 modifier = Modifier
