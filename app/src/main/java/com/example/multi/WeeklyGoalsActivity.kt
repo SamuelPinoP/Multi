@@ -68,8 +68,35 @@ private fun WeeklyGoalsScreen() {
     val context = LocalContext.current
     val goals = remember { mutableStateListOf<WeeklyGoal>() }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
+    var selectedGoalIndex by remember { mutableStateOf<Int?>(null) }
+    var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    fun updateDayState(goalIndex: Int, dayIndex: Int, completed: Boolean) {
+        val g = goals[goalIndex]
+        val chars = g.dayStates.toCharArray()
+        val prev = chars[dayIndex]
+        val newChar = if (completed) 'C' else 'M'
+        if (prev == newChar) return
+        chars[dayIndex] = newChar
+        var remaining = g.remaining
+        if (completed && prev != 'C') {
+            remaining = (remaining - 1).coerceAtLeast(0)
+        } else if (!completed && prev == 'C') {
+            remaining += 1
+        }
+        val updated = g.copy(
+            dayStates = String(chars),
+            remaining = remaining,
+            lastCheckedDate = if (completed) LocalDate.now().toString() else g.lastCheckedDate
+        )
+        goals[goalIndex] = updated
+        scope.launch {
+            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+        }
+    }
 
     LaunchedEffect(Unit) {
         val db = EventDatabase.getInstance(context)
@@ -93,7 +120,8 @@ private fun WeeklyGoalsScreen() {
                     completed = completed,
                     frequency = model.frequency,
                     weekStart = prevStartStr,
-                    weekEnd = prevEndStr
+                    weekEnd = prevEndStr,
+                    dayStates = model.dayStates
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -107,10 +135,12 @@ private fun WeeklyGoalsScreen() {
             val dayIndex = today.dayOfWeek.value % 7
             val chars = model.dayStates.toCharArray()
             var changed = false
-            for (i in 0 until dayIndex) {
-                if (chars[i] == '-') {
-                    chars[i] = 'M'
-                    changed = true
+            if (model.remaining > 0) {
+                for (i in 0 until dayIndex) {
+                    if (chars[i] == '-') {
+                        chars[i] = 'M'
+                        changed = true
+                    }
                 }
             }
             if (changed) {
@@ -249,21 +279,8 @@ private fun WeeklyGoalsScreen() {
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             DayButtonsRow(states = goal.dayStates) { dayIndex ->
-                                val todayIndex = LocalDate.now().dayOfWeek.value % 7
-                                if (dayIndex == todayIndex && goal.dayStates[dayIndex] == '-') {
-                                    val chars = goal.dayStates.toCharArray()
-                                    chars[dayIndex] = 'C'
-                                    val updated = goal.copy(
-                                        dayStates = String(chars),
-                                        lastCheckedDate = LocalDate.now().toString(),
-                                        remaining = (goal.remaining - 1).coerceAtLeast(0)
-                                    )
-                                    goals[index] = updated
-                                    scope.launch {
-                                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                                    }
-                                }
+                                selectedGoalIndex = index
+                                selectedDayIndex = dayIndex
                             }
                         }
                     }
@@ -281,6 +298,33 @@ private fun WeeklyGoalsScreen() {
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 80.dp)
         )
+
+        if (selectedGoalIndex != null && selectedDayIndex != null) {
+            AlertDialog(
+                onDismissRequest = { selectedGoalIndex = null; selectedDayIndex = null },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            updateDayState(selectedGoalIndex!!, selectedDayIndex!!, true)
+                            selectedGoalIndex = null
+                            selectedDayIndex = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                    ) { Icon(Icons.Default.Check, contentDescription = null) }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = {
+                            updateDayState(selectedGoalIndex!!, selectedDayIndex!!, false)
+                            selectedGoalIndex = null
+                            selectedDayIndex = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    ) { Icon(Icons.Default.Close, contentDescription = null) }
+                },
+                title = { Text("Mark Day") }
+            )
+        }
 
         val index = editingIndex
         if (index != null) {
@@ -426,7 +470,7 @@ private fun WeeklyGoalDialog(
 }
 
 @Composable
-private fun DayButtonsRow(states: String, onClick: (Int) -> Unit) {
+private fun DayButtonsRow(states: String, onClick: ((Int) -> Unit)? = null) {
     val labels = listOf("S", "M", "T", "W", "T", "F", "S")
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -439,7 +483,8 @@ private fun DayButtonsRow(states: String, onClick: (Int) -> Unit) {
                 else -> MaterialTheme.colorScheme.surfaceVariant
             }
             Button(
-                onClick = { onClick(index) },
+                onClick = { onClick?.invoke(index) },
+                enabled = onClick != null,
                 colors = ButtonDefaults.buttonColors(containerColor = color),
                 contentPadding = PaddingValues(0.dp),
                 modifier = Modifier.size(40.dp)
