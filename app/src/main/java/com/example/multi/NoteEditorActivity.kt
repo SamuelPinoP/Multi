@@ -69,7 +69,7 @@ const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
 
-class NoteEditorActivity : SegmentActivity("Note") {
+class NoteEditorActivity : SegmentActivity("Note", showBack = true) {
     private var noteId: Long = 0L
     private var noteCreated: Long = System.currentTimeMillis()
     private var noteLastOpened: Long = System.currentTimeMillis()

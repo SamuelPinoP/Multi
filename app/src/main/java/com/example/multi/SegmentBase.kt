@@ -11,8 +11,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,7 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import com.example.multi.ui.theme.MultiTheme
 
 open class SegmentActivity(
-    private val segmentTitle: String
+    private val segmentTitle: String,
+    private val showBack: Boolean = false
 ) : ComponentActivity() {
     @Composable
     open fun SegmentContent() {
@@ -41,6 +46,7 @@ open class SegmentActivity(
             MultiTheme {
                 SegmentScreen(
                     title = segmentTitle,
+                    showBack = showBack,
                     onBack = { finish() },
                     onClose = { finishAffinity() },
                     actions = { SegmentActions() }
@@ -56,6 +62,7 @@ open class SegmentActivity(
 @Composable
 fun SegmentScreen(
     title: String,
+    showBack: Boolean,
     onBack: () -> Unit,
     onClose: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
@@ -83,7 +90,16 @@ fun SegmentScreen(
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
-                navigationIcon = {},
+                navigationIcon = {
+                    if (showBack) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                },
                 actions = { actions() }
             )
         }

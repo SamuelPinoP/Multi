@@ -21,9 +21,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
+import com.example.multi.ui.NotesFab
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -280,30 +280,16 @@ class NotesActivity : SegmentActivity("Notes") {
                     }
                 }
             } else {
-                ExtendedFloatingActionButton(
-                    onClick = {
+                NotesFab(
+                    onNewNote = {
                         context.startActivity(Intent(context, NoteEditorActivity::class.java))
                     },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { M3Text("New Note") },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    onTrash = {
+                        context.startActivity(Intent(context, TrashbinActivity::class.java))
+                    },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 80.dp)
-                )
-
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        context.startActivity(Intent(context, TrashbinActivity::class.java))
-                    },
-                    icon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                    text = { M3Text("Trash") },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 16.dp, bottom = 80.dp)
                 )
             }
         }
