@@ -99,8 +99,22 @@ private fun WeeklyGoalsScreen() {
                 model = model.copy(
                     remaining = model.frequency,
                     weekNumber = currentWeek,
-                    lastCheckedDate = null
+                    lastCheckedDate = null,
+                    dayStates = DEFAULT_DAY_STATES
                 )
+                withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
+            }
+            val dayIndex = today.dayOfWeek.value % 7
+            val chars = model.dayStates.toCharArray()
+            var changed = false
+            for (i in 0 until dayIndex) {
+                if (chars[i] == '-') {
+                    chars[i] = 'M'
+                    changed = true
+                }
+            }
+            if (changed) {
+                model = model.copy(dayStates = String(chars))
                 withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
             }
             goals.add(model)
@@ -233,6 +247,24 @@ private fun WeeklyGoalsScreen() {
                                     .fillMaxWidth()
                                     .padding(top = 8.dp)
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            DayButtonsRow(states = goal.dayStates) { dayIndex ->
+                                val todayIndex = LocalDate.now().dayOfWeek.value % 7
+                                if (dayIndex == todayIndex && goal.dayStates[dayIndex] == '-') {
+                                    val chars = goal.dayStates.toCharArray()
+                                    chars[dayIndex] = 'C'
+                                    val updated = goal.copy(
+                                        dayStates = String(chars),
+                                        lastCheckedDate = LocalDate.now().toString(),
+                                        remaining = (goal.remaining - 1).coerceAtLeast(0)
+                                    )
+                                    goals[index] = updated
+                                    scope.launch {
+                                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -391,4 +423,29 @@ private fun WeeklyGoalDialog(
             }
         }
     )
+}
+
+@Composable
+private fun DayButtonsRow(states: String, onClick: (Int) -> Unit) {
+    val labels = listOf("S", "M", "T", "W", "T", "F", "S")
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        labels.forEachIndexed { index, label ->
+            val color = when (states[index]) {
+                'C' -> Color(0xFF4CAF50)
+                'M' -> Color.Red
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            }
+            Button(
+                onClick = { onClick(index) },
+                colors = ButtonDefaults.buttonColors(containerColor = color),
+                contentPadding = PaddingValues(0.dp),
+                modifier = Modifier.size(40.dp)
+            ) {
+                Text(label)
+            }
+        }
+    }
 }
