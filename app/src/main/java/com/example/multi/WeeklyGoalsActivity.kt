@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +52,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.DayButtonsRow
 
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -68,6 +70,8 @@ private fun WeeklyGoalsScreen() {
     val context = LocalContext.current
     val goals = remember { mutableStateListOf<WeeklyGoal>() }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
+    var selectedGoalIndex by remember { mutableStateOf<Int?>(null) }
+    var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -87,13 +91,14 @@ private fun WeeklyGoalsScreen() {
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
-                val completed = model.frequency - model.remaining
+                val completed = model.dayStates.count { it == 'C' }
                 val record = WeeklyGoalRecord(
                     header = model.header,
                     completed = completed,
                     frequency = model.frequency,
                     weekStart = prevStartStr,
-                    weekEnd = prevEndStr
+                    weekEnd = prevEndStr,
+                    dayStates = model.dayStates
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -102,19 +107,6 @@ private fun WeeklyGoalsScreen() {
                     lastCheckedDate = null,
                     dayStates = DEFAULT_DAY_STATES
                 )
-                withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
-            }
-            val dayIndex = today.dayOfWeek.value % 7
-            val chars = model.dayStates.toCharArray()
-            var changed = false
-            for (i in 0 until dayIndex) {
-                if (chars[i] == '-') {
-                    chars[i] = 'M'
-                    changed = true
-                }
-            }
-            if (changed) {
-                model = model.copy(dayStates = String(chars))
                 withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
             }
             goals.add(model)
@@ -249,21 +241,8 @@ private fun WeeklyGoalsScreen() {
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             DayButtonsRow(states = goal.dayStates) { dayIndex ->
-                                val todayIndex = LocalDate.now().dayOfWeek.value % 7
-                                if (dayIndex == todayIndex && goal.dayStates[dayIndex] == '-') {
-                                    val chars = goal.dayStates.toCharArray()
-                                    chars[dayIndex] = 'C'
-                                    val updated = goal.copy(
-                                        dayStates = String(chars),
-                                        lastCheckedDate = LocalDate.now().toString(),
-                                        remaining = (goal.remaining - 1).coerceAtLeast(0)
-                                    )
-                                    goals[index] = updated
-                                    scope.launch {
-                                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                                    }
-                                }
+                                selectedGoalIndex = index
+                                selectedDayIndex = dayIndex
                             }
                         }
                     }
@@ -327,6 +306,38 @@ private fun WeeklyGoalsScreen() {
                                 withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                             }
                         }
+                    }
+                }
+            )
+        }
+
+        val gIndex = selectedGoalIndex
+        val dIndex = selectedDayIndex
+        if (gIndex != null && dIndex != null) {
+            DayStatusDialog(
+                onDismiss = { selectedGoalIndex = null; selectedDayIndex = null },
+                onCompleted = {
+                    val g = goals[gIndex]
+                    val chars = g.dayStates.toCharArray()
+                    chars[dIndex] = 'C'
+                    val remaining = g.frequency - chars.count { it == 'C' }
+                    val updated = g.copy(dayStates = String(chars), remaining = remaining)
+                    goals[gIndex] = updated
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                    }
+                },
+                onMissed = {
+                    val g = goals[gIndex]
+                    val chars = g.dayStates.toCharArray()
+                    chars[dIndex] = 'M'
+                    val remaining = g.frequency - chars.count { it == 'C' }
+                    val updated = g.copy(dayStates = String(chars), remaining = remaining)
+                    goals[gIndex] = updated
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                     }
                 }
             )
@@ -426,26 +437,29 @@ private fun WeeklyGoalDialog(
 }
 
 @Composable
-private fun DayButtonsRow(states: String, onClick: (Int) -> Unit) {
-    val labels = listOf("S", "M", "T", "W", "T", "F", "S")
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        labels.forEachIndexed { index, label ->
-            val color = when (states[index]) {
-                'C' -> Color(0xFF4CAF50)
-                'M' -> Color.Red
-                else -> MaterialTheme.colorScheme.surfaceVariant
-            }
-            Button(
-                onClick = { onClick(index) },
-                colors = ButtonDefaults.buttonColors(containerColor = color),
-                contentPadding = PaddingValues(0.dp),
-                modifier = Modifier.size(40.dp)
-            ) {
-                Text(label)
+private fun DayStatusDialog(
+    onDismiss: () -> Unit,
+    onCompleted: () -> Unit,
+    onMissed: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        dismissButton = {},
+        text = {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Button(
+                    onClick = { onMissed(); onDismiss() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                    modifier = Modifier.weight(1f)
+                ) { Icon(Icons.Default.Close, contentDescription = null) }
+                Button(
+                    onClick = { onCompleted(); onDismiss() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                    modifier = Modifier.weight(1f)
+                ) { Icon(Icons.Default.Check, contentDescription = null) }
             }
         }
-    }
+    )
 }
+
