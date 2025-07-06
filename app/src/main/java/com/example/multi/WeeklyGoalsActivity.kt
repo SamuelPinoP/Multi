@@ -99,9 +99,24 @@ private fun WeeklyGoalsScreen() {
                 model = model.copy(
                     remaining = model.frequency,
                     weekNumber = currentWeek,
-                    lastCheckedDate = null
+                    lastCheckedDate = null,
+                    dayStates = "NNNNNNN"
                 )
                 withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
+            } else {
+                val dayIndex = today.dayOfWeek.value % 7
+                val chars = model.dayStates.toCharArray()
+                var changed = false
+                for (i in 0 until dayIndex) {
+                    if (chars[i] == 'N') {
+                        chars[i] = 'M'
+                        changed = true
+                    }
+                }
+                if (changed) {
+                    model = model.copy(dayStates = String(chars))
+                    withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
+                }
             }
             goals.add(model)
         }
@@ -199,8 +214,8 @@ private fun WeeklyGoalsScreen() {
                                         text = "${goal.frequency - goal.remaining}/${goal.frequency}",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
-                                    val today = LocalDate.now().toString()
-                                    if (goal.lastCheckedDate != today && goal.remaining > 0) {
+                                    val todayIndex = LocalDate.now().dayOfWeek.value % 7
+                                    if (goal.dayStates[todayIndex] == 'N' && goal.remaining > 0) {
                                         Icon(
                                             Icons.Default.Check,
                                             contentDescription = "Complete",
@@ -209,18 +224,50 @@ private fun WeeklyGoalsScreen() {
                                                 .padding(start = 8.dp)
                                                 .clickable {
                                                     if (goal.remaining > 0) {
-                                                        val updated = goal.copy(
-                                                            remaining = goal.remaining - 1,
-                                                            lastCheckedDate = today
-                                                        )
-                                                        goals[index] = updated
-                                                        scope.launch {
-                                                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                                        val chars = goal.dayStates.toCharArray()
+                                                        if (chars[todayIndex] == 'N') {
+                                                            chars[todayIndex] = 'C'
+                                                            val today = LocalDate.now().toString()
+                                                            val updated = goal.copy(
+                                                                remaining = goal.remaining - 1,
+                                                                lastCheckedDate = today,
+                                                                dayStates = String(chars)
+                                                            )
+                                                            goals[index] = updated
+                                                            scope.launch {
+                                                                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                                            }
                                                         }
                                                     }
                                                 }
                                         )
+                                    }
+                                }
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                val labels = listOf("S", "M", "T", "W", "T", "F", "S")
+                                for (i in 0..6) {
+                                    val color = when (goal.dayStates[i]) {
+                                        'C' -> Color.Green
+                                        'M' -> Color.Red
+                                        else -> MaterialTheme.colorScheme.surfaceVariant
+                                    }
+                                    Button(
+                                        onClick = {},
+                                        enabled = false,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = color,
+                                            disabledContainerColor = color
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(labels[i])
                                     }
                                 }
                             }
@@ -288,11 +335,20 @@ private fun WeeklyGoalsScreen() {
                     {
                         val g = goals[index]
                         if (g.remaining > 0) {
-                            val updated = g.copy(remaining = g.remaining - 1)
-                            goals[index] = updated
-                            scope.launch {
-                                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                            val todayIndex = LocalDate.now().dayOfWeek.value % 7
+                            val chars = g.dayStates.toCharArray()
+                            if (chars[todayIndex] == 'N') {
+                                chars[todayIndex] = 'C'
+                                val updated = g.copy(
+                                    remaining = g.remaining - 1,
+                                    lastCheckedDate = LocalDate.now().toString(),
+                                    dayStates = String(chars)
+                                )
+                                goals[index] = updated
+                                scope.launch {
+                                    val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                    withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                }
                             }
                         }
                     }
