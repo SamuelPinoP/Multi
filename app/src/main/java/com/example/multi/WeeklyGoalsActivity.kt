@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +69,7 @@ private fun WeeklyGoalsScreen() {
     val context = LocalContext.current
     val goals = remember { mutableStateListOf<WeeklyGoal>() }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
+    var daySelection by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -93,7 +95,8 @@ private fun WeeklyGoalsScreen() {
                     completed = completed,
                     frequency = model.frequency,
                     weekStart = prevStartStr,
-                    weekEnd = prevEndStr
+                    weekEnd = prevEndStr,
+                    dayStates = model.dayStates
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -249,21 +252,7 @@ private fun WeeklyGoalsScreen() {
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             DayButtonsRow(states = goal.dayStates) { dayIndex ->
-                                val todayIndex = LocalDate.now().dayOfWeek.value % 7
-                                if (dayIndex == todayIndex && goal.dayStates[dayIndex] == '-') {
-                                    val chars = goal.dayStates.toCharArray()
-                                    chars[dayIndex] = 'C'
-                                    val updated = goal.copy(
-                                        dayStates = String(chars),
-                                        lastCheckedDate = LocalDate.now().toString(),
-                                        remaining = (goal.remaining - 1).coerceAtLeast(0)
-                                    )
-                                    goals[index] = updated
-                                    scope.launch {
-                                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                                    }
-                                }
+                                daySelection = index to dayIndex
                             }
                         }
                     }
@@ -281,6 +270,29 @@ private fun WeeklyGoalsScreen() {
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 80.dp)
         )
+
+        daySelection?.let { (gIdx, dIdx) ->
+            val goal = goals[gIdx]
+            DayStatusDialog(
+                onCompleted = {
+                    val updated = updateDayState(goal, dIdx, 'C')
+                    goals[gIdx] = updated
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                    }
+                },
+                onMissed = {
+                    val updated = updateDayState(goal, dIdx, 'M')
+                    goals[gIdx] = updated
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                    }
+                },
+                onDismiss = { daySelection = null }
+            )
+        }
 
         val index = editingIndex
         if (index != null) {
@@ -426,7 +438,38 @@ private fun WeeklyGoalDialog(
 }
 
 @Composable
-private fun DayButtonsRow(states: String, onClick: (Int) -> Unit) {
+private fun DayStatusDialog(
+    onCompleted: () -> Unit,
+    onMissed: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        text = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(
+                    onClick = { onMissed(); onDismiss() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Icon(Icons.Filled.Close, contentDescription = null)
+                }
+                Button(
+                    onClick = { onCompleted(); onDismiss() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                ) {
+                    Icon(Icons.Filled.Check, contentDescription = null)
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun DayButtonsRow(states: String, onClick: ((Int) -> Unit)? = null) {
     val labels = listOf("S", "M", "T", "W", "T", "F", "S")
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -439,7 +482,8 @@ private fun DayButtonsRow(states: String, onClick: (Int) -> Unit) {
                 else -> MaterialTheme.colorScheme.surfaceVariant
             }
             Button(
-                onClick = { onClick(index) },
+                onClick = { onClick?.invoke(index) },
+                enabled = onClick != null,
                 colors = ButtonDefaults.buttonColors(containerColor = color),
                 contentPadding = PaddingValues(0.dp),
                 modifier = Modifier.size(40.dp)
@@ -448,4 +492,21 @@ private fun DayButtonsRow(states: String, onClick: (Int) -> Unit) {
             }
         }
     }
+}
+
+private fun updateDayState(goal: WeeklyGoal, index: Int, newState: Char): WeeklyGoal {
+    val chars = goal.dayStates.toCharArray()
+    val old = chars[index]
+    if (old == newState) return goal
+    chars[index] = newState
+    var remaining = goal.remaining
+    if (old == 'C' && newState != 'C') {
+        remaining = (remaining + 1).coerceAtMost(goal.frequency)
+    }
+    if (old != 'C' && newState == 'C') {
+        remaining = (remaining - 1).coerceAtLeast(0)
+    }
+    val todayIndex = LocalDate.now().dayOfWeek.value % 7
+    val lastDate = if (index == todayIndex && newState == 'C') LocalDate.now().toString() else goal.lastCheckedDate
+    return goal.copy(dayStates = String(chars), remaining = remaining, lastCheckedDate = lastDate)
 }

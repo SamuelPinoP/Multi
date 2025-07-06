@@ -12,6 +12,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -132,26 +136,54 @@ fun RecordScreen() {
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(rec.header, style = MaterialTheme.typography.bodyLarge)
-                                    Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(rec.header, style = MaterialTheme.typography.bodyLarge)
+                                        Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                    Icon(
+                                        imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,
+                                        contentDescription = null,
+                                        tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                    )
                                 }
-                                Icon(
-                                    imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,
-                                    contentDescription = null,
-                                    tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                DayButtonsRow(states = rec.dayStates)
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DayButtonsRow(states: String) {
+    val labels = listOf("S", "M", "T", "W", "T", "F", "S")
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        labels.forEachIndexed { index, label ->
+            val color = when (states[index]) {
+                'C' -> Color(0xFF4CAF50)
+                'M' -> Color.Red
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            }
+            Button(
+                onClick = {},
+                enabled = false,
+                colors = ButtonDefaults.buttonColors(containerColor = color),
+                contentPadding = PaddingValues(0.dp),
+                modifier = Modifier.size(40.dp)
+            ) {
+                Text(label)
             }
         }
     }
