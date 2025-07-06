@@ -1,16 +1,15 @@
 /*
 
-- The lower part of the screen that has the back button, minimazing circle and the third button 
-right now  covers my Calendar display.
-
 - I need to fix and improve the app. Debug it!
 
-- Clean the UI and make it look better, use dropdown menus instead of having buttons blocking my UI.
+- I want the Weekly Goals View button in the Calendar activity to display the same exact kizitonwose 
+compose Calendar we have in the Events Calendar activity except that it needs to display the days 
+were I completed a weekly goal.
 
-- Implement the desired Calendar View API to the Weekly Goals Record.
+- Architecture – Introducing ViewModel and repository layers for notes would better separate UI and 
+data logic.
 
-- Architecture – Introducing ViewModel and repository layers for notes would better separate UI 
-and data logic.
+- Make sure the Record activity is still working.
 
 - Make notes able to add addresses and display google maps. Same with events.
 
