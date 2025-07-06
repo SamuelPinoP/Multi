@@ -19,11 +19,14 @@ fun daysRemainingInWeek(): Int {
     return ChronoUnit.DAYS.between(today, nextMonday).toInt() - 1
 }
 
+const val DEFAULT_DAY_STATES = "-------"
+
 data class WeeklyGoal(
     var id: Long = 0L,
     var header: String,
     var frequency: Int,
     var remaining: Int = frequency,
     var lastCheckedDate: String? = null,
-    var weekNumber: Int = currentWeek()
+    var weekNumber: Int = currentWeek(),
+    var dayStates: String = DEFAULT_DAY_STATES
 )
