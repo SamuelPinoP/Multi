@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.DayButtonsRow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -132,22 +133,28 @@ fun RecordScreen() {
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
-                            Row(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(16.dp)
                             ) {
-                                Column {
-                                    Text(rec.header, style = MaterialTheme.typography.bodyLarge)
-                                    Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(rec.header, style = MaterialTheme.typography.bodyLarge)
+                                        Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                    Icon(
+                                        imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,
+                                        contentDescription = null,
+                                        tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                    )
                                 }
-                                Icon(
-                                    imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,
-                                    contentDescription = null,
-                                    tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                DayButtonsRow(states = rec.dayStates) { }
                             }
                         }
                     }
