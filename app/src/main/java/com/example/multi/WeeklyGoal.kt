@@ -25,5 +25,7 @@ data class WeeklyGoal(
     var frequency: Int,
     var remaining: Int = frequency,
     var lastCheckedDate: String? = null,
-    var weekNumber: Int = currentWeek()
+    var weekNumber: Int = currentWeek(),
+    /** String representing day states for current week: C = completed, M = missed, - = pending */
+    var dayStates: String = "-------"
 )

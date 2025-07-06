@@ -86,6 +86,7 @@ private fun WeeklyGoalsScreen() {
         goals.clear()
         stored.forEach { entity ->
             var model = entity.toModel()
+            if (model.dayStates.length != 7) model = model.copy(dayStates = "-------")
             if (model.weekNumber != currentWeek) {
                 val completed = model.frequency - model.remaining
                 val record = WeeklyGoalRecord(
@@ -99,11 +100,28 @@ private fun WeeklyGoalsScreen() {
                 model = model.copy(
                     remaining = model.frequency,
                     weekNumber = currentWeek,
-                    lastCheckedDate = null
+                    lastCheckedDate = null,
+                    dayStates = "-------"
                 )
                 withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
             }
-            goals.add(model)
+            // Mark past uncompleted days as missed
+            val todayIndex = (today.dayOfWeek.value % 7)
+            val chars = model.dayStates.toCharArray()
+            var changed = false
+            for (i in 0 until todayIndex) {
+                if (chars[i] == '-') {
+                    chars[i] = 'M'
+                    changed = true
+                }
+            }
+            val completedCount = chars.count { it == 'C' }
+            val newRemaining = (model.frequency - completedCount).coerceAtLeast(0)
+            val updatedModel = model.copy(dayStates = String(chars), remaining = newRemaining)
+            if (changed || newRemaining != model.remaining) {
+                withContext(Dispatchers.IO) { dao.update(updatedModel.toEntity()) }
+            }
+            goals.add(updatedModel)
         }
     }
     
@@ -194,36 +212,49 @@ private fun WeeklyGoalsScreen() {
                                     text = goal.header,
                                     style = MaterialTheme.typography.bodyLarge
                                 )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "${goal.frequency - goal.remaining}/${goal.frequency}",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    val today = LocalDate.now().toString()
-                                    if (goal.lastCheckedDate != today && goal.remaining > 0) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = "Complete",
-                                            tint = Color.Green,
-                                            modifier = Modifier
-                                                .padding(start = 8.dp)
-                                                .clickable {
-                                                    if (goal.remaining > 0) {
-                                                        val updated = goal.copy(
-                                                            remaining = goal.remaining - 1,
-                                                            lastCheckedDate = today
-                                                        )
-                                                        goals[index] = updated
-                                                        scope.launch {
-                                                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                                                        }
-                                                    }
+                                Text(
+                                    text = "${goal.frequency - goal.remaining}/${goal.frequency}",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            val letters = listOf("S", "M", "T", "W", "T", "F", "S")
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                for (i in 0..6) {
+                                    val state = goal.dayStates[i]
+                                    val color = when (state) {
+                                        'C' -> Color.Green
+                                        'M' -> Color.Red
+                                        else -> MaterialTheme.colorScheme.surfaceVariant
+                                    }
+                                    Button(
+                                        onClick = {
+                                            val todayIndex = (LocalDate.now().dayOfWeek.value % 7)
+                                            if (i <= todayIndex && state != 'C') {
+                                                val chars = goal.dayStates.toCharArray()
+                                                chars[i] = 'C'
+                                                val newRemaining = (goal.frequency - chars.count { it == 'C' }).coerceAtLeast(0)
+                                                val updated = goal.copy(dayStates = String(chars), remaining = newRemaining)
+                                                goals[index] = updated
+                                                scope.launch {
+                                                    val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                                    withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                                                 }
-                                        )
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = color),
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Text(letters[i])
                                     }
                                 }
                             }
+
                             val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
                             LinearProgressIndicator(
                                 progress = progress,
@@ -283,19 +314,6 @@ private fun WeeklyGoalsScreen() {
                             editingIndex = null
                         }
                     }
-                },
-                onProgress = if (isNew) null else {
-                    {
-                        val g = goals[index]
-                        if (g.remaining > 0) {
-                            val updated = g.copy(remaining = g.remaining - 1)
-                            goals[index] = updated
-                            scope.launch {
-                                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                            }
-                        }
-                    }
                 }
             )
         }
@@ -314,8 +332,7 @@ private fun WeeklyGoalDialog(
     initial: WeeklyGoal,
     onDismiss: () -> Unit,
     onSave: (String, Int) -> Unit,
-    onDelete: (() -> Unit)? = null,
-    onProgress: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null
 ) {
     var header by remember { mutableStateOf(initial.header) }
     var frequency by remember { mutableStateOf<Int?>(initial.frequency) }
@@ -330,16 +347,6 @@ private fun WeeklyGoalDialog(
         },
         dismissButton = {
             Row {
-                onProgress?.let { prog ->
-                    Button(
-                        onClick = {
-                            prog()
-                            onDismiss()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) { Text("Progress") }
-                }
                 onDelete?.let { del ->
                     TextButton(onClick = del) { Text("Delete") }
                 }
