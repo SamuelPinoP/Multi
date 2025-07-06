@@ -17,6 +17,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as M3Text
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -280,31 +282,46 @@ class NotesActivity : SegmentActivity("Notes") {
                     }
                 }
             } else {
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        context.startActivity(Intent(context, NoteEditorActivity::class.java))
-                    },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { M3Text("New Note") },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                var fabExpanded by remember { mutableStateOf(false) }
+
+                Column(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 80.dp)
-                )
+                        .padding(end = 16.dp, bottom = 80.dp),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    if (fabExpanded) {
+                        FloatingActionButton(
+                            onClick = {
+                                context.startActivity(Intent(context, NoteEditorActivity::class.java))
+                                fabExpanded = false
+                            },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ) { Icon(Icons.Default.Add, contentDescription = "New Note") }
 
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        context.startActivity(Intent(context, TrashbinActivity::class.java))
-                    },
-                    icon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                    text = { M3Text("Trash") },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 16.dp, bottom = 80.dp)
-                )
+                        FloatingActionButton(
+                            onClick = {
+                                context.startActivity(Intent(context, TrashbinActivity::class.java))
+                                fabExpanded = false
+                            },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ) { Icon(Icons.Default.Delete, contentDescription = "Trash") }
+                    }
+
+                    FloatingActionButton(
+                        onClick = { fabExpanded = !fabExpanded },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(
+                            imageVector = if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
+                            contentDescription = "Menu"
+                        )
+                    }
+                }
             }
         }
     }
