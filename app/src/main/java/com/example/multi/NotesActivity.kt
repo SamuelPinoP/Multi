@@ -27,10 +27,11 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
+import androidx.activity.viewModels
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,41 +39,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.multi.data.EventDatabase
-import com.example.multi.data.toModel
 import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
 import com.example.multi.util.shareNotesAsTxt
 import com.example.multi.util.toDateString
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import androidx.lifecycle.lifecycleScope
-import com.example.multi.data.toEntity
 
 class NotesActivity : SegmentActivity("Notes") {
-    private val notes = mutableStateListOf<Note>()
+    private val viewModel: NotesViewModel by viewModels()
 
     override fun onResume() {
         super.onResume()
-        lifecycleScope.launch {
-            val db = EventDatabase.getInstance(this@NotesActivity)
-            val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
-            withContext(Dispatchers.IO) { db.trashedNoteDao().deleteExpired(threshold) }
-            val stored = withContext(Dispatchers.IO) { db.noteDao().getNotes() }
-            notes.clear(); notes.addAll(stored.map { it.toModel() })
-        }
+        viewModel.loadNotes()
     }
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
-        val notes = remember { this@NotesActivity.notes }
+        val notes by viewModel.notes.collectAsState()
         var selectionMode by remember { mutableStateOf(false) }
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
-        val scope = rememberCoroutineScope()
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -209,26 +196,9 @@ class NotesActivity : SegmentActivity("Notes") {
                     ExtendedFloatingActionButton(
                         onClick = {
                             val targets = notes.filter { it.id in selectedIds }
-                            scope.launch {
-                                val db = EventDatabase.getInstance(context)
-                                withContext(Dispatchers.IO) {
-                                    val noteDao = db.noteDao()
-                                    val trashDao = db.trashedNoteDao()
-                                    targets.forEach { note ->
-                                        trashDao.insert(
-                                            TrashedNote(
-                                                header = note.header,
-                                                content = note.content,
-                                                created = note.created
-                                            ).toEntity()
-                                        )
-                                        noteDao.delete(note.toEntity())
-                                    }
-                                }
-                                notes.removeAll { it.id in selectedIds }
-                                selectedIds.clear()
-                                selectionMode = false
-                            }
+                            viewModel.deleteNotes(targets)
+                            selectedIds.clear()
+                            selectionMode = false
                         },
                         icon = { Icon(Icons.Default.Delete, contentDescription = null) },
                         text = { M3Text("Delete") },
