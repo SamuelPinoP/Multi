@@ -68,6 +68,7 @@ const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
 const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
+const val EXTRA_NOTE_ADDRESS = "extra_note_address"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -79,6 +80,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var readOnly: Boolean = false
     private var currentHeader: String = ""
     private var currentText: String = ""
+    private var currentAddress: String = ""
     private var saved = false
 
     private val textSizeState = mutableIntStateOf(20)
@@ -98,6 +100,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         readOnly = intent.getBooleanExtra(EXTRA_NOTE_READ_ONLY, false)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        currentAddress = intent.getStringExtra(EXTRA_NOTE_ADDRESS) ?: ""
         noteScroll = intent.getIntExtra(EXTRA_NOTE_SCROLL, 0)
         noteCursor = intent.getIntExtra(EXTRA_NOTE_CURSOR, 0)
         noteLastOpened = System.currentTimeMillis()
@@ -144,6 +147,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     content = formattedContent,
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
+                                    address = currentAddress,
                                     scroll = scrollState.value,
                                     cursor = textState.value.selection.start
                                 ).toEntity()
@@ -156,6 +160,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     content = formattedContent,
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
+                                    address = currentAddress,
                                     scroll = scrollState.value,
                                     cursor = textState.value.selection.start
                                 ).toEntity()
@@ -331,7 +336,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            address = currentAddress
                         )
                         note.shareAsDocx(context)
                     }
@@ -345,7 +351,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            address = currentAddress
                         )
                         note.shareAsTxt(context)
                     }
@@ -359,7 +366,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            address = currentAddress
                         )
                         note.shareAsPdf(context)
                     }
@@ -395,13 +403,15 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     header = currentHeader,
                                     content = currentText,
                                     created = noteCreated,
-                                    lastOpened = noteLastOpened
+                                    lastOpened = noteLastOpened,
+                                    address = currentAddress
                                 )
                                 db.trashedNoteDao().insert(
                                     TrashedNote(
                                         header = note.header,
                                         content = note.content,
-                                        created = note.created
+                                        created = note.created,
+                                        address = note.address
                                     ).toEntity()
                                 )
                                 db.noteDao().delete(note.toEntity())
@@ -431,6 +441,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             content = formattedText,
                             created = noteCreated,
                             lastOpened = noteLastOpened,
+                            address = currentAddress,
                             scroll = noteScroll,
                             cursor = noteCursor
                         ).toEntity()
@@ -443,6 +454,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             content = formattedText,
                             created = noteCreated,
                             lastOpened = noteLastOpened,
+                            address = currentAddress,
                             scroll = noteScroll,
                             cursor = noteCursor
                         ).toEntity()

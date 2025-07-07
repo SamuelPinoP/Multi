@@ -1,6 +1,7 @@
 package com.example.multi
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,13 +20,19 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +80,7 @@ class NotesActivity : SegmentActivity("Notes") {
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+        var addressDialogNote by remember { mutableStateOf<Note?>(null) }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -129,6 +137,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                             intent.putExtra(EXTRA_NOTE_HEADER, note.header)
                                             intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
                                             intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                            intent.putExtra(EXTRA_NOTE_ADDRESS, note.address)
                                             intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
                                             intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
                                             context.startActivity(intent)
@@ -193,6 +202,9 @@ class NotesActivity : SegmentActivity("Notes") {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
+                                IconButton(onClick = { addressDialogNote = note }) {
+                                    Icon(Icons.Default.Map, contentDescription = "Address")
+                                }
                             }
                         }
                     }
@@ -219,7 +231,8 @@ class NotesActivity : SegmentActivity("Notes") {
                                             TrashedNote(
                                                 header = note.header,
                                                 content = note.content,
-                                                created = note.created
+                                                created = note.created,
+                                                address = note.address
                                             ).toEntity()
                                         )
                                         noteDao.delete(note.toEntity())
@@ -323,6 +336,62 @@ class NotesActivity : SegmentActivity("Notes") {
                     }
                 }
             }
+            addressDialogNote?.let { note ->
+                AddressDialog(
+                    note = note,
+                    onDismiss = { addressDialogNote = null },
+                    onSave = { addr ->
+                        addressDialogNote = null
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).noteDao()
+                            val updated = note.copy(address = addr)
+                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                            val index = notes.indexOfFirst { it.id == updated.id }
+                            if (index >= 0) notes[index] = updated
+                        }
+                    }
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun AddressDialog(
+    note: Note,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var address by remember { mutableStateOf(note.address) }
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(onClick = { onSave(address) }) { M3Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { M3Text("Cancel") } },
+        title = { M3Text("Add Address") },
+        text = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = address,
+                    onValueChange = { address = it },
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = {
+                        val encoded = Uri.encode(address)
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://www.google.com/maps/search/?api=1&query=$encoded")
+                        )
+                        context.startActivity(intent)
+                    },
+                    enabled = address.isNotBlank()
+                ) {
+                    Icon(Icons.Default.Map, contentDescription = "Open Maps")
+                }
+            }
+        }
+    )
 }
