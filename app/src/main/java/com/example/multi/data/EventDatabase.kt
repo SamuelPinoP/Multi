@@ -22,7 +22,8 @@ data class EventEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val title: String,
     val description: String,
-    val date: String?
+    val date: String?,
+    val address: String?
 )
 
 @Entity(tableName = "weekly_goals")
@@ -140,7 +141,7 @@ interface TrashedNoteDao {
 
 @Database(
     entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class, NoteEntity::class, TrashedNoteEntity::class],
-    version = 9
+    version = 10
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -169,8 +170,8 @@ abstract class EventDatabase : RoomDatabase() {
     }
 }
 
-fun EventEntity.toModel() = Event(id, title, description, date)
-fun Event.toEntity() = EventEntity(id, title, description, date)
+fun EventEntity.toModel() = Event(id, title, description, date, address)
+fun Event.toEntity() = EventEntity(id, title, description, date, address)
 
 fun WeeklyGoalEntity.toModel() =
     WeeklyGoal(id, header, frequency, remaining, lastCheckedDate, weekNumber, dayStates)
