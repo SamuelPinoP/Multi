@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.WeeklyGoalCalendarActivity
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -145,7 +146,11 @@ fun CalendarMenuScreen() {
             ),
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             shape = CutCornerShape(16.dp),
-            onClick = { /* No action for now */ },
+            onClick = {
+                context.startActivity(
+                    Intent(context, WeeklyGoalCalendarActivity::class.java)
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
