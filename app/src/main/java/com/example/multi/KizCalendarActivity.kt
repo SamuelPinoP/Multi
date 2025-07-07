@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -52,6 +51,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.ui.graphics.Color
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
+import com.example.multi.EventListItem
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -264,24 +264,17 @@ private fun KizCalendarScreen() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     selectedEvents.forEach { event ->
-                        ElevatedCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    editingEvent = event
-                                    showDialog = false
-                                }
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(event.title, style = MaterialTheme.typography.titleMedium)
-                                if (event.description.isNotBlank()) {
-                                    Text(event.description, style = MaterialTheme.typography.bodyMedium)
-                                }
+                        EventListItem(
+                            event = event,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                editingEvent = event
+                                showDialog = false
                             }
-                        }
+                        )
                     }
                     Spacer(Modifier.height(12.dp))
                     TextButton(

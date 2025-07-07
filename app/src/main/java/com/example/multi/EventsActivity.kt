@@ -2,7 +2,6 @@ package com.example.multi
 
 import android.os.Bundle
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -26,10 +24,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import com.example.multi.EventListItem
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,32 +89,11 @@ private fun EventsScreen(initialDate: String? = null) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(events) { index, event ->
-                ElevatedCard(
-                    elevation = CardDefaults.elevatedCardElevation(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { editingIndex = index }
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "${index + 1}. ${event.title}",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        if (event.description.isNotBlank()) {
-                            Text(
-                                text = event.description,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                        event.date?.let {
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
-                    }
-                }
+                EventListItem(
+                    event = event,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { editingIndex = index }
+                )
             }
         }
 
