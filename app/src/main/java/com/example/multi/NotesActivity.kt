@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +74,7 @@ class NotesActivity : SegmentActivity("Notes") {
         var selectionMode by remember { mutableStateOf(false) }
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
+        var addressDialogNote by remember { mutableStateOf<Note?>(null) }
         val scope = rememberCoroutineScope()
 
         BackHandler(enabled = selectionMode) {
@@ -192,10 +195,34 @@ class NotesActivity : SegmentActivity("Notes") {
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                }
+                                if (!selectionMode) {
+                                    IconButton(onClick = { addressDialogNote = note }) {
+                                        Icon(Icons.Default.Map, contentDescription = "Address")
+                                    }
                                 }
-                            }
+            }
+        }
+        addressDialogNote?.let { target ->
+            AddAddressDialog(
+                initialAddress = target.address,
+                onDismiss = { addressDialogNote = null },
+                onSave = { addr ->
+                    addressDialogNote = null
+                    scope.launch {
+                        val db = EventDatabase.getInstance(context)
+                        withContext(Dispatchers.IO) {
+                            db.noteDao().update(target.copy(address = addr).toEntity())
                         }
+                        val index = notes.indexOfFirst { it.id == target.id }
+                        if (index != -1) notes[index] = target.copy(address = addr)
                     }
+                },
+                context = context
+            )
+        }
+    }
+}
                 }
             }
 
