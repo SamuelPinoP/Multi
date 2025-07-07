@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -41,6 +42,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.net.Uri
+import android.content.Intent
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
@@ -114,6 +117,28 @@ private fun EventsScreen(initialDate: String? = null) {
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
+                        }
+                        event.address?.let {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 2.dp)
+                            ) {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    Icons.Default.Map,
+                                    contentDescription = "Map",
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clickable {
+                                            val uri = Uri.parse("https://www.google.com/maps/search/?api=1&query=" + Uri.encode(it))
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                                        }
+                                )
+                            }
                         }
                     }
                 }
@@ -190,26 +215,26 @@ private fun EventsScreen(initialDate: String? = null) {
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
-            val event = if (isNew) Event(0L, "", "", null) else events[index]
+            val event = if (isNew) Event(0L, "", "", null, null) else events[index]
             EventDialog(
                 initial = event,
                 onDismiss = {
                     editingIndex = null
                     newDate = null
                 },
-                onSave = { title, desc, date ->
+                onSave = { title, desc, date, addr ->
                     editingIndex = null
                     newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
                             val id = withContext(Dispatchers.IO) {
-                                dao.insert(Event(title = title, description = desc, date = date).toEntity())
+                                dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
                             }
-                            events.add(Event(id, title, desc, date))
+                            events.add(Event(id, title, desc, date, addr))
                             snackbarHostState.showSnackbar("New Event added")
                         } else {
-                            val updated = Event(event.id, title, desc, date)
+                            val updated = Event(event.id, title, desc, date, addr)
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                             events[index] = updated
                         }

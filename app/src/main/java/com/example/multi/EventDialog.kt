@@ -22,6 +22,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -31,28 +33,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.multi.util.capitalizeSentences
+import android.net.Uri
+import android.content.Intent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?) -> Unit,
+    onSave: (String, String, String?, String?) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
     var selectedDate by remember { mutableStateOf(initial.date) }
+    var address by remember { mutableStateOf(initial.address ?: "") }
     var showPicker by remember { mutableStateOf(false) }
+    var showAddressDialog by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
+    val context = LocalContext.current
     val previewDate by remember {
         derivedStateOf {
             val daysFull = listOf(
@@ -113,7 +121,7 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate)
+                    onSave(title, description, finalDate, address.ifBlank { null })
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -151,6 +159,12 @@ fun EventDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { showAddressDialog = true }) { Text("Address") }
+                    if (address.isNotBlank()) {
+                        Text(address, modifier = Modifier.padding(start = 8.dp))
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -217,5 +231,32 @@ fun EventDialog(
         ) {
             DatePicker(state = pickerState)
         }
+    }
+
+    if (showAddressDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddressDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showAddressDialog = false }) { Text("Close") }
+            },
+            title = { Text("Add Address") },
+            text = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = address,
+                        onValueChange = { address = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    androidx.compose.material3.IconButton(
+                        onClick = {
+                            val uri = Uri.parse("https://www.google.com/maps/search/?api=1&query=" + Uri.encode(address))
+                            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                        }
+                    ) {
+                        Icon(Icons.Default.Map, contentDescription = "Open Map")
+                    }
+                }
+            }
+        )
     }
 }

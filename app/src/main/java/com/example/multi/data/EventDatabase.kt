@@ -22,7 +22,8 @@ data class EventEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val title: String,
     val description: String,
-    val date: String?
+    val date: String?,
+    val address: String?
 )
 
 @Entity(tableName = "weekly_goals")
@@ -84,7 +85,8 @@ data class NoteEntity(
     val created: Long,
     val lastOpened: Long,
     val scroll: Int = 0,
-    val cursor: Int = 0
+    val cursor: Int = 0,
+    val address: String?
 )
 
 @Entity(tableName = "trashed_notes")
@@ -140,7 +142,7 @@ interface TrashedNoteDao {
 
 @Database(
     entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class, NoteEntity::class, TrashedNoteEntity::class],
-    version = 9
+    version = 10
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -169,8 +171,8 @@ abstract class EventDatabase : RoomDatabase() {
     }
 }
 
-fun EventEntity.toModel() = Event(id, title, description, date)
-fun Event.toEntity() = EventEntity(id, title, description, date)
+fun EventEntity.toModel() = Event(id, title, description, date, address)
+fun Event.toEntity() = EventEntity(id, title, description, date, address)
 
 fun WeeklyGoalEntity.toModel() =
     WeeklyGoal(id, header, frequency, remaining, lastCheckedDate, weekNumber, dayStates)
@@ -181,8 +183,8 @@ fun WeeklyGoal.toEntity() =
 fun WeeklyGoalRecordEntity.toModel() = WeeklyGoalRecord(id, header, completed, frequency, weekStart, weekEnd)
 fun WeeklyGoalRecord.toEntity() = WeeklyGoalRecordEntity(id, header, completed, frequency, weekStart, weekEnd)
 
-fun NoteEntity.toModel() = Note(id, header, content, created, lastOpened, scroll, cursor)
-fun Note.toEntity() = NoteEntity(id, header, content, created, lastOpened, scroll, cursor)
+fun NoteEntity.toModel() = Note(id, header, content, created, lastOpened, scroll, cursor, address)
+fun Note.toEntity() = NoteEntity(id, header, content, created, lastOpened, scroll, cursor, address)
 
 fun TrashedNoteEntity.toModel() = TrashedNote(id, header, content, created, deleted)
 fun TrashedNote.toEntity() = TrashedNoteEntity(id, header, content, created, deleted)
