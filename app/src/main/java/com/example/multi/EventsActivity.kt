@@ -26,9 +26,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -97,23 +99,47 @@ private fun EventsScreen(initialDate: String? = null) {
                         .fillMaxWidth()
                         .clickable { editingIndex = index }
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "${index + 1}. ${event.title}",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        if (event.description.isNotBlank()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = event.description,
-                                style = MaterialTheme.typography.bodyMedium
+                                text = "${index + 1}. ${event.title}",
+                                style = MaterialTheme.typography.titleMedium
                             )
+                            if (event.description.isNotBlank()) {
+                                Text(
+                                    text = event.description,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            event.date?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                            event.address?.takeIf { it.isNotBlank() }?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
                         }
-                        event.date?.let {
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
+                        event.address?.takeIf { it.isNotBlank() }?.let { addr ->
+                            IconButton(onClick = {
+                                val uri = android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=" + java.net.URLEncoder.encode(addr, "UTF-8"))
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                                context.startActivity(intent)
+                            }) {
+                                Icon(Icons.Default.LocationOn, contentDescription = "Map")
+                            }
                         }
                     }
                 }
@@ -190,26 +216,26 @@ private fun EventsScreen(initialDate: String? = null) {
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
-            val event = if (isNew) Event(0L, "", "", null) else events[index]
+            val event = if (isNew) Event(0L, "", "", null, null) else events[index]
             EventDialog(
                 initial = event,
                 onDismiss = {
                     editingIndex = null
                     newDate = null
                 },
-                onSave = { title, desc, date ->
+                onSave = { title, desc, date, address ->
                     editingIndex = null
                     newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
                             val id = withContext(Dispatchers.IO) {
-                                dao.insert(Event(title = title, description = desc, date = date).toEntity())
+                                dao.insert(Event(title = title, description = desc, date = date, address = address).toEntity())
                             }
-                            events.add(Event(id, title, desc, date))
+                            events.add(Event(id, title, desc, date, address))
                             snackbarHostState.showSnackbar("New Event added")
                         } else {
-                            val updated = Event(event.id, title, desc, date)
+                            val updated = Event(event.id, title, desc, date, address)
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                             events[index] = updated
                         }
