@@ -53,6 +53,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material)
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.apache.poi)

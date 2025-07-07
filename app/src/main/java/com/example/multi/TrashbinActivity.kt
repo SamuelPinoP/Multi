@@ -12,37 +12,31 @@ import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
+import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.multi.data.EventDatabase
-import com.example.multi.data.toEntity
-import com.example.multi.data.toModel
+import com.example.multi.repository.NotesViewModel
 import com.example.multi.util.toDateString
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /** Activity showing deleted notes. */
 class TrashbinActivity : SegmentActivity("Trash") {
+    private val viewModel by viewModels<NotesViewModel>()
+
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
-        val notes = remember { mutableStateListOf<TrashedNote>() }
+        val notes by viewModel.trashed.collectAsState()
         val scope = rememberCoroutineScope()
 
         LaunchedEffect(Unit) {
-            val dao = EventDatabase.getInstance(context).trashedNoteDao()
-            val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
-            withContext(Dispatchers.IO) { dao.deleteExpired(threshold) }
-            val stored = withContext(Dispatchers.IO) { dao.getNotes() }
-            notes.clear(); notes.addAll(stored.map { it.toModel() })
+            viewModel.refreshTrash()
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -141,29 +135,11 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                     horizontalArrangement = Arrangement.End
                                 ) {
                                     TextButton(onClick = {
-                                        scope.launch {
-                                            val db = EventDatabase.getInstance(context)
-                                            withContext(Dispatchers.IO) {
-                                                db.noteDao().insert(
-                                                    Note(
-                                                        header = note.header,
-                                                        content = note.content,
-                                                        created = note.created,
-                                                        lastOpened = System.currentTimeMillis()
-                                                    ).toEntity()
-                                                )
-                                                db.trashedNoteDao().delete(note.toEntity())
-                                            }
-                                            notes.remove(note)
-                                        }
+                                        viewModel.restore(note)
                                     }) { Text("Restore") }
                                     Spacer(modifier = Modifier.width(8.dp))
                                     TextButton(onClick = {
-                                        scope.launch {
-                                            val dao = EventDatabase.getInstance(context).trashedNoteDao()
-                                            withContext(Dispatchers.IO) { dao.delete(note.toEntity()) }
-                                            notes.remove(note)
-                                        }
+                                        viewModel.deleteForever(note)
                                     }) { Text("Delete") }
                                 }
                             }

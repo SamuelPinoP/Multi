@@ -6,6 +6,7 @@ junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.9.0"
+lifecycleViewModel = "2.9.0"
 activityCompose = "1.10.1"
 composeBom = "2024.05.00"
 desugarJdk = "2.0.4"
@@ -36,6 +37,8 @@ androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = 
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 apache-poi = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poi" }
 kizitonwose-calendar-compose = { group = "com.kizitonwose.calendar", name = "compose", version.ref = "kizCalendar" }
+androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewModel" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewModel" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
