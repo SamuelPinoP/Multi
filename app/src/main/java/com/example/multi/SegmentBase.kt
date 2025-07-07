@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.LastActivityTracker
 
 open class SegmentActivity(
     private val segmentTitle: String
@@ -37,6 +38,11 @@ open class SegmentActivity(
 
     @Composable
     open fun SegmentActions() {}
+
+    override fun onResume() {
+        super.onResume()
+        LastActivityTracker.record(this, javaClass)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

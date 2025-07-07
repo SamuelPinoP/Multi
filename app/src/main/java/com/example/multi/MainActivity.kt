@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.Scaffold
 import androidx.compose.ui.Modifier
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.LastActivityTracker
 
 /**
  * Main entry point of the application.
@@ -23,6 +25,18 @@ import com.example.multi.ui.theme.MultiTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val last = LastActivityTracker.getLastActivityClassName(this)
+        if (last != null && last != javaClass.name) {
+            try {
+                val cls = Class.forName(last)
+                startActivity(Intent(this, cls))
+                finish()
+                return
+            } catch (_: ClassNotFoundException) {
+            }
+        }
+
         enableEdgeToEdge()
         setContent {
             MultiTheme {
@@ -36,5 +50,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        LastActivityTracker.record(this, javaClass)
     }
 }

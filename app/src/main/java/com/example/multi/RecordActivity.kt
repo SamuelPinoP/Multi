@@ -42,6 +42,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import com.example.multi.LastActivityTracker
 
 class RecordActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +53,11 @@ class RecordActivity : ComponentActivity() {
                 RecordScreen()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        LastActivityTracker.record(this, javaClass)
     }
 }
 

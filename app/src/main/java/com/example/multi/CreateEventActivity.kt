@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.LastActivityTracker
 
 /**
  * Activity that allows the user to create a new calendar event.
@@ -43,6 +44,11 @@ class CreateEventActivity : ComponentActivity() {
                 CreateEventScreen()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        LastActivityTracker.record(this, javaClass)
     }
 }
 
