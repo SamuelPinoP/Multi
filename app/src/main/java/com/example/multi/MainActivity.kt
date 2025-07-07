@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,6 +24,17 @@ import com.example.multi.ui.theme.MultiTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // If this is a fresh launch and a last screen was stored, start that
+        if (savedInstanceState == null) {
+            val last = com.example.multi.util.LastActivityTracker.getLastActivityClass(this)
+            if (last != null && last != MainActivity::class.java) {
+                startActivity(Intent(this, last))
+                finish()
+                return
+            }
+        }
+
         enableEdgeToEdge()
         setContent {
             MultiTheme {
@@ -36,5 +48,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Record MainActivity as the last opened when it's visible
+        com.example.multi.util.LastActivityTracker.saveLastActivity(this, MainActivity::class.java)
     }
 }

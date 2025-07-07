@@ -38,6 +38,14 @@ open class SegmentActivity(
     @Composable
     open fun SegmentActions() {}
 
+    override fun onResume() {
+        super.onResume()
+        // Record this screen as the last opened activity
+        com.example.multi.util.LastActivityTracker.saveLastActivity(
+            this, this::class.java
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
