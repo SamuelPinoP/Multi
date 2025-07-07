@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +24,8 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.Badge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -219,12 +220,12 @@ private fun KizCalendarScreen() {
                         style = MaterialTheme.typography.bodyMedium
                     )
                     if (dayEvents.isNotEmpty()) {
-                        Box(
+                        Badge(
                             modifier = Modifier
-                                .size(8.dp)
-                                .align(Alignment.BottomCenter)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                        )
+                                .size(6.dp)
+                                .align(Alignment.BottomCenter),
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ) {}
                     }
                 }
             }
@@ -275,12 +276,20 @@ private fun KizCalendarScreen() {
                                     showDialog = false
                                 }
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(event.title, style = MaterialTheme.typography.titleMedium)
-                                if (event.description.isNotBlank()) {
-                                    Text(event.description, style = MaterialTheme.typography.bodyMedium)
+                            ListItem(
+                                headlineText = { Text(event.title) },
+                                supportingText = {
+                                    if (event.description.isNotBlank()) {
+                                        Text(event.description)
+                                    }
+                                },
+                                leadingContent = {
+                                    Icon(Icons.Default.Event, contentDescription = null)
+                                },
+                                trailingContent = {
+                                    Icon(Icons.Default.ChevronRight, contentDescription = null)
                                 }
-                            }
+                            )
                         }
                     }
                     Spacer(Modifier.height(12.dp))
