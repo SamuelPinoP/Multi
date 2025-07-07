@@ -104,6 +104,9 @@ interface WeeklyGoalRecordDao {
 
     @Insert
     suspend fun insert(record: WeeklyGoalRecordEntity)
+
+    @Update
+    suspend fun update(record: WeeklyGoalRecordEntity)
 }
 
 @Dao
