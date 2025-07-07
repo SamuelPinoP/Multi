@@ -7,5 +7,6 @@ data class Event(
     var id: Long = 0L,
     var title: String,
     var description: String,
-    var date: String? = null
+    var date: String? = null,
+    var address: String = ""
 )

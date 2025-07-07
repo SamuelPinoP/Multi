@@ -18,6 +18,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as M3Text
@@ -26,6 +29,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +48,7 @@ import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
 import com.example.multi.util.shareNotesAsTxt
 import com.example.multi.util.toDateString
+import com.example.multi.util.openMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -73,6 +78,7 @@ class NotesActivity : SegmentActivity("Notes") {
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+        var editingNote by remember { mutableStateOf<Note?>(null) }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -192,6 +198,16 @@ class NotesActivity : SegmentActivity("Notes") {
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    if (note.address.isNotBlank()) {
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        M3Text(
+                                            text = note.address,
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                }
+                                IconButton(onClick = { editingNote = note }) {
+                                    Icon(Icons.Default.Map, contentDescription = "Map")
                                 }
                             }
                         }
@@ -322,6 +338,46 @@ class NotesActivity : SegmentActivity("Notes") {
                         )
                     }
                 }
+            }
+            editingNote?.let { note ->
+                var addr by remember { mutableStateOf(note.address) }
+                AlertDialog(
+                    onDismissRequest = { editingNote = null },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            editingNote = null
+                            scope.launch {
+                                val dao = EventDatabase.getInstance(context).noteDao()
+                                withContext(Dispatchers.IO) { dao.update(note.copy(address = addr).toEntity()) }
+                                val idx = notes.indexOfFirst { it.id == note.id }
+                                if (idx >= 0) notes[idx] = note.copy(address = addr)
+                            }
+                        }) { M3Text("Save") }
+                    },
+                    dismissButton = {
+                        IconButton(onClick = { openMap(context, addr) }) {
+                            Icon(Icons.Default.Map, contentDescription = "Map")
+                        }
+                    },
+                    text = {
+                        Column {
+                            M3Text("Add Address")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(
+                                    value = addr,
+                                    onValueChange = { addr = it },
+                                    modifier = Modifier.weight(1f),
+                                    label = { M3Text("Address") }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                IconButton(onClick = { openMap(context, addr) }) {
+                                    Icon(Icons.Default.Map, contentDescription = "Map")
+                                }
+                            }
+                        }
+                    }
+                )
             }
         }
     }

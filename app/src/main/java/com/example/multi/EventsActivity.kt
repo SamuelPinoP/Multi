@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -45,6 +46,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.KizCalendarActivity
+import com.example.multi.util.openMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -97,23 +99,37 @@ private fun EventsScreen(initialDate: String? = null) {
                         .fillMaxWidth()
                         .clickable { editingIndex = index }
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "${index + 1}. ${event.title}",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        if (event.description.isNotBlank()) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = event.description,
-                                style = MaterialTheme.typography.bodyMedium
+                                text = "${index + 1}. ${event.title}",
+                                style = MaterialTheme.typography.titleMedium
                             )
+                            if (event.description.isNotBlank()) {
+                                Text(
+                                    text = event.description,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            event.date?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                            if (event.address.isNotBlank()) {
+                                Text(
+                                    text = event.address,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
                         }
-                        event.date?.let {
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
+                        IconButton(onClick = { openMap(context, event.address) }) {
+                            Icon(Icons.Default.Map, contentDescription = "Map")
                         }
                     }
                 }
@@ -190,26 +206,26 @@ private fun EventsScreen(initialDate: String? = null) {
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
-            val event = if (isNew) Event(0L, "", "", null) else events[index]
+            val event = if (isNew) Event(0L, "", "", null, "") else events[index]
             EventDialog(
                 initial = event,
                 onDismiss = {
                     editingIndex = null
                     newDate = null
                 },
-                onSave = { title, desc, date ->
+                onSave = { title, desc, date, address ->
                     editingIndex = null
                     newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
                             val id = withContext(Dispatchers.IO) {
-                                dao.insert(Event(title = title, description = desc, date = date).toEntity())
+                                dao.insert(Event(title = title, description = desc, date = date, address = address).toEntity())
                             }
-                            events.add(Event(id, title, desc, date))
+                            events.add(Event(id, title, desc, date, address))
                             snackbarHostState.showSnackbar("New Event added")
                         } else {
-                            val updated = Event(event.id, title, desc, date)
+                            val updated = Event(event.id, title, desc, date, address)
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                             events[index] = updated
                         }
