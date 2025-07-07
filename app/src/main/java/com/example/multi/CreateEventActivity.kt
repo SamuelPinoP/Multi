@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
+import androidx.compose.ui.res.stringResource
 
 /**
  * Activity that allows the user to create a new calendar event.
@@ -71,7 +72,7 @@ private fun CreateEventScreen() {
             ),
             title = {
                 Text(
-                    text = "New Event",
+                    text = stringResource(R.string.new_event),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
@@ -84,7 +85,7 @@ private fun CreateEventScreen() {
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it.capitalizeSentences() },
-                label = { Text("Title") },
+                label = { Text(stringResource(R.string.title)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     capitalization = KeyboardCapitalization.Sentences
@@ -94,7 +95,7 @@ private fun CreateEventScreen() {
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it.capitalizeSentences() },
-                label = { Text("Description") },
+                label = { Text(stringResource(R.string.description)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     capitalization = KeyboardCapitalization.Sentences

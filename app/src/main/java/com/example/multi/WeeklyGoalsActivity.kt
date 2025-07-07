@@ -51,8 +51,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import com.example.multi.util.capitalizeSentences
+import androidx.compose.ui.res.stringResource
 
-class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
+class WeeklyGoalsActivity : SegmentActivity(R.string.label_weekly_goals) {
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     override fun SegmentContent() {
@@ -149,7 +150,7 @@ private fun WeeklyGoalsScreen() {
                         contentDescription = null,
                         modifier = Modifier.padding(end = 4.dp)
                     )
-                    Text("Record", fontSize = 18.sp)
+                    Text(stringResource(R.string.record), fontSize = 18.sp)
                 }
             }
 
@@ -157,7 +158,7 @@ private fun WeeklyGoalsScreen() {
 
             val remaining = daysRemainingInWeek()
             Text(
-                text = "$remaining days remaining",
+                text = stringResource(R.string.days_remaining, remaining),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.fillMaxWidth(),
@@ -167,7 +168,7 @@ private fun WeeklyGoalsScreen() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Today's Goals",
+                text = stringResource(R.string.todays_goals),
                 style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.fillMaxWidth(),
@@ -192,7 +193,7 @@ private fun WeeklyGoalsScreen() {
                             .padding(16.dp)) {
                             if (goal.remaining == 0) {
                                 Text(
-                                    text = "Completed!",
+                                    text = stringResource(R.string.completed),
                                     color = Color.Green,
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.fillMaxWidth(),
@@ -217,7 +218,7 @@ private fun WeeklyGoalsScreen() {
                                     if (goal.lastCheckedDate != today && goal.remaining > 0) {
                                         Icon(
                                             Icons.Default.Check,
-                                            contentDescription = "Complete",
+                                            contentDescription = stringResource(R.string.complete),
                                             tint = Color.Green,
                                             modifier = Modifier
                                                 .padding(start = 8.dp)
@@ -274,7 +275,7 @@ private fun WeeklyGoalsScreen() {
         ExtendedFloatingActionButton(
             onClick = { editingIndex = -1 },
             icon = { Icon(Icons.Default.Add, contentDescription = null) },
-            text = { Text("Add Goal") },
+            text = { Text(stringResource(R.string.add_goal)) },
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier
@@ -298,7 +299,7 @@ private fun WeeklyGoalsScreen() {
                                 dao.insert(WeeklyGoal(header = header, frequency = freq).toEntity())
                             }
                             goals.add(WeeklyGoal(id, header, freq))
-                            snackbarHostState.showSnackbar("New Weekly Activity added")
+                            snackbarHostState.showSnackbar(stringResource(R.string.new_weekly_activity_added))
                         } else {
                             val updated = goal.copy(header = header, frequency = freq)
                             goals[index] = updated
@@ -358,7 +359,7 @@ private fun WeeklyGoalDialog(
             Button(
                 onClick = { frequency?.let { onSave(header, it) } },
                 enabled = header.isNotBlank() && frequency != null
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
             Row {
@@ -370,18 +371,18 @@ private fun WeeklyGoalDialog(
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                         modifier = Modifier.padding(end = 8.dp)
-                    ) { Text("Progress") }
+                    ) { Text(stringResource(R.string.progress)) }
                 }
                 onDelete?.let { del ->
-                    TextButton(onClick = del) { Text("Delete") }
+                    TextButton(onClick = del) { Text(stringResource(R.string.delete)) }
                 }
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             }
         },
-        title = { Text("Customize your Weekly Routine!") },
+        title = { Text(stringResource(R.string.customize_weekly_routine)) },
         text = {
             Column {
-                Text("Header", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.header), style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(
                     value = header,
                     onValueChange = { header = it.capitalizeSentences() },
@@ -391,7 +392,7 @@ private fun WeeklyGoalDialog(
                     )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Frequency", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.frequency), style = MaterialTheme.typography.bodySmall)
                 val scrollState = rememberScrollState()
                 Row(
                     modifier = Modifier

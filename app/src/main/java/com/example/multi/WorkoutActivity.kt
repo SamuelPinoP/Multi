@@ -9,14 +9,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 
-class WorkoutActivity : SegmentActivity("Workout") {
+class WorkoutActivity : SegmentActivity(R.string.label_workout) {
     @Composable
     override fun SegmentContent() {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Today's workout", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.todays_workout), style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("\u2022 Push-ups\n\u2022 Sit-ups\n\u2022 Squats")
+            Text(stringResource(R.string.workout_items))
         }
     }
 }

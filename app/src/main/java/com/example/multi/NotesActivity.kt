@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.util.shareNotesAsDocx
@@ -50,7 +51,7 @@ import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.toEntity
 
-class NotesActivity : SegmentActivity("Notes") {
+class NotesActivity : SegmentActivity(R.string.label_notes) {
     private val notes = mutableStateListOf<Note>()
 
     override fun onResume() {
@@ -93,7 +94,7 @@ class NotesActivity : SegmentActivity("Notes") {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     M3Text(
-                        "No notes yet",
+                        stringResource(R.string.no_notes_yet),
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
                     )
                 }
@@ -231,7 +232,7 @@ class NotesActivity : SegmentActivity("Notes") {
                             }
                         },
                         icon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                        text = { M3Text("Delete") },
+                        text = { M3Text(stringResource(R.string.delete)) },
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -240,7 +241,7 @@ class NotesActivity : SegmentActivity("Notes") {
                         ExtendedFloatingActionButton(
                             onClick = { shareMenuExpanded = true },
                             icon = { Icon(Icons.Default.Share, contentDescription = null) },
-                            text = { M3Text("Share") },
+                            text = { M3Text(stringResource(R.string.share)) },
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -249,7 +250,7 @@ class NotesActivity : SegmentActivity("Notes") {
                             onDismissRequest = { shareMenuExpanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { M3Text("Word") },
+                                text = { M3Text(stringResource(R.string.word)) },
                                 onClick = {
                                     shareMenuExpanded = false
                                     val targets = notes.filter { it.id in selectedIds }
@@ -259,7 +260,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                 }
                             )
                             DropdownMenuItem(
-                                text = { M3Text("Text File") },
+                                text = { M3Text(stringResource(R.string.text_file)) },
                                 onClick = {
                                     shareMenuExpanded = false
                                     val targets = notes.filter { it.id in selectedIds }
@@ -269,7 +270,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                 }
                             )
                             DropdownMenuItem(
-                                text = { M3Text("PDF") },
+                                text = { M3Text(stringResource(R.string.pdf)) },
                                 onClick = {
                                     shareMenuExpanded = false
                                     val targets = notes.filter { it.id in selectedIds }
@@ -299,7 +300,7 @@ class NotesActivity : SegmentActivity("Notes") {
                             },
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
-                        ) { Icon(Icons.Default.Add, contentDescription = "New Note") }
+                        ) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_note)) }
 
                         FloatingActionButton(
                             onClick = {
@@ -308,7 +309,7 @@ class NotesActivity : SegmentActivity("Notes") {
                             },
                             containerColor = MaterialTheme.colorScheme.secondaryContainer,
                             contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        ) { Icon(Icons.Default.Delete, contentDescription = "Trash") }
+                        ) { Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.trash)) }
                     }
 
                     FloatingActionButton(
@@ -318,7 +319,7 @@ class NotesActivity : SegmentActivity("Notes") {
                     ) {
                         Icon(
                             imageVector = if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
-                            contentDescription = "Menu"
+                            contentDescription = stringResource(R.string.menu)
                         )
                     }
                 }

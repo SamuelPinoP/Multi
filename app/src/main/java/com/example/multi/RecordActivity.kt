@@ -32,6 +32,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
@@ -82,7 +83,7 @@ fun RecordScreen() {
                 ),
                 title = {
                     Text(
-                        text = "Record",
+                        text = stringResource(R.string.record),
                         style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
                     )
                 },
@@ -97,7 +98,7 @@ fun RecordScreen() {
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No records yet")
+                Text(stringResource(R.string.no_records_yet))
             }
         } else {
             val grouped = records.groupBy { it.weekStart to it.weekEnd }

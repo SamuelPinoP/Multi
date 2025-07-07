@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
@@ -52,7 +53,7 @@ import kotlinx.coroutines.withContext
 const val EXTRA_DATE = "extra_date"
 
 /** Activity displaying the list of user events. */
-class EventsActivity : SegmentActivity("Events") {
+class EventsActivity : SegmentActivity(R.string.label_events) {
     private var initialDate: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -170,7 +171,7 @@ private fun EventsScreen(initialDate: String? = null) {
                     editingIndex = -1
                 },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Add Event") },
+                text = { Text(stringResource(R.string.add_event)) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
@@ -181,7 +182,7 @@ private fun EventsScreen(initialDate: String? = null) {
                     )
                 },
                 icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
-                text = { Text("Calendar") },
+                text = { Text(stringResource(R.string.calendar)) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
@@ -207,7 +208,7 @@ private fun EventsScreen(initialDate: String? = null) {
                                 dao.insert(Event(title = title, description = desc, date = date).toEntity())
                             }
                             events.add(Event(id, title, desc, date))
-                            snackbarHostState.showSnackbar("New Event added")
+                            snackbarHostState.showSnackbar(stringResource(R.string.new_event_added))
                         } else {
                             val updated = Event(event.id, title, desc, date)
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }

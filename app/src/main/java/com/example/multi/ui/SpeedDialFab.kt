@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun SpeedDialFab(
@@ -54,7 +55,7 @@ fun SpeedDialFab(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete"
+                        contentDescription = stringResource(R.string.delete)
                     )
                 }
                 FloatingActionButton(
@@ -64,7 +65,7 @@ fun SpeedDialFab(
                 ) {
                     Icon(
                         imageVector = Icons.Default.FormatSize,
-                        contentDescription = "Text Size"
+                        contentDescription = stringResource(R.string.text_size)
                     )
                 }
                 FloatingActionButton(
@@ -74,7 +75,7 @@ fun SpeedDialFab(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Share,
-                        contentDescription = "Share"
+                        contentDescription = stringResource(R.string.share)
                     )
                 }
             }
@@ -87,7 +88,7 @@ fun SpeedDialFab(
         ) {
             Icon(
                 imageVector = if (expanded) Icons.Default.Close else Icons.Default.Add,
-                contentDescription = if (expanded) "Close" else "Open",
+                contentDescription = if (expanded) stringResource(R.string.close) else stringResource(R.string.open),
                 modifier = Modifier.rotate(rotation)
             )
         }

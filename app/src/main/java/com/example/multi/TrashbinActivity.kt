@@ -28,9 +28,10 @@ import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.res.stringResource
 
 /** Activity showing deleted notes. */
-class TrashbinActivity : SegmentActivity("Trash") {
+class TrashbinActivity : SegmentActivity(R.string.label_trash) {
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
@@ -59,7 +60,7 @@ class TrashbinActivity : SegmentActivity("Trash") {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Trash is empty",
+                        stringResource(R.string.trash_empty),
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
                     )
                 }
@@ -124,12 +125,12 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            "Created: ${note.created.toDateString()}",
+                                            stringResource(R.string.created, note.created.toDateString()),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                         Text(
-                                            "Days remaining: $daysLeft",
+                                            stringResource(R.string.days_remaining, daysLeft),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -156,7 +157,7 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                             }
                                             notes.remove(note)
                                         }
-                                    }) { Text("Restore") }
+                                    }) { Text(stringResource(R.string.restore)) }
                                     Spacer(modifier = Modifier.width(8.dp))
                                     TextButton(onClick = {
                                         scope.launch {
@@ -164,7 +165,7 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                             withContext(Dispatchers.IO) { dao.delete(note.toEntity()) }
                                             notes.remove(note)
                                         }
-                                    }) { Text("Delete") }
+                                    }) { Text(stringResource(R.string.delete)) }
                                 }
                             }
                         }

@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.multi.ui.theme.MultiTheme
 import java.text.SimpleDateFormat
@@ -96,10 +97,10 @@ fun CalendarMenuScreen() {
                         intent.putExtra(EXTRA_DATE, dateStr)
                         context.startActivity(intent)
                     }
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.cancel)) }
             }
         ) {
             DatePicker(state = pickerState)
@@ -114,7 +115,7 @@ fun CalendarMenuScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         MenuCardButton(
-            label = "Events in Calendar",
+            label = stringResource(R.string.events_in_calendar),
             icon = Icons.Default.Event,
             gradient = Brush.verticalGradient(
                 listOf(
@@ -135,7 +136,7 @@ fun CalendarMenuScreen() {
         )
 
         MenuCardButton(
-            label = "Weekly Goals View",
+            label = stringResource(R.string.weekly_goals_view),
             icon = Icons.Default.Flag,
             gradient = Brush.verticalGradient(
                 listOf(
@@ -152,7 +153,7 @@ fun CalendarMenuScreen() {
         )
 
         MenuCardButton(
-            label = "Calendar Display",
+            label = stringResource(R.string.calendar_display),
             icon = Icons.Default.CalendarMonth,
             gradient = Brush.verticalGradient(
                 listOf(

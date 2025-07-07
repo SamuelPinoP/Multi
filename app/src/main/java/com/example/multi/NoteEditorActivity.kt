@@ -55,6 +55,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -69,7 +70,7 @@ const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
 
-class NoteEditorActivity : SegmentActivity("Note") {
+class NoteEditorActivity : SegmentActivity(R.string.label_note) {
     private var noteId: Long = 0L
     private var noteCreated: Long = System.currentTimeMillis()
     private var noteLastOpened: Long = System.currentTimeMillis()
@@ -182,13 +183,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         .imePadding()
                 ) {
                     Text(
-                        text = "Created: ${noteCreated.toDateString()}",
+                        text = stringResource(R.string.created, noteCreated.toDateString()),
                         style = MaterialTheme.typography.labelSmall
                     )
                     if (readOnly && noteDeleted != 0L) {
                         val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
                         Text(
-                            text = "Days remaining: $daysLeft",
+                            text = stringResource(R.string.days_remaining, daysLeft),
                             style = MaterialTheme.typography.labelSmall
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -196,7 +197,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     Box {
                         if (headerState.value.isEmpty()) {
                             Text(
-                                text = "Header",
+                                text = stringResource(R.string.header),
                                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -238,7 +239,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     Box(modifier = Modifier.weight(1f)) {
                         if (textState.value.text.isEmpty()) {
                             Text(
-                                text = "Start writing...",
+                                text = stringResource(R.string.start_writing),
                                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -281,9 +282,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         AlertDialog(
                             onDismissRequest = { showSizeDialog = false },
                             confirmButton = {
-                                TextButton(onClick = { showSizeDialog = false }) { Text("Close") }
+                                TextButton(onClick = { showSizeDialog = false }) { Text(stringResource(R.string.close)) }
                             },
-                            title = { Text("Select Text Size") },
+                            title = { Text(stringResource(R.string.select_text_size)) },
                             text = {
                                 Column {
                                     listOf(16, 20, 24, 28, 32).forEach { size ->
@@ -316,14 +317,14 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
         Box {
             IconButton(onClick = { shareMenuExpanded = true }) {
-                Icon(Icons.Default.Share, contentDescription = "Share")
+                Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share))
             }
             DropdownMenu(
                 expanded = shareMenuExpanded,
                 onDismissRequest = { shareMenuExpanded = false }
             ) {
                 DropdownMenuItem(
-                    text = { Text("Word") },
+                    text = { Text(stringResource(R.string.word)) },
                     onClick = {
                         shareMenuExpanded = false
                         val note = Note(
@@ -337,7 +338,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Text File") },
+                    text = { Text(stringResource(R.string.text_file)) },
                     onClick = {
                         shareMenuExpanded = false
                         val note = Note(
@@ -351,7 +352,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("PDF") },
+                    text = { Text(stringResource(R.string.pdf)) },
                     onClick = {
                         shareMenuExpanded = false
                         val note = Note(
@@ -369,21 +370,21 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
         Box {
             IconButton(onClick = { overflowMenuExpanded = true }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+                Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.menu))
             }
             DropdownMenu(
                 expanded = overflowMenuExpanded,
                 onDismissRequest = { overflowMenuExpanded = false }
             ) {
                 DropdownMenuItem(
-                    text = { Text("Text Size") },
+                    text = { Text(stringResource(R.string.text_size)) },
                     onClick = {
                         overflowMenuExpanded = false
                         showSizeDialog = true
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Delete") },
+                    text = { Text(stringResource(R.string.delete)) },
                     onClick = {
                         overflowMenuExpanded = false
                         if (noteId != 0L) {

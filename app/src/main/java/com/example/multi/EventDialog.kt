@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.multi.util.capitalizeSentences
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,14 +117,14 @@ fun EventDialog(
                     onSave(title, description, finalDate)
                 },
                 enabled = title.isNotBlank(),
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
             Row {
                 onDelete?.let { del ->
-                    TextButton(onClick = del) { Text("Delete") }
+                    TextButton(onClick = del) { Text(stringResource(R.string.delete)) }
                 }
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             }
         },
         text = {
@@ -131,7 +132,7 @@ fun EventDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it.capitalizeSentences() },
-                    label = { Text("Title") },
+                    label = { Text(stringResource(R.string.title)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions.Default.copy(
                         capitalization = KeyboardCapitalization.Sentences
@@ -141,7 +142,7 @@ fun EventDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it.capitalizeSentences() },
-                    label = { Text("Description") },
+                    label = { Text(stringResource(R.string.description)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions.Default.copy(
                         capitalization = KeyboardCapitalization.Sentences
@@ -149,7 +150,7 @@ fun EventDialog(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { showPicker = true }) { Text("Date") }
+                    TextButton(onClick = { showPicker = true }) { Text(stringResource(R.string.date)) }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -161,13 +162,13 @@ fun EventDialog(
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (repeatOption == "Every") selectedColor else unselectedColor
                         )
-                    ) { Text("Every") }
+                    ) { Text(stringResource(R.string.every)) }
                     Button(
                         onClick = { repeatOption = "Every other" },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (repeatOption == "Every other") selectedColor else unselectedColor
                         )
-                    ) { Text("Every Other") }
+                    ) { Text(stringResource(R.string.every_other)) }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 val scrollState = rememberScrollState()
@@ -209,10 +210,10 @@ fun EventDialog(
                             fmt.format(java.util.Date(millis))
                         }
                     }
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.cancel)) }
             }
         ) {
             DatePicker(state = pickerState)

@@ -52,9 +52,10 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.ui.graphics.Color
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
+import androidx.compose.ui.res.stringResource
 
 /** Activity showing the Kizitonwose calendar. */
-class KizCalendarActivity : SegmentActivity("Events Calendar") {
+class KizCalendarActivity : SegmentActivity(R.string.label_events_calendar) {
     @Composable
     override fun SegmentContent() {
         KizCalendarScreen()
@@ -120,7 +121,7 @@ private fun KizCalendarScreen() {
                     state.animateScrollToMonth(visibleMonth.minusMonths(1))
                 }
             }) {
-                Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous month")
+                Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.previous_month))
             }
 
             val isCurrentMonthVisible = visibleMonth == currentMonth
@@ -146,7 +147,7 @@ private fun KizCalendarScreen() {
                     state.animateScrollToMonth(visibleMonth.plusMonths(1))
                 }
             }) {
-                Icon(Icons.Filled.ChevronRight, contentDescription = "Next month")
+                Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.next_month))
             }
         }
 
@@ -240,7 +241,7 @@ private fun KizCalendarScreen() {
             ExtendedFloatingActionButton(
                 onClick = { creatingEvent = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Add Event") },
+                text = { Text(stringResource(R.string.add_event)) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
@@ -249,7 +250,7 @@ private fun KizCalendarScreen() {
                     context.startActivity(android.content.Intent(context, EventsActivity::class.java))
                 },
                 icon = { Icon(Icons.Default.Event, contentDescription = null) },
-                text = { Text("My Events") },
+                text = { Text(stringResource(R.string.my_events)) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
@@ -287,7 +288,7 @@ private fun KizCalendarScreen() {
                     TextButton(
                         onClick = { showDialog = false },
                         modifier = Modifier.align(Alignment.End)
-                    ) { Text("Close") }
+                    ) { Text(stringResource(R.string.close)) }
                 }
             }
         }

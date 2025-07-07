@@ -27,12 +27,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import com.example.multi.ui.theme.MultiTheme
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+
 open class SegmentActivity(
-    private val segmentTitle: String
+    @StringRes private val segmentTitleRes: Int
 ) : ComponentActivity() {
     @Composable
     open fun SegmentContent() {
-        Text(segmentTitle)
+        Text(stringResource(segmentTitleRes))
     }
 
     @Composable
@@ -44,7 +47,7 @@ open class SegmentActivity(
         setContent {
             MultiTheme {
                 SegmentScreen(
-                    title = segmentTitle,
+                    title = stringResource(segmentTitleRes),
                     onBack = { finish() },
                     onClose = { finishAffinity() },
                     actions = { SegmentActions() }

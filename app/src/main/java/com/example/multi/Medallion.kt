@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, WORKOUT, NOTES }
@@ -86,7 +87,7 @@ fun Medallion(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Multi",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier
                 .fillMaxWidth()
