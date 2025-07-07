@@ -40,13 +40,15 @@ import com.example.multi.util.capitalizeSentences
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?) -> Unit,
+    onSave: (String, String, String?, String?) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
     var selectedDate by remember { mutableStateOf(initial.date) }
+    var address by remember { mutableStateOf(initial.address ?: "") }
+    var showAddressField by remember { mutableStateOf(address.isNotBlank()) }
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
@@ -113,7 +115,7 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate)
+                    onSave(title, description, finalDate, address.ifBlank { null })
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -151,6 +153,21 @@ fun EventDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { showAddressField = !showAddressField }) { Text("Address") }
+                    if (!showAddressField && address.isNotBlank()) {
+                        Text(address, modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+                if (showAddressField) {
+                    OutlinedTextField(
+                        value = address,
+                        onValueChange = { address = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Address") }
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

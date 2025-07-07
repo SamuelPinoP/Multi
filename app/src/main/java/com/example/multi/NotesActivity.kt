@@ -25,7 +25,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +46,7 @@ import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
 import com.example.multi.util.shareNotesAsTxt
 import com.example.multi.util.toDateString
+import com.example.multi.util.openMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -73,6 +76,9 @@ class NotesActivity : SegmentActivity("Notes") {
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+        var showAddressDialog by remember { mutableStateOf(false) }
+        val addressDialogAddress = remember { mutableStateOf("") }
+        var editingAddressNote by remember { mutableStateOf<Note?>(null) }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -191,6 +197,18 @@ class NotesActivity : SegmentActivity("Notes") {
                                         text = note.created.toDateString(),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        addressDialogAddress.value = note.address ?: ""
+                                        editingAddressNote = note
+                                        showAddressDialog = true
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Map,
+                                        contentDescription = "Address"
                                     )
                                 }
                             }
@@ -321,6 +339,46 @@ class NotesActivity : SegmentActivity("Notes") {
                             contentDescription = "Menu"
                         )
                     }
+                }
+                if (showAddressDialog) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showAddressDialog = false },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(onClick = {
+                                val addr = addressDialogAddress.value.trim()
+                                editingAddressNote?.let { note ->
+                                    scope.launch {
+                                        val dao = EventDatabase.getInstance(context).noteDao()
+                                        withContext(Dispatchers.IO) {
+                                            dao.update(note.copy(address = addr).toEntity())
+                                        }
+                                        note.address = addr
+                                    }
+                                }
+                                showAddressDialog = false
+                            }) { M3Text("Save") }
+                        },
+                        dismissButton = {
+                            androidx.compose.material3.TextButton(onClick = { showAddressDialog = false }) { M3Text("Cancel") }
+                        },
+                        title = { M3Text("Add Address") },
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                androidx.compose.material3.OutlinedTextField(
+                                    value = addressDialogAddress.value,
+                                    onValueChange = { addressDialogAddress.value = it },
+                                    modifier = Modifier.weight(1f),
+                                    label = { M3Text("Address") }
+                                )
+                                IconButton(onClick = {
+                                    val addr = addressDialogAddress.value.trim()
+                                    if (addr.isNotBlank()) openMap(context, addr)
+                                }) {
+                                    Icon(Icons.Default.Map, contentDescription = "Open Map")
+                                }
+                            }
+                        }
+                    )
                 }
             }
         }

@@ -145,7 +145,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
-                                    cursor = textState.value.selection.start
+                                    cursor = textState.value.selection.start,
+                                    address = null
                                 ).toEntity()
                             )
                         } else {
@@ -157,7 +158,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
-                                    cursor = textState.value.selection.start
+                                    cursor = textState.value.selection.start,
+                                    address = null
                                 ).toEntity()
                             )
                         }
@@ -331,7 +333,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            address = null
                         )
                         note.shareAsDocx(context)
                     }
@@ -345,7 +348,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            address = null
                         )
                         note.shareAsTxt(context)
                     }
@@ -359,7 +363,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            address = null
                         )
                         note.shareAsPdf(context)
                     }
@@ -395,7 +400,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     header = currentHeader,
                                     content = currentText,
                                     created = noteCreated,
-                                    lastOpened = noteLastOpened
+                                    lastOpened = noteLastOpened,
+                                    address = null
                                 )
                                 db.trashedNoteDao().insert(
                                     TrashedNote(
@@ -432,7 +438,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             created = noteCreated,
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
-                            cursor = noteCursor
+                            cursor = noteCursor,
+                            address = null
                         ).toEntity()
                     )
                 } else {
@@ -444,7 +451,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             created = noteCreated,
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
-                            cursor = noteCursor
+                            cursor = noteCursor,
+                            address = null
                         ).toEntity()
                     )
                 }

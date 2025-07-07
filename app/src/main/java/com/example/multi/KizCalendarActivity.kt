@@ -294,16 +294,16 @@ private fun KizCalendarScreen() {
 
         if (creatingEvent) {
             EventDialog(
-                initial = Event(0L, "", ""),
+                initial = Event(0L, "", "", null, null),
                 onDismiss = { creatingEvent = false },
-                onSave = { title, desc, date ->
+                onSave = { title, desc, date, addr ->
                     creatingEvent = false
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         val id = withContext(Dispatchers.IO) {
-                            dao.insert(Event(title = title, description = desc, date = date).toEntity())
+                            dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
                         }
-                        events.add(Event(id, title, desc, date))
+                        events.add(Event(id, title, desc, date, addr))
                         context.startActivity(android.content.Intent(context, EventsActivity::class.java))
                     }
                 },
@@ -315,11 +315,11 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = event,
                 onDismiss = { editingEvent = null },
-                onSave = { title, desc, date ->
+                onSave = { title, desc, date, addr ->
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date)
+                        val updated = Event(event.id, title, desc, date, addr)
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
