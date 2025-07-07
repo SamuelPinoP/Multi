@@ -7,6 +7,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -53,13 +64,14 @@ class RecordActivity : ComponentActivity() {
             }
         }
     }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecordScreen() {
     val context = LocalContext.current
     val records = remember { mutableStateListOf<WeeklyGoalRecord>() }
+    var editingIndex by remember { mutableStateOf<Int?>(null) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
@@ -127,6 +139,7 @@ fun RecordScreen() {
                         )
                     }
                     items(list) { rec ->
+                        val index = records.indexOf(rec)
                         val done = rec.completed >= rec.frequency
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -147,11 +160,16 @@ fun RecordScreen() {
                                         Text(rec.header, style = MaterialTheme.typography.bodyLarge)
                                         Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
                                     }
-                                    Icon(
-                                        imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,
-                                        contentDescription = null,
-                                        tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        IconButton(onClick = { editingIndex = index }) {
+                                            Icon(Icons.Default.Edit, contentDescription = "Edit")
+                                        }
+                                        Icon(
+                                            imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,
+                                            contentDescription = null,
+                                            tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                        )
+                                    }
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 DayButtonsRow(states = rec.dayStates) { }
@@ -160,6 +178,118 @@ fun RecordScreen() {
                     }
                 }
             }
+
+            val idx = editingIndex
+            if (idx != null) {
+                val record = records[idx]
+                RecordEditDialog(
+                    record = record,
+                    onDismiss = { editingIndex = null },
+                    onSave = { updated ->
+                        editingIndex = null
+                        records[idx] = updated
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
+                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                        }
+                    }
+                )
+            }
+        }
+
+        val idx = editingIndex
+        if (idx != null) {
+            val record = records[idx]
+            RecordEditDialog(
+                record = record,
+                onDismiss = { editingIndex = null },
+                onSave = { updated ->
+                    editingIndex = null
+                    records[idx] = updated
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
+                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                    }
+                }
+            )
         }
     }
+}
+
+@Composable
+private fun RecordEditDialog(
+    record: WeeklyGoalRecord,
+    onDismiss: () -> Unit,
+    onSave: (WeeklyGoalRecord) -> Unit
+) {
+    var states by remember { mutableStateOf(record.dayStates) }
+    var chooseIndex by remember { mutableStateOf<Int?>(null) }
+
+    val dIndex = chooseIndex
+    if (dIndex != null) {
+        DayChoiceDialog(
+            onDismiss = { chooseIndex = null },
+            onMiss = {
+                val chars = states.toCharArray()
+                chars[dIndex] = 'M'
+                states = String(chars)
+            },
+            onComplete = {
+                val chars = states.toCharArray()
+                chars[dIndex] = 'C'
+                states = String(chars)
+            }
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(onClick = {
+                val updated = record.copy(
+                    dayStates = states,
+                    completed = states.count { it == 'C' }
+                )
+                onSave(updated)
+            }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        title = { Text(record.header) },
+        text = {
+            Column {
+                DayButtonsRow(states = states) { chooseIndex = it }
+            }
+        }
+    )
+}
+
+@Composable
+private fun DayChoiceDialog(
+    onDismiss: () -> Unit,
+    onMiss: () -> Unit,
+    onComplete: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(
+                onClick = {
+                    onComplete()
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+            ) { Icon(Icons.Default.Check, contentDescription = null) }
+        },
+        dismissButton = {
+            Button(
+                onClick = {
+                    onMiss()
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            ) { Icon(Icons.Default.Close, contentDescription = null) }
+        },
+        title = { Text("Mark Day") },
+        text = { Text("Choose status") }
+    )
 }
