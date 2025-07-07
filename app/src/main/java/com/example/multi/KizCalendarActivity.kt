@@ -173,7 +173,7 @@ private fun KizCalendarScreen() {
                 .height(420.dp),
             state = state,
             dayContent = { day ->
-                val dayEvents = events.filter { it.date == day.date.toString() }
+                val dayEvents = events.filter { it.occursOn(day.date) }
                 val isCurrentMonth = day.position == DayPosition.MonthDate
                 val textColor = when {
                     dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primary
