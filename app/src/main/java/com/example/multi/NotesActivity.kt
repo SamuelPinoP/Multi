@@ -131,6 +131,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                             intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                             intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
                                             intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                            intent.putExtra(EXTRA_NOTE_ADDRESS, note.address)
                                             context.startActivity(intent)
                                         }
                                     },
@@ -219,7 +220,8 @@ class NotesActivity : SegmentActivity("Notes") {
                                             TrashedNote(
                                                 header = note.header,
                                                 content = note.content,
-                                                created = note.created
+                                                created = note.created,
+                                                address = note.address
                                             ).toEntity()
                                         )
                                         noteDao.delete(note.toEntity())

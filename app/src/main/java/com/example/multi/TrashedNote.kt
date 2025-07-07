@@ -6,5 +6,6 @@ data class TrashedNote(
     var header: String = "",
     var content: String,
     var created: Long,
-    var deleted: Long = System.currentTimeMillis()
+    var deleted: Long = System.currentTimeMillis(),
+    var address: String = ""
 )

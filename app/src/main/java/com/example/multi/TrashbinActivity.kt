@@ -86,6 +86,7 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                     intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
                                     intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                     intent.putExtra(EXTRA_NOTE_DELETED, note.deleted)
+                                    intent.putExtra(EXTRA_NOTE_ADDRESS, note.address)
                                     intent.putExtra(EXTRA_NOTE_READ_ONLY, true)
                                     context.startActivity(intent)
                                 }
@@ -149,7 +150,8 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                                         header = note.header,
                                                         content = note.content,
                                                         created = note.created,
-                                                        lastOpened = System.currentTimeMillis()
+                                                        lastOpened = System.currentTimeMillis(),
+                                                        address = note.address
                                                     ).toEntity()
                                                 )
                                                 db.trashedNoteDao().delete(note.toEntity())

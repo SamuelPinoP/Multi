@@ -8,5 +8,6 @@ data class Note(
     var created: Long = System.currentTimeMillis(),
     var lastOpened: Long = System.currentTimeMillis(),
     var scroll: Int = 0,
-    var cursor: Int = 0
+    var cursor: Int = 0,
+    var address: String = ""
 )

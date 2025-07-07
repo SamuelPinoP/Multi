@@ -3,6 +3,7 @@ package com.example.multi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextRange
@@ -53,6 +55,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +72,7 @@ const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
 const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
+const val EXTRA_NOTE_ADDRESS = "extra_note_address"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -76,6 +81,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var noteDeleted: Long = 0L
     private var noteScroll: Int = 0
     private var noteCursor: Int = 0
+    private var noteAddress: String = ""
     private var readOnly: Boolean = false
     private var currentHeader: String = ""
     private var currentText: String = ""
@@ -83,11 +89,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     private val textSizeState = mutableIntStateOf(20)
     private val showSizeDialogState = mutableStateOf(false)
+    private val showAddressDialogState = mutableStateOf(false)
     private val shareMenuExpandedState = mutableStateOf(false)
     private val overflowMenuExpandedState = mutableStateOf(false)
 
     private var textSize by textSizeState
     private var showSizeDialog by showSizeDialogState
+    private var showAddressDialog by showAddressDialogState
     private var shareMenuExpanded by shareMenuExpandedState
     private var overflowMenuExpanded by overflowMenuExpandedState
 
@@ -100,6 +108,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
         noteScroll = intent.getIntExtra(EXTRA_NOTE_SCROLL, 0)
         noteCursor = intent.getIntExtra(EXTRA_NOTE_CURSOR, 0)
+        noteAddress = intent.getStringExtra(EXTRA_NOTE_ADDRESS) ?: ""
         noteLastOpened = System.currentTimeMillis()
         if (noteId != 0L && !readOnly) {
             lifecycleScope.launch {
@@ -118,13 +127,15 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val scope = rememberCoroutineScope()
             val scrollState = rememberScrollState(initial = noteScroll)
             val headerBringIntoView = remember { BringIntoViewRequester() }
-            val textBringIntoView = remember { BringIntoViewRequester() }
-            val headerState = remember { mutableStateOf(currentHeader) }
-            val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
-            var textSize by textSizeState
-            var showSizeDialog by showSizeDialogState
-            var shareMenuExpanded by shareMenuExpandedState
-            var overflowMenuExpanded by overflowMenuExpandedState
+           val textBringIntoView = remember { BringIntoViewRequester() }
+           val headerState = remember { mutableStateOf(currentHeader) }
+           val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
+            val addressState = remember { mutableStateOf(noteAddress) }
+           var textSize by textSizeState
+           var showSizeDialog by showSizeDialogState
+            var showAddressDialog by showAddressDialogState
+           var shareMenuExpanded by shareMenuExpandedState
+           var overflowMenuExpanded by overflowMenuExpandedState
             val density = LocalDensity.current
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
@@ -137,6 +148,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     withContext(Dispatchers.IO) {
                         val formattedHeader = headerState.value.trim().capitalizeSentences()
                         val formattedContent = textState.value.text.trim().capitalizeSentences()
+                        val formattedAddress = addressState.value.trim()
                         if (noteId == 0L) {
                             noteId = dao.insert(
                                 Note(
@@ -145,7 +157,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
-                                    cursor = textState.value.selection.start
+                                    cursor = textState.value.selection.start,
+                                    address = formattedAddress
                                 ).toEntity()
                             )
                         } else {
@@ -157,7 +170,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
-                                    cursor = textState.value.selection.start
+                                    cursor = textState.value.selection.start,
+                                    address = formattedAddress
                                 ).toEntity()
                             )
                         }
@@ -165,6 +179,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     saved = true
                     currentHeader = headerState.value
                     currentText = textState.value.text
+                    noteAddress = addressState.value
                     noteScroll = scrollState.value
                     noteCursor = textState.value.selection.start
                 }
@@ -181,10 +196,17 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         .verticalScroll(scrollState)
                         .imePadding()
                 ) {
-                    Text(
-                        text = "Created: ${noteCreated.toDateString()}",
-                        style = MaterialTheme.typography.labelSmall
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Created: ${noteCreated.toDateString()}",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                        if (!readOnly && noteId != 0L) {
+                            IconButton(onClick = { showAddressDialog = true }) {
+                                Icon(Icons.Default.Place, contentDescription = "Add address")
+                            }
+                        }
+                    }
                     if (readOnly && noteDeleted != 0L) {
                         val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
                         Text(
@@ -303,6 +325,39 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             }
                         )
                     }
+
+                    if (showAddressDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showAddressDialog = false },
+                            confirmButton = {
+                                TextButton(onClick = { showAddressDialog = false }) { Text("Close") }
+                            },
+                            title = { Text("Add Address") },
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    BasicTextField(
+                                        value = addressState.value,
+                                        onValueChange = {
+                                            addressState.value = it
+                                            noteAddress = it
+                                            saved = false
+                                        },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 8.dp),
+                                        textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface)
+                                    )
+                                    IconButton(onClick = {
+                                        val uri = android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=" + android.net.Uri.encode(addressState.value))
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                                        context.startActivity(intent)
+                                    }) {
+                                        Icon(Icons.Default.Map, contentDescription = "Open in Maps")
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
 
             }
@@ -331,7 +386,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            address = noteAddress
                         )
                         note.shareAsDocx(context)
                     }
@@ -345,7 +401,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            address = noteAddress
                         )
                         note.shareAsTxt(context)
                     }
@@ -359,7 +416,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            address = noteAddress
                         )
                         note.shareAsPdf(context)
                     }
@@ -401,7 +459,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     TrashedNote(
                                         header = note.header,
                                         content = note.content,
-                                        created = note.created
+                                        created = note.created,
+                                        address = note.address
                                     ).toEntity()
                                 )
                                 db.noteDao().delete(note.toEntity())
@@ -424,6 +483,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 val dao = EventDatabase.getInstance(applicationContext).noteDao()
                 val formattedHeader = header.capitalizeSentences()
                 val formattedText = text.capitalizeSentences()
+                val formattedAddress = noteAddress.trim()
                 if (noteId == 0L) {
                     dao.insert(
                         Note(
@@ -432,7 +492,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             created = noteCreated,
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
-                            cursor = noteCursor
+                            cursor = noteCursor,
+                            address = formattedAddress
                         ).toEntity()
                     )
                 } else {
@@ -444,7 +505,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             created = noteCreated,
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
-                            cursor = noteCursor
+                            cursor = noteCursor,
+                            address = formattedAddress
                         ).toEntity()
                     )
                 }
