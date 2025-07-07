@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.util.PreferenceUtils
 
 open class SegmentActivity(
     private val segmentTitle: String
@@ -53,6 +54,11 @@ open class SegmentActivity(
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        PreferenceUtils.setLastActivity(this, javaClass.name)
     }
 }
 
