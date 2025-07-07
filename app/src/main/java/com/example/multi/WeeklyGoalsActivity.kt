@@ -238,7 +238,9 @@ private fun WeeklyGoalsScreen() {
                                     }
                                 }
                             }
-                            val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
+                            val progress = if (goal.frequency > 0) {
+                                (goal.frequency - goal.remaining).toFloat() / goal.frequency
+                            } else 0f
                             LinearProgressIndicator(
                                 progress = progress,
                                 color = MaterialTheme.colorScheme.primary,
