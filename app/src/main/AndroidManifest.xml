@@ -58,6 +58,9 @@
             android:name=".WeeklyGoalsActivity"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".WeeklyGoalsCalendarActivity"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".RecordActivity"
             android:screenOrientation="portrait" />
         <activity
