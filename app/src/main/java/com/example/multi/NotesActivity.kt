@@ -38,41 +38,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.multi.data.EventDatabase
-import com.example.multi.data.toModel
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.multi.data.NoteRepository
+import com.example.multi.viewmodel.NotesViewModel
+import com.example.multi.viewmodel.NotesViewModelFactory
 import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
 import com.example.multi.util.shareNotesAsTxt
 import com.example.multi.util.toDateString
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import androidx.lifecycle.lifecycleScope
-import com.example.multi.data.toEntity
 
 class NotesActivity : SegmentActivity("Notes") {
-    private val notes = mutableStateListOf<Note>()
-
-    override fun onResume() {
-        super.onResume()
-        lifecycleScope.launch {
-            val db = EventDatabase.getInstance(this@NotesActivity)
-            val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
-            withContext(Dispatchers.IO) { db.trashedNoteDao().deleteExpired(threshold) }
-            val stored = withContext(Dispatchers.IO) { db.noteDao().getNotes() }
-            notes.clear(); notes.addAll(stored.map { it.toModel() })
-        }
-    }
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
-        val notes = remember { this@NotesActivity.notes }
+        val viewModel: NotesViewModel = viewModel(
+            factory = NotesViewModelFactory(NoteRepository.getInstance(context))
+        )
+        val notes by viewModel.notes.collectAsState()
         var selectionMode by remember { mutableStateOf(false) }
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+
+        LaunchedEffect(Unit) { viewModel.loadNotes() }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -210,22 +202,7 @@ class NotesActivity : SegmentActivity("Notes") {
                         onClick = {
                             val targets = notes.filter { it.id in selectedIds }
                             scope.launch {
-                                val db = EventDatabase.getInstance(context)
-                                withContext(Dispatchers.IO) {
-                                    val noteDao = db.noteDao()
-                                    val trashDao = db.trashedNoteDao()
-                                    targets.forEach { note ->
-                                        trashDao.insert(
-                                            TrashedNote(
-                                                header = note.header,
-                                                content = note.content,
-                                                created = note.created
-                                            ).toEntity()
-                                        )
-                                        noteDao.delete(note.toEntity())
-                                    }
-                                }
-                                notes.removeAll { it.id in selectedIds }
+                                viewModel.moveToTrash(targets)
                                 selectedIds.clear()
                                 selectionMode = false
                             }
