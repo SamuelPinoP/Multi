@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.data.toEntity
+import com.example.multi.util.occursOn
 import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.ui.graphics.Color
@@ -167,13 +168,13 @@ private fun KizCalendarScreen() {
             }
         }
 
-        HorizontalCalendar(
+            HorizontalCalendar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(420.dp),
             state = state,
             dayContent = { day ->
-                val dayEvents = events.filter { it.date == day.date.toString() }
+                val dayEvents = events.filter { it.occursOn(day.date) }
                 val isCurrentMonth = day.position == DayPosition.MonthDate
                 val textColor = when {
                     dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primary
