@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.Scaffold
 import androidx.compose.ui.Modifier
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.util.LaunchPrefs
 
 /**
  * Main entry point of the application.
@@ -23,6 +25,15 @@ import com.example.multi.ui.theme.MultiTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null && intent?.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
+            LaunchPrefs.getLastActivityClass(this)?.let { cls ->
+                if (cls != MainActivity::class.java) {
+                    startActivity(Intent(this, cls))
+                    finish()
+                    return
+                }
+            }
+        }
         enableEdgeToEdge()
         setContent {
             MultiTheme {
@@ -36,5 +47,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        LaunchPrefs.setLastActivity(this)
     }
 }
