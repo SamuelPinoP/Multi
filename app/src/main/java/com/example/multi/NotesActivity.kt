@@ -19,6 +19,10 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
@@ -26,6 +30,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -131,6 +136,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                             intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                             intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
                                             intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                            intent.putExtra(EXTRA_NOTE_ADDRESS, note.address)
                                             context.startActivity(intent)
                                         }
                                     },
@@ -171,6 +177,8 @@ class NotesActivity : SegmentActivity("Notes") {
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
+                                var showAddressDialog by remember { mutableStateOf(false) }
+                                var addressText by remember { mutableStateOf(note.address) }
                                 Column(modifier = Modifier.weight(1f)) {
                                     val previewLines = mutableListOf<String>()
                                     val headerLine = note.header.trim()
@@ -191,6 +199,46 @@ class NotesActivity : SegmentActivity("Notes") {
                                         text = note.created.toDateString(),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (!selectionMode) {
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    IconButton(onClick = { showAddressDialog = true }) {
+                                        Icon(Icons.Default.Map, contentDescription = "Address")
+                                    }
+                                }
+                                if (showAddressDialog) {
+                                    AlertDialog(
+                                        onDismissRequest = { showAddressDialog = false },
+                                        confirmButton = {
+                                            TextButton(onClick = {
+                                                showAddressDialog = false
+                                                if (addressText != note.address) {
+                                                    note.address = addressText
+                                                    scope.launch {
+                                                        val dao = EventDatabase.getInstance(context).noteDao()
+                                                        withContext(Dispatchers.IO) { dao.update(note.toEntity()) }
+                                                    }
+                                                }
+                                            }) { M3Text("Save") }
+                                        },
+                                        title = { M3Text("Add Address") },
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                TextField(
+                                                    value = addressText,
+                                                    onValueChange = { addressText = it },
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                IconButton(onClick = {
+                                                    val uri = android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=" + android.net.Uri.encode(addressText))
+                                                    val mapIntent = Intent(Intent.ACTION_VIEW, uri)
+                                                    context.startActivity(mapIntent)
+                                                }) {
+                                                    Icon(Icons.Default.Map, contentDescription = "Open Map")
+                                                }
+                                            }
+                                        }
                                     )
                                 }
                             }
@@ -219,7 +267,8 @@ class NotesActivity : SegmentActivity("Notes") {
                                             TrashedNote(
                                                 header = note.header,
                                                 content = note.content,
-                                                created = note.created
+                                                created = note.created,
+                                                address = note.address
                                             ).toEntity()
                                         )
                                         noteDao.delete(note.toEntity())
