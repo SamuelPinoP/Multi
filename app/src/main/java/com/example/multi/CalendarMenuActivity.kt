@@ -145,7 +145,11 @@ fun CalendarMenuScreen() {
             ),
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             shape = CutCornerShape(16.dp),
-            onClick = { /* No action for now */ },
+            onClick = {
+                context.startActivity(
+                    Intent(context, WeeklyGoalsActivity::class.java)
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
