@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +75,8 @@ class NotesActivity : SegmentActivity("Notes") {
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+        var addressNote by remember { mutableStateOf<Note?>(null) }
+        var addressText by remember { mutableStateOf("") }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -192,6 +196,18 @@ class NotesActivity : SegmentActivity("Notes") {
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    if (note.address.isNotBlank()) {
+                                        M3Text(
+                                            text = note.address,
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                }
+                                IconButton(onClick = {
+                                    addressNote = note
+                                    addressText = note.address
+                                }) {
+                                    Icon(Icons.Default.Place, contentDescription = "Address")
                                 }
                             }
                         }
@@ -322,6 +338,45 @@ class NotesActivity : SegmentActivity("Notes") {
                         )
                     }
                 }
+            }
+            addressNote?.let { note ->
+                AlertDialog(
+                    onDismissRequest = { addressNote = null },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            scope.launch {
+                                val dao = EventDatabase.getInstance(context).noteDao()
+                                val updated = note.copy(address = addressText)
+                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                val idx = notes.indexOfFirst { it.id == note.id }
+                                if (idx >= 0) notes[idx] = updated
+                            }
+                            addressNote = null
+                        }) { M3Text("Save") }
+                    },
+                    text = {
+                        Column {
+                            M3Text("Add Address")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(
+                                    value = addressText,
+                                    onValueChange = { addressText = it },
+                                    modifier = Modifier.weight(1f),
+                                    label = { M3Text("Address") }
+                                )
+                                IconButton(onClick = {
+                                    val intent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        android.net.Uri.parse("geo:0,0?q=" + java.net.URLEncoder.encode(addressText, "UTF-8"))
+                                    )
+                                    context.startActivity(intent)
+                                }) {
+                                    Icon(Icons.Default.Place, contentDescription = "Map")
+                                }
+                            }
+                        }
+                    }
+                )
             }
         }
     }
