@@ -1,5 +1,9 @@
 /*
 
+- Change UI. The + button in the notes will create a new note. The trash will be displayed after 
+clicking the three dots that will go in the right top corner. It will display trash or import. When
+you click import it will bring a pdf or word or pic or text file as a note.
+
 - Add importing a PDF file or Word or Image as a Note if I will keep checking it. Like I do in my
 notes app for FIU. I downloaded the char of my classes and I can check the pic to see my classes.
 
