@@ -1,5 +1,8 @@
 /*
 
+- Add importing a PDF file or Word or Image as a Note if I will keep checking it. Like I do in my
+notes app for FIU. I downloaded the char of my classes and I can check the pic to see my classes.
+
 - I need to fix and improve the app. Debug it!
 
 - I want the Weekly Goals View button in the Calendar activity to display the same exact kizitonwose 
