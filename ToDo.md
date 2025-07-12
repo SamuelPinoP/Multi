@@ -1,5 +1,8 @@
 /*
 
+- Consider removing workout and adding Addresses book. It will contain addresses and will display 
+that address in google maps.
+
 - Change UI. The + button in the notes will create a new note. The trash will be displayed after 
 clicking the three dots that will go in the right top corner. It will display trash or import. When
 you click import it will bring a pdf or word or pic or text file as a note.
