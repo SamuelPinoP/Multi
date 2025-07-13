@@ -1,9 +1,7 @@
 package com.example.multi
 
 import android.content.Context
-import com.example.multi.DailyCompletion
 import com.example.multi.data.EventDatabase
-import com.example.multi.toEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate

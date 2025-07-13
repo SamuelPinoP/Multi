@@ -11,7 +11,8 @@ import androidx.room.Query
 import androidx.room.Insert
 import androidx.room.Update
 import androidx.room.Delete
-import androidx.room.OnConflictStrategy
+import com.example.multi.DailyCompletionDao
+import com.example.multi.DailyCompletionEntity
 import com.example.multi.Event
 import com.example.multi.Note
 import com.example.multi.TrashedNote

@@ -1,4 +1,4 @@
-package com.example.multi.data
+package com.example.multi
 
 import androidx.room.*
 

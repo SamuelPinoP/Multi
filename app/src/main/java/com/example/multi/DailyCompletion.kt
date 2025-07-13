@@ -9,7 +9,7 @@ data class DailyCompletion(
 )
 
 // Extension functions
-fun DailyCompletion.toEntity() = com.example.multi.data.DailyCompletionEntity(
+fun DailyCompletion.toEntity() = DailyCompletionEntity(
     goalId = goalId,
     goalHeader = goalHeader,
     completionDate = completionDate,
@@ -17,7 +17,7 @@ fun DailyCompletion.toEntity() = com.example.multi.data.DailyCompletionEntity(
     weekEnd = weekEnd
 )
 
-fun com.example.multi.data.DailyCompletionEntity.toModel() = DailyCompletion(
+fun DailyCompletionEntity.toModel() = DailyCompletion(
     goalId = goalId,
     goalHeader = goalHeader,
     completionDate = completionDate,

@@ -35,7 +35,6 @@ import androidx.compose.material3.Text
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
-import com.example.multi.DayButtonsRow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
