@@ -41,6 +41,7 @@ import com.example.multi.ui.theme.MultiTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.jvm.java
 
 class CalendarMenuActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -145,7 +146,11 @@ fun CalendarMenuScreen() {
             ),
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             shape = CutCornerShape(16.dp),
-            onClick = { /* No action for now */ },
+            onClick = {
+                context.startActivity(
+                    Intent(context, WeeklyGoalsCalendarActivity::class.java)
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
