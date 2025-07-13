@@ -4,42 +4,51 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -47,12 +56,11 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
-import com.example.multi.DayButtonsRow
-import kotlinx.coroutines.launch
+import com.example.multi.util.capitalizeSentences
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
-import com.example.multi.util.capitalizeSentences
 
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -92,8 +100,6 @@ private fun DayChoiceDialog(
         text = { Text("Choose status") }
     )
 }
-
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -145,7 +151,7 @@ private fun WeeklyGoalsScreen() {
             goals.add(model)
         }
     }
-    
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -260,6 +266,12 @@ private fun WeeklyGoalsScreen() {
                                                             )
                                                             goals[index] = updated
                                                             scope.launch {
+                                                                saveGoalCompletion(
+                                                                    context = context,
+                                                                    goalId = goal.id,
+                                                                    goalHeader = goal.header,
+                                                                    completionDate = LocalDate.now()
+                                                                )
                                                                 val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                                                                 withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                                                             }
@@ -342,6 +354,12 @@ private fun WeeklyGoalsScreen() {
                             val updated = g.copy(remaining = g.remaining - 1)
                             goals[index] = updated
                             scope.launch {
+                                saveGoalCompletion(
+                                    context = context,
+                                    goalId = g.id,
+                                    goalHeader = g.header,
+                                    completionDate = LocalDate.now()
+                                )
                                 val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                                 withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                             }
@@ -383,6 +401,12 @@ private fun WeeklyGoalsScreen() {
                     )
                     goals[gIndex] = updated
                     scope.launch {
+                        saveGoalCompletion(
+                            context = context,
+                            goalId = g.id,
+                            goalHeader = g.header,
+                            completionDate = LocalDate.now()
+                        )
                         val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                     }
@@ -482,4 +506,3 @@ private fun WeeklyGoalDialog(
         }
     )
 }
-

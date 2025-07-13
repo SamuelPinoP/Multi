@@ -11,6 +11,7 @@ import androidx.room.Query
 import androidx.room.Insert
 import androidx.room.Update
 import androidx.room.Delete
+import androidx.room.OnConflictStrategy
 import com.example.multi.Event
 import com.example.multi.Note
 import com.example.multi.TrashedNote
@@ -35,36 +36,6 @@ data class WeeklyGoalEntity(
     val weekNumber: Int,
     val dayStates: String
 )
-
-@Dao
-interface EventDao {
-    @Query("SELECT * FROM events")
-    suspend fun getEvents(): List<EventEntity>
-
-    @Insert
-    suspend fun insert(event: EventEntity): Long
-
-    @Update
-    suspend fun update(event: EventEntity)
-
-    @Delete
-    suspend fun delete(event: EventEntity)
-}
-
-@Dao
-interface WeeklyGoalDao {
-    @Query("SELECT * FROM weekly_goals")
-    suspend fun getGoals(): List<WeeklyGoalEntity>
-
-    @Insert
-    suspend fun insert(goal: WeeklyGoalEntity): Long
-
-    @Update
-    suspend fun update(goal: WeeklyGoalEntity)
-
-    @Delete
-    suspend fun delete(goal: WeeklyGoalEntity)
-}
 
 @Entity(tableName = "weekly_goal_records")
 data class WeeklyGoalRecordEntity(
@@ -96,6 +67,36 @@ data class TrashedNoteEntity(
     val created: Long,
     val deleted: Long
 )
+
+@Dao
+interface EventDao {
+    @Query("SELECT * FROM events")
+    suspend fun getEvents(): List<EventEntity>
+
+    @Insert
+    suspend fun insert(event: EventEntity): Long
+
+    @Update
+    suspend fun update(event: EventEntity)
+
+    @Delete
+    suspend fun delete(event: EventEntity)
+}
+
+@Dao
+interface WeeklyGoalDao {
+    @Query("SELECT * FROM weekly_goals")
+    suspend fun getGoals(): List<WeeklyGoalEntity>
+
+    @Insert
+    suspend fun insert(goal: WeeklyGoalEntity): Long
+
+    @Update
+    suspend fun update(goal: WeeklyGoalEntity)
+
+    @Delete
+    suspend fun delete(goal: WeeklyGoalEntity)
+}
 
 @Dao
 interface WeeklyGoalRecordDao {
@@ -140,8 +141,8 @@ interface TrashedNoteDao {
 }
 
 @Database(
-    entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class, NoteEntity::class, TrashedNoteEntity::class],
-    version = 10
+    entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class, NoteEntity::class, TrashedNoteEntity::class, DailyCompletionEntity::class],
+    version = 11
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -149,6 +150,7 @@ abstract class EventDatabase : RoomDatabase() {
     abstract fun weeklyGoalRecordDao(): WeeklyGoalRecordDao
     abstract fun noteDao(): NoteDao
     abstract fun trashedNoteDao(): TrashedNoteDao
+    abstract fun dailyCompletionDao(): DailyCompletionDao
 
     companion object {
         @Volatile
@@ -190,3 +192,28 @@ fun Note.toEntity() = NoteEntity(id, header, content, created, lastOpened, scrol
 
 fun TrashedNoteEntity.toModel() = TrashedNote(id, header, content, created, deleted)
 fun TrashedNote.toEntity() = TrashedNoteEntity(id, header, content, created, deleted)
+
+// DailyCompletion model and extension functions
+data class DailyCompletion(
+    val goalId: Long,
+    val goalHeader: String,
+    val completionDate: String,
+    val weekStart: String,
+    val weekEnd: String
+)
+
+fun DailyCompletion.toEntity() = DailyCompletionEntity(
+    goalId = goalId,
+    goalHeader = goalHeader,
+    completionDate = completionDate,
+    weekStart = weekStart,
+    weekEnd = weekEnd
+)
+
+fun DailyCompletionEntity.toModel() = DailyCompletion(
+    goalId = goalId,
+    goalHeader = goalHeader,
+    completionDate = completionDate,
+    weekStart = weekStart,
+    weekEnd = weekEnd
+)

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import com.example.multi.data.EventDatabase
+import com.example.multi.data.DailyCompletion
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.CalendarTodayBg
@@ -60,11 +61,15 @@ class WeeklyGoalsCalendarActivity : SegmentActivity("Goals Calendar") {
 private fun WeeklyGoalsCalendarScreen() {
     val context = LocalContext.current
     val goals = remember { mutableStateListOf<WeeklyGoal>() }
+    val completions = remember { mutableStateListOf<DailyCompletion>() }
 
     LaunchedEffect(Unit) {
         val db = EventDatabase.getInstance(context)
         val dao = db.weeklyGoalDao()
         val recordDao = db.weeklyGoalRecordDao()
+        val completionDao = db.dailyCompletionDao()
+
+        // Load goals (existing logic)
         val stored = withContext(Dispatchers.IO) { dao.getGoals() }
         val currentWeek = currentWeek()
         val today = LocalDate.now()
@@ -73,6 +78,7 @@ private fun WeeklyGoalsCalendarScreen() {
         val prevEnd = startCurrent.minusDays(1)
         val prevStartStr = prevStart.toString()
         val prevEndStr = prevEnd.toString()
+
         goals.clear()
         stored.forEach { entity ->
             var model = entity.toModel()
@@ -109,6 +115,15 @@ private fun WeeklyGoalsCalendarScreen() {
             }
             goals.add(model)
         }
+
+        // Load completions for calendar display (12 months range)
+        val startDate = today.minusMonths(12)
+        val endDate = today.plusMonths(12)
+        val loadedCompletions = withContext(Dispatchers.IO) {
+            completionDao.getCompletionsInRange(startDate.toString(), endDate.toString())
+        }
+        completions.clear()
+        completions.addAll(loadedCompletions.map { it.toModel() })
     }
 
     val currentMonth = remember { YearMonth.now() }
@@ -128,7 +143,7 @@ private fun WeeklyGoalsCalendarScreen() {
         daysOfWeek.drop(startIndex) + daysOfWeek.take(startIndex)
     }
 
-    var selectedGoals by remember { mutableStateOf<List<WeeklyGoal>>(emptyList()) }
+    var selectedCompletions by remember { mutableStateOf<List<DailyCompletion>>(emptyList()) }
     var showDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     var editingGoal by remember { mutableStateOf<WeeklyGoal?>(null) }
@@ -204,13 +219,13 @@ private fun WeeklyGoalsCalendarScreen() {
                     .height(420.dp),
                 state = state,
                 dayContent = { day ->
-                    val dayGoals = goals.filter {
-                        val index = day.date.dayOfWeek.value % 7
-                        it.dayStates[index] != 'M'
+                    val completionsForDay = completions.filter {
+                        it.completionDate == day.date.toString()
                     }
+
                     val isCurrentMonth = day.position == DayPosition.MonthDate
                     val textColor = when {
-                        dayGoals.isNotEmpty() -> MaterialTheme.colorScheme.primary
+                        completionsForDay.isNotEmpty() -> MaterialTheme.colorScheme.primary
                         isCurrentMonth -> MaterialTheme.colorScheme.onSurface
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
@@ -218,8 +233,8 @@ private fun WeeklyGoalsCalendarScreen() {
                     val bgColor = when {
                         isToday -> CalendarTodayBg
                         else -> Color.Transparent
-                        // dayGoals.isNotEmpty() -> MaterialTheme.colorScheme.primaryContainer
                     }
+
                     Box(
                         modifier = Modifier
                             .aspectRatio(1f)
@@ -233,8 +248,8 @@ private fun WeeklyGoalsCalendarScreen() {
                             )
                             .background(bgColor, RoundedCornerShape(8.dp))
                             .then(if (!isCurrentMonth) Modifier.alpha(0.5f) else Modifier)
-                            .clickable(enabled = dayGoals.isNotEmpty()) {
-                                selectedGoals = dayGoals
+                            .clickable(enabled = completionsForDay.isNotEmpty()) {
+                                selectedCompletions = completionsForDay
                                 showDialog = true
                             },
                         contentAlignment = Alignment.Center
@@ -244,7 +259,8 @@ private fun WeeklyGoalsCalendarScreen() {
                             color = if (isToday) MaterialTheme.colorScheme.onSurface else textColor,
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        if (dayGoals.isNotEmpty()) {
+                        // Only show indicator if there are actual completions
+                        if (completionsForDay.isNotEmpty()) {
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
@@ -292,18 +308,22 @@ private fun WeeklyGoalsCalendarScreen() {
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    selectedGoals.forEach { goal ->
+                    Text(
+                        text = "Goals completed on ${selectedCompletions.firstOrNull()?.completionDate}",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    selectedCompletions.forEach { completion ->
                         ElevatedCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    editingGoal = goal
-                                    showDialog = false
-                                }
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                Text(goal.header, style = MaterialTheme.typography.titleMedium)
-                                Text("${goal.frequency - goal.remaining}/${goal.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                Text(completion.goalHeader, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    text = "Completed on ${completion.completionDate}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
