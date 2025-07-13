@@ -1,5 +1,8 @@
 /*
 
+- Create a Calendar button inside weekly goals that will take me to my weekly goals. Also clicking 
+a weekly goal that was completed inside the calendar will take me to the weekly goals page.
+
 - Consider removing workout and adding Addresses book. It will contain addresses and will display 
 that address in google maps.
 
@@ -11,10 +14,6 @@ you click import it will bring a pdf or word or pic or text file as a note.
 notes app for FIU. I downloaded the char of my classes and I can check the pic to see my classes.
 
 - I need to fix and improve the app. Debug it!
-
-- I want the Weekly Goals View button in the Calendar activity to display the same exact kizitonwose 
-compose Calendar we have in the Events Calendar activity except that it needs to display the days 
-were I completed a weekly goal.
 
 - Architecture – Introducing ViewModel and repository layers for notes would better separate UI and 
 data logic.
@@ -50,9 +49,6 @@ marked in the Calendar.
 
 -I need to add levels of priority to the notes. Priority green. It is high. Yellow is medium. Red 
 is low. By clicking each of them we can display the notes with that priority.
-
--I want a button that says Weekly Goals View were every day when the user completed a Weekly goal 
-will be marked. 
 
 1- The Workout page should have different workout plans. They should be added to the events page.
 Maybe add options to customize the workout such as adding a specific workout of calestenics to the
