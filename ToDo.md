@@ -1,5 +1,7 @@
 /*
 
+- The back button in the right does not save my changes inside the note.
+
 - Create a Calendar button inside weekly goals that will take me to my weekly goals. Also clicking 
 a weekly goal that was completed inside the calendar will take me to the weekly goals page.
 
