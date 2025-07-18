@@ -1,7 +1,7 @@
 package com.example.multi
 
 import androidx.compose.runtime.Composable
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 
 /** Activity hosting the [CalendarView]. */
 class CalendarActivity : SegmentActivity("Calendar") {
