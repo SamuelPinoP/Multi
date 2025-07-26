@@ -131,7 +131,6 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
-                    delay(500)
                     val dao = EventDatabase.getInstance(context).noteDao()
                     withContext(Dispatchers.IO) {
                         val formattedHeader = headerState.value.trim().capitalizeSentences()

@@ -65,7 +65,8 @@
             android:screenOrientation="portrait" />
         <activity
             android:name=".NoteEditorActivity"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize|stateHidden" />
         <activity
             android:name=".TrashbinActivity"
             android:screenOrientation="portrait" />
