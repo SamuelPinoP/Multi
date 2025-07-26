@@ -9,6 +9,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -16,6 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,7 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.ui.platform.LocalContext
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.ThemePreferences
 
 open class SegmentActivity(
     private val segmentTitle: String
@@ -42,12 +50,16 @@ open class SegmentActivity(
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MultiTheme {
+            val darkThemeState = remember { mutableStateOf(ThemePreferences.isDarkTheme(this)) }
+            MultiTheme(darkTheme = darkThemeState.value) {
                 SegmentScreen(
                     title = segmentTitle,
                     onBack = { finish() },
                     onClose = { finishAffinity() },
-                    actions = { SegmentActions() }
+                    actions = {
+                        ThemeToggleAction(darkThemeState)
+                        SegmentActions()
+                    }
                 ) {
                     SegmentContent()
                 }
@@ -112,6 +124,30 @@ fun SegmentScreen(
             contentAlignment = Alignment.Center
         ) {
             content()
+        }
+    }
+}
+
+@Composable
+private fun ThemeToggleAction(darkThemeState: MutableState<Boolean>) {
+    val context = LocalContext.current
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            val nextText = if (darkThemeState.value) "Light Theme" else "Dark Theme"
+            DropdownMenuItem(
+                text = { Text(nextText) },
+                onClick = {
+                    val newValue = !darkThemeState.value
+                    darkThemeState.value = newValue
+                    ThemePreferences.setDarkTheme(context, newValue)
+                    expanded = false
+                }
+            )
         }
     }
 }
