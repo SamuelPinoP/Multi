@@ -16,6 +16,7 @@ import com.example.multi.DailyCompletionEntity
 import com.example.multi.Event
 import com.example.multi.Note
 import com.example.multi.TrashedNote
+import com.example.multi.TrashedEvent
 import com.example.multi.WeeklyGoal
 import com.example.multi.WeeklyGoalRecord
 
@@ -66,6 +67,15 @@ data class TrashedNoteEntity(
     val header: String,
     val content: String,
     val created: Long,
+    val deleted: Long
+)
+
+@Entity(tableName = "trashed_events")
+data class TrashedEventEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val title: String,
+    val description: String,
+    val date: String?,
     val deleted: Long
 )
 
@@ -141,9 +151,24 @@ interface TrashedNoteDao {
     suspend fun delete(note: TrashedNoteEntity)
 }
 
+@Dao
+interface TrashedEventDao {
+    @Query("SELECT * FROM trashed_events ORDER BY deleted DESC")
+    suspend fun getEvents(): List<TrashedEventEntity>
+
+    @Query("DELETE FROM trashed_events WHERE deleted < :threshold")
+    suspend fun deleteExpired(threshold: Long)
+
+    @Insert
+    suspend fun insert(event: TrashedEventEntity): Long
+
+    @Delete
+    suspend fun delete(event: TrashedEventEntity)
+}
+
 @Database(
-    entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class, NoteEntity::class, TrashedNoteEntity::class, DailyCompletionEntity::class],
-    version = 11
+    entities = [EventEntity::class, WeeklyGoalEntity::class, WeeklyGoalRecordEntity::class, NoteEntity::class, TrashedNoteEntity::class, TrashedEventEntity::class, DailyCompletionEntity::class],
+    version = 12
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -151,6 +176,7 @@ abstract class EventDatabase : RoomDatabase() {
     abstract fun weeklyGoalRecordDao(): WeeklyGoalRecordDao
     abstract fun noteDao(): NoteDao
     abstract fun trashedNoteDao(): TrashedNoteDao
+    abstract fun trashedEventDao(): TrashedEventDao
     abstract fun dailyCompletionDao(): DailyCompletionDao
 
     companion object {
@@ -193,3 +219,6 @@ fun Note.toEntity() = NoteEntity(id, header, content, created, lastOpened, scrol
 
 fun TrashedNoteEntity.toModel() = TrashedNote(id, header, content, created, deleted)
 fun TrashedNote.toEntity() = TrashedNoteEntity(id, header, content, created, deleted)
+
+fun TrashedEventEntity.toModel() = TrashedEvent(id, title, description, date, deleted)
+fun TrashedEvent.toEntity() = TrashedEventEntity(id, title, description, date, deleted)

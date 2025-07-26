@@ -17,7 +17,10 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +35,8 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.TrashedEvent
+import androidx.compose.material.icons.filled.MoreVert
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,11 +53,32 @@ class EventsActivity : SegmentActivity("Events") {
     }
 
     @Composable
+
     override fun SegmentContent() {
         EventsScreen(initialDate)
         initialDate = null
     }
-}
+
+    @Composable
+    override fun SegmentActions() {
+        val context = LocalContext.current
+        var expanded by remember { mutableStateOf(false) }
+
+        Box {
+            IconButton(onClick = { expanded = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                DropdownMenuItem(
+                    text = { Text("Trash") },
+                    onClick = {
+                        expanded = false
+                        context.startActivity(android.content.Intent(context, EventsTrashActivity::class.java))
+                    }
+                )
+            }
+        }
+    }
 
 @Composable
 private fun EventsScreen(initialDate: String? = null) {
@@ -205,8 +231,17 @@ private fun EventsScreen(initialDate: String? = null) {
                 onDelete = if (isNew) null else {
                     {
                         scope.launch {
-                            val dao = EventDatabase.getInstance(context).eventDao()
-                            withContext(Dispatchers.IO) { dao.delete(event.toEntity()) }
+                            val db = EventDatabase.getInstance(context)
+                            withContext(Dispatchers.IO) {
+                                db.trashedEventDao().insert(
+                                    TrashedEvent(
+                                        title = event.title,
+                                        description = event.description,
+                                        date = event.date
+                                    ).toEntity()
+                                )
+                                db.eventDao().delete(event.toEntity())
+                            }
                             events.removeAt(index)
                             editingIndex = null
                             newDate = null
@@ -226,3 +261,4 @@ private fun EventsScreen(initialDate: String? = null) {
     }
 }
 
+}

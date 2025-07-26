@@ -13,6 +13,10 @@ import androidx.compose.material.Scaffold
 import androidx.compose.ui.Modifier
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.ThemePreferences
+import androidx.lifecycle.lifecycleScope
+import com.example.multi.data.EventDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Main entry point of the application.
@@ -36,6 +40,16 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val db = EventDatabase.getInstance(applicationContext)
+            val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+            db.trashedNoteDao().deleteExpired(threshold)
+            db.trashedEventDao().deleteExpired(threshold)
         }
     }
 }

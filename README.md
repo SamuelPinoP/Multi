@@ -39,6 +39,8 @@ To run unit tests:
 
 ## Trash Bin
 
-Deleted notes are moved to a temporary trash bin. Items remain there for 30 days
-unless restored or permanently removed earlier.
+Deleted notes and events are moved to a temporary trash bin. Items remain there
+for 30 days unless restored or permanently removed earlier. Every time the app
+starts, anything that has been in the trash for more than 30 days is
+automatically deleted.
 

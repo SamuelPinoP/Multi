@@ -25,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -57,10 +58,29 @@ class NotesActivity : SegmentActivity("Notes") {
         super.onResume()
         lifecycleScope.launch {
             val db = EventDatabase.getInstance(this@NotesActivity)
-            val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
-            withContext(Dispatchers.IO) { db.trashedNoteDao().deleteExpired(threshold) }
             val stored = withContext(Dispatchers.IO) { db.noteDao().getNotes() }
             notes.clear(); notes.addAll(stored.map { it.toModel() })
+        }
+    }
+
+    @Composable
+    override fun SegmentActions() {
+        val context = LocalContext.current
+        var expanded by remember { mutableStateOf(false) }
+
+        Box {
+            IconButton(onClick = { expanded = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                DropdownMenuItem(
+                    text = { M3Text("Trash") },
+                    onClick = {
+                        expanded = false
+                        context.startActivity(Intent(context, TrashbinActivity::class.java))
+                    }
+                )
+            }
         }
     }
 
@@ -282,45 +302,15 @@ class NotesActivity : SegmentActivity("Notes") {
                     }
                 }
             } else {
-                var fabExpanded by remember { mutableStateOf(false) }
-
-                Column(
+                FloatingActionButton(
+                    onClick = { context.startActivity(Intent(context, NoteEditorActivity::class.java)) },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 80.dp),
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
-                    if (fabExpanded) {
-                        FloatingActionButton(
-                            onClick = {
-                                context.startActivity(Intent(context, NoteEditorActivity::class.java))
-                                fabExpanded = false
-                            },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ) { Icon(Icons.Default.Add, contentDescription = "New Note") }
-
-                        FloatingActionButton(
-                            onClick = {
-                                context.startActivity(Intent(context, TrashbinActivity::class.java))
-                                fabExpanded = false
-                            },
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        ) { Icon(Icons.Default.Delete, contentDescription = "Trash") }
-                    }
-
-                    FloatingActionButton(
-                        onClick = { fabExpanded = !fabExpanded },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ) {
-                        Icon(
-                            imageVector = if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
-                            contentDescription = "Menu"
-                        )
-                    }
+                    Icon(Icons.Default.Add, contentDescription = "New Note")
                 }
             }
         }
