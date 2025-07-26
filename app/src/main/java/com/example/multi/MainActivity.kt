@@ -13,6 +13,11 @@ import androidx.compose.material.Scaffold
 import androidx.compose.ui.Modifier
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.ThemePreferences
+import androidx.lifecycle.lifecycleScope
+import com.example.multi.data.EventDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Main entry point of the application.
@@ -25,6 +30,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        lifecycleScope.launch {
+            val db = EventDatabase.getInstance(this@MainActivity)
+            val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+            withContext(Dispatchers.IO) {
+                db.trashedNoteDao().deleteExpired(threshold)
+                db.trashedEventDao().deleteExpired(threshold)
+            }
+        }
         setContent {
             MultiTheme(darkTheme = ThemePreferences.isDarkTheme(this)) {
                 Scaffold(

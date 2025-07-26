@@ -25,7 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -282,46 +283,38 @@ class NotesActivity : SegmentActivity("Notes") {
                     }
                 }
             } else {
-                var fabExpanded by remember { mutableStateOf(false) }
-
-                Column(
+                FloatingActionButton(
+                    onClick = {
+                        context.startActivity(Intent(context, NoteEditorActivity::class.java))
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 80.dp),
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    if (fabExpanded) {
-                        FloatingActionButton(
-                            onClick = {
-                                context.startActivity(Intent(context, NoteEditorActivity::class.java))
-                                fabExpanded = false
-                            },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ) { Icon(Icons.Default.Add, contentDescription = "New Note") }
+                        .padding(end = 16.dp, bottom = 80.dp)
+                ) { Icon(Icons.Default.Add, contentDescription = "New Note") }
+            }
+            }
+        }
+    }
 
-                        FloatingActionButton(
-                            onClick = {
-                                context.startActivity(Intent(context, TrashbinActivity::class.java))
-                                fabExpanded = false
-                            },
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        ) { Icon(Icons.Default.Delete, contentDescription = "Trash") }
-                    }
+    @Composable
+    override fun SegmentActions() {
+        val context = LocalContext.current
+        var expanded by remember { mutableStateOf(false) }
 
-                    FloatingActionButton(
-                        onClick = { fabExpanded = !fabExpanded },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ) {
-                        Icon(
-                            imageVector = if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
-                            contentDescription = "Menu"
-                        )
+        Box {
+            IconButton(onClick = { expanded = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                DropdownMenuItem(
+                    text = { M3Text("Trash") },
+                    onClick = {
+                        expanded = false
+                        context.startActivity(Intent(context, TrashbinActivity::class.java))
                     }
-                }
+                )
             }
         }
     }
