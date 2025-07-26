@@ -1,5 +1,13 @@
 /*
 
+- If I click study and select wednesday and monday today. The weekly goals calendar will record the
+current day instead of the days when I completed the activity. That needs fixing. Also If I update 
+the weekly goals and put I did not study today after the fact. The Weekly goals calendar will continue
+to display the wrong weekly goal completion. It will mark that the study was done without removing it 
+when proper.
+
+- The record screen looks a bit ugly and doesn't record which days had weekly goals done.
+
 - Add trash button to the events in the three dots to the top also any other settings like dark theme.
 
 - Consider removing workout and adding Addresses book. It will contain addresses and will display 
