@@ -1,5 +1,7 @@
 /*
 
+- Add trash button to the events in the three dots to the top also any other settings like dark theme.
+
 - Consider removing workout and adding Addresses book. It will contain addresses and will display 
 that address in google maps.
 
@@ -9,8 +11,6 @@ you click import it will bring a pdf or word or pic or text file as a note.
 
 - Add importing a PDF file or Word or Image as a Note if I will keep checking it. Like I do in my
 notes app for FIU. I downloaded the char of my classes and I can check the pic to see my classes.
-
-- I need to fix and improve the app. Debug it!
 
 - Architecture – Introducing ViewModel and repository layers for notes would better separate UI and 
 data logic.
@@ -34,9 +34,6 @@ of just having a text no events, add a sleepy bear or something.
 - Whenever I cut something it must be removed from the note asap. Currently when I cut something
 the note still keeps it. If the note becomes empty when I cut the text then the note must be
 automatically deleted.
-
-- I want the note to have a proper title when I share it. It will be shared with the name of the
-first 2 words in the note as a title.
 
 - Allow notes to have an address besides the date. The address will be in the note and display a
 Google map in that address. Inside the Note there will be an option to add address.
