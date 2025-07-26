@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.Scaffold
 import androidx.compose.ui.Modifier
 import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.ThemePreferences
 
 /**
  * Main entry point of the application.
@@ -25,7 +26,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MultiTheme {
+            MultiTheme(darkTheme = ThemePreferences.isDarkTheme(this)) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     contentWindowInsets = WindowInsets.safeDrawing

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.ThemePreferences
 
 /**
  * Activity that allows the user to create a new calendar event.
@@ -39,7 +40,7 @@ class CreateEventActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MultiTheme {
+            MultiTheme(darkTheme = ThemePreferences.isDarkTheme(this)) {
                 CreateEventScreen()
             }
         }
