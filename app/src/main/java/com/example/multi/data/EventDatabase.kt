@@ -193,28 +193,3 @@ fun Note.toEntity() = NoteEntity(id, header, content, created, lastOpened, scrol
 
 fun TrashedNoteEntity.toModel() = TrashedNote(id, header, content, created, deleted)
 fun TrashedNote.toEntity() = TrashedNoteEntity(id, header, content, created, deleted)
-
-// DailyCompletion model and extension functions
-data class DailyCompletion(
-    val goalId: Long,
-    val goalHeader: String,
-    val completionDate: String,
-    val weekStart: String,
-    val weekEnd: String
-)
-
-fun DailyCompletion.toEntity() = DailyCompletionEntity(
-    goalId = goalId,
-    goalHeader = goalHeader,
-    completionDate = completionDate,
-    weekStart = weekStart,
-    weekEnd = weekEnd
-)
-
-fun DailyCompletionEntity.toModel() = DailyCompletion(
-    goalId = goalId,
-    goalHeader = goalHeader,
-    completionDate = completionDate,
-    weekStart = weekStart,
-    weekEnd = weekEnd
-)
