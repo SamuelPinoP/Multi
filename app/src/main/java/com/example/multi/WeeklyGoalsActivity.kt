@@ -402,6 +402,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 onMiss = {
                     val g = goals[gIndex]
                     val chars = g.dayStates.toCharArray()
+                    val wasComplete = chars[dIndex] == 'C'
                     chars[dIndex] = 'M'
                     val completed = chars.count { it == 'C' }
                     val updated = g.copy(
@@ -412,11 +413,19 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+
+                        if (wasComplete) {
+                            val today = LocalDate.now()
+                            val startOfWeek = today.minusDays((today.dayOfWeek.value % 7).toLong())
+                            val date = startOfWeek.plusDays(dIndex.toLong())
+                            removeGoalCompletion(context, g.id, date)
+                        }
                     }
                 },
                 onComplete = {
                     val g = goals[gIndex]
                     val chars = g.dayStates.toCharArray()
+                    val alreadyComplete = chars[dIndex] == 'C'
                     chars[dIndex] = 'C'
                     val completed = chars.count { it == 'C' }
                     val updated = g.copy(
@@ -426,12 +435,17 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                     )
                     goals[gIndex] = updated
                     scope.launch {
-                        saveGoalCompletion(
-                            context = context,
-                            goalId = g.id,
-                            goalHeader = g.header,
-                            completionDate = LocalDate.now()
-                        )
+                        val today = LocalDate.now()
+                        val startOfWeek = today.minusDays((today.dayOfWeek.value % 7).toLong())
+                        val date = startOfWeek.plusDays(dIndex.toLong())
+                        if (!alreadyComplete) {
+                            saveGoalCompletion(
+                                context = context,
+                                goalId = g.id,
+                                goalHeader = g.header,
+                                completionDate = date
+                            )
+                        }
                         val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                     }
