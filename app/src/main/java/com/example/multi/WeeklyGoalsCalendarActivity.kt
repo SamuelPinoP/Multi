@@ -88,7 +88,8 @@ private fun WeeklyGoalsCalendarScreen() {
                     completed = completed,
                     frequency = model.frequency,
                     weekStart = prevStartStr,
-                    weekEnd = prevEndStr
+                    weekEnd = prevEndStr,
+                    dayStates = model.dayStates
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(

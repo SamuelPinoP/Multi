@@ -1,10 +1,5 @@
 /*
 
-- The back button in the interface or the app does not save my changes inside the note.
-
-- Create a Calendar button inside weekly goals that will take me to my weekly goals. Also clicking 
-a weekly goal that was completed inside the calendar will take me to the weekly goals page.
-
 - Consider removing workout and adding Addresses book. It will contain addresses and will display 
 that address in google maps.
 
