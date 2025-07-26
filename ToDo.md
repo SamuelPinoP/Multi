@@ -1,16 +1,10 @@
 /*
 
-- If I click study and select wednesday and monday today. The weekly goals calendar will record the
-current day instead of the days when I completed the activity. That needs fixing. Also If I update 
-the weekly goals and put I did not study today after the fact. The Weekly goals calendar will continue
-to display the wrong weekly goal completion. It will mark that the study was done without removing it 
-when proper.
-
 - The record screen looks a bit ugly and doesn't record which days had weekly goals done.
 
 - Add trash button to the events in the three dots to the top also any other settings like dark theme.
 
-- Consider removing workout and adding Addresses book. It will contain addresses and will display 
+- Remove workout and adding Addresses book. It will contain addresses and will display 
 that address in google maps.
 
 - Change UI. The + button in the notes will create a new note. The trash will be displayed after 
@@ -27,43 +21,32 @@ data logic.
 
 - Make notes able to add addresses and display google maps. Same with events.
 
-- Consider adding a new note button inside each note for users who might want to create a second
-note while writing one. Create a go back button to go back to the previous note and a go forward to 
-go to the next note.
-
 - Delete everything 30 days old in the trash when the Notes Activity is opened instead of when
-the trash is opened.
+  the trash is opened.
 
 - Add dark and light theme
 
-- Animation when or pic whenever the events are empty and there are no weekly activities. Instead
-of just having a text no events, add a sleepy bear or something.
-
-- Whenever I cut something it must be removed from the note asap. Currently when I cut something
-the note still keeps it. If the note becomes empty when I cut the text then the note must be
-automatically deleted.
-
 - Allow notes to have an address besides the date. The address will be in the note and display a
-Google map in that address. Inside the Note there will be an option to add address.
+  Google map in that address. Inside the Note there will be an option to add address.
 
-- Improving UI of Events in Calendar. If I choose every tuesday, then I want every tuesday to be 
-marked in the Calendar.
+- Improving UI of Events in Calendar. If I choose every tuesday, then I want every tuesday to be
+  marked in the Calendar.
 
--I need to add levels of priority to the notes. Priority green. It is high. Yellow is medium. Red 
+-I need to add levels of priority to the notes. Priority green. It is high. Yellow is medium. Red
 is low. By clicking each of them we can display the notes with that priority.
 
-1- The Workout page should have different workout plans. They should be added to the events page.
-Maybe add options to customize the workout such as adding a specific workout of calestenics to the
-day. Think it further. Or even more. The user can create constraints such as only natural exercises. 
-No legs workout, no cardio, or only weight lifting.
-
-2- Add highlighted text in different colors as well as adding divisions between lines and segments.
+2- Add highlighted text in different colors.
 
 3- Add notifications for the Events we have. Adding remainders and a todo tag in red to the note with
 red priority will make it somehow a todo item.
 
 4- Add feature of having a notification about daily activities. The user can click progress without
 entering the app. As a Remainder, only for active users.
+-----------------------------------------------------------------------------
+
+- Consider adding a new note button inside each note for users who might want to create a second
+note while writing one. Create a go back button to go back to the previous note and a go forward to 
+go to the next note.
 
 5- Add Attach button in the events activity to attach notes to an specific event. It could be a new
 note or an existing one or even multiple of them. I must select the event first and then the note.
