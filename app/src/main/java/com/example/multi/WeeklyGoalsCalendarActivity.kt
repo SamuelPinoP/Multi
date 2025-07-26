@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import com.example.multi.data.EventDatabase
-import com.example.multi.data.DailyCompletion
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.CalendarTodayBg
