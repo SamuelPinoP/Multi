@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
@@ -62,11 +63,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
+const val EXTRA_GOAL_ID = "extra_goal_id"
+
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     override fun SegmentContent() {
-        WeeklyGoalsScreen()
+        val goalId = intent.getLongExtra(EXTRA_GOAL_ID, -1L)
+        WeeklyGoalsScreen(highlightGoalId = goalId.takeIf { it > 0 })
     }
 }
 
@@ -103,7 +107,7 @@ private fun DayChoiceDialog(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-private fun WeeklyGoalsScreen() {
+private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     val context = LocalContext.current
     val goals = remember { mutableStateListOf<WeeklyGoal>() }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
@@ -112,7 +116,7 @@ private fun WeeklyGoalsScreen() {
     var selectedGoalIndex by remember { mutableStateOf<Int?>(null) }
     var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(highlightGoalId) {
         val db = EventDatabase.getInstance(context)
         val dao = db.weeklyGoalDao()
         val recordDao = db.weeklyGoalRecordDao()
@@ -149,6 +153,12 @@ private fun WeeklyGoalsScreen() {
             val completed = model.dayStates.count { it == 'C' }
             model = model.copy(remaining = (model.frequency - completed).coerceAtLeast(0))
             goals.add(model)
+        }
+        highlightGoalId?.let { id ->
+            val index = goals.indexOfFirst { it.id == id }
+            if (index >= 0) {
+                editingIndex = index
+            }
         }
     }
 
@@ -302,16 +312,31 @@ private fun WeeklyGoalsScreen() {
             }
         }
 
-        ExtendedFloatingActionButton(
-            onClick = { editingIndex = -1 },
-            icon = { Icon(Icons.Default.Add, contentDescription = null) },
-            text = { Text("Add Goal") },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+        Row(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 80.dp)
-        )
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ExtendedFloatingActionButton(
+                onClick = { editingIndex = -1 },
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Add Goal") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+            ExtendedFloatingActionButton(
+                onClick = {
+                    context.startActivity(
+                        android.content.Intent(context, WeeklyGoalsCalendarActivity::class.java)
+                    )
+                },
+                icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                text = { Text("Calendar") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        }
 
         val index = editingIndex
         if (index != null) {

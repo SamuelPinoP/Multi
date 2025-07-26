@@ -31,6 +31,7 @@ import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
+import com.example.multi.EXTRA_GOAL_ID
 import com.example.multi.util.capitalizeSentences
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
@@ -315,7 +316,17 @@ private fun WeeklyGoalsCalendarScreen() {
                     )
                     selectedCompletions.forEach { completion ->
                         ElevatedCard(
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showDialog = false
+                                    val intent = android.content.Intent(
+                                        context,
+                                        WeeklyGoalsActivity::class.java
+                                    )
+                                    intent.putExtra(EXTRA_GOAL_ID, completion.goalId)
+                                    context.startActivity(intent)
+                                }
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(completion.goalHeader, style = MaterialTheme.typography.titleMedium)
