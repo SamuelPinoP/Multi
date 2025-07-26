@@ -48,6 +48,9 @@ open class SegmentActivity(
     @Composable
     open fun SegmentActions() {}
 
+    @Composable
+    open fun OverflowMenuItems(onDismiss: () -> Unit) {}
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -59,7 +62,7 @@ open class SegmentActivity(
                     onBack = { finish() },
                     onClose = { finishAffinity() },
                     actions = {
-                        ThemeToggleAction(darkThemeState)
+                        ThemeToggleAction(darkThemeState) { OverflowMenuItems(it) }
                         SegmentActions()
                     }
                 ) {
@@ -131,7 +134,10 @@ fun SegmentScreen(
 }
 
 @Composable
-private fun ThemeToggleAction(darkThemeState: MutableState<Boolean>) {
+private fun ThemeToggleAction(
+    darkThemeState: MutableState<Boolean>,
+    extraItems: @Composable (onDismiss: () -> Unit) -> Unit = {}
+) {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
 
@@ -150,6 +156,7 @@ private fun ThemeToggleAction(darkThemeState: MutableState<Boolean>) {
                     expanded = false
                 }
             )
+            extraItems { expanded = false }
         }
     }
 }

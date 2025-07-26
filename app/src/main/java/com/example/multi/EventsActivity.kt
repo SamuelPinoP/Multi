@@ -52,6 +52,18 @@ class EventsActivity : SegmentActivity("Events") {
         EventsScreen(initialDate)
         initialDate = null
     }
+
+    @Composable
+    override fun OverflowMenuItems(onDismiss: () -> Unit) {
+        val context = LocalContext.current
+        DropdownMenuItem(
+            text = { Text("Trash") },
+            onClick = {
+                onDismiss()
+                context.startActivity(android.content.Intent(context, EventTrashActivity::class.java))
+            }
+        )
+    }
 }
 
 @Composable
@@ -205,8 +217,17 @@ private fun EventsScreen(initialDate: String? = null) {
                 onDelete = if (isNew) null else {
                     {
                         scope.launch {
-                            val dao = EventDatabase.getInstance(context).eventDao()
-                            withContext(Dispatchers.IO) { dao.delete(event.toEntity()) }
+                            val db = EventDatabase.getInstance(context)
+                            withContext(Dispatchers.IO) {
+                                db.trashedEventDao().insert(
+                                    TrashedEvent(
+                                        title = event.title,
+                                        description = event.description,
+                                        date = event.date
+                                    ).toEntity()
+                                )
+                                db.eventDao().delete(event.toEntity())
+                            }
                             events.removeAt(index)
                             editingIndex = null
                             newDate = null
