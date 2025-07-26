@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
@@ -163,7 +164,7 @@ private fun WeeklyGoalsScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
             ) {
                 ElevatedButton(
                     onClick = {
@@ -173,7 +174,7 @@ private fun WeeklyGoalsScreen() {
                     },
                     modifier = Modifier
                         .height(50.dp)
-                        .defaultMinSize(minWidth = 170.dp)
+                        .defaultMinSize(minWidth = 150.dp)
                 ) {
                     Icon(
                         Icons.Default.Check,
@@ -181,6 +182,24 @@ private fun WeeklyGoalsScreen() {
                         modifier = Modifier.padding(end = 4.dp)
                     )
                     Text("Record", fontSize = 18.sp)
+                }
+
+                ElevatedButton(
+                    onClick = {
+                        context.startActivity(
+                            android.content.Intent(context, WeeklyGoalsCalendarActivity::class.java)
+                        )
+                    },
+                    modifier = Modifier
+                        .height(50.dp)
+                        .defaultMinSize(minWidth = 150.dp)
+                ) {
+                    Icon(
+                        Icons.Default.CalendarMonth,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Text("Calendar", fontSize = 18.sp)
                 }
             }
 

@@ -315,7 +315,13 @@ private fun WeeklyGoalsCalendarScreen() {
                     )
                     selectedCompletions.forEach { completion ->
                         ElevatedCard(
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    context.startActivity(
+                                        android.content.Intent(context, WeeklyGoalsActivity::class.java)
+                                    )
+                                }
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(completion.goalHeader, style = MaterialTheme.typography.titleMedium)
