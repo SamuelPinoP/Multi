@@ -25,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -282,47 +281,31 @@ class NotesActivity : SegmentActivity("Notes") {
                     }
                 }
             } else {
-                var fabExpanded by remember { mutableStateOf(false) }
-
-                Column(
+                FloatingActionButton(
+                    onClick = {
+                        context.startActivity(Intent(context, NoteEditorActivity::class.java))
+                    },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 80.dp),
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
-                    if (fabExpanded) {
-                        FloatingActionButton(
-                            onClick = {
-                                context.startActivity(Intent(context, NoteEditorActivity::class.java))
-                                fabExpanded = false
-                            },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ) { Icon(Icons.Default.Add, contentDescription = "New Note") }
-
-                        FloatingActionButton(
-                            onClick = {
-                                context.startActivity(Intent(context, TrashbinActivity::class.java))
-                                fabExpanded = false
-                            },
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        ) { Icon(Icons.Default.Delete, contentDescription = "Trash") }
-                    }
-
-                    FloatingActionButton(
-                        onClick = { fabExpanded = !fabExpanded },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ) {
-                        Icon(
-                            imageVector = if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
-                            contentDescription = "Menu"
-                        )
-                    }
+                    Icon(Icons.Default.Add, contentDescription = "New Note")
                 }
             }
         }
+    }
+
+    @Composable
+    override fun OverflowMenuItems(onDismiss: () -> Unit) {
+        val context = LocalContext.current
+        DropdownMenuItem(
+            text = { M3Text("Trash") },
+            onClick = {
+                onDismiss()
+                context.startActivity(Intent(context, TrashbinActivity::class.java))
+            }
+        )
     }
 }

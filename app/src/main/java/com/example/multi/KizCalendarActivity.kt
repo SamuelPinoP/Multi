@@ -330,8 +330,17 @@ private fun KizCalendarScreen() {
                 onDelete = {
                     editingEvent = null
                     scope.launch {
-                        val dao = EventDatabase.getInstance(context).eventDao()
-                        withContext(Dispatchers.IO) { dao.delete(event.toEntity()) }
+                        val db = EventDatabase.getInstance(context)
+                        withContext(Dispatchers.IO) {
+                            db.trashedEventDao().insert(
+                                TrashedEvent(
+                                    title = event.title,
+                                    description = event.description,
+                                    date = event.date
+                                ).toEntity()
+                            )
+                            db.eventDao().delete(event.toEntity())
+                        }
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
                             events.removeAt(idx)
