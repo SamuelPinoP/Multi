@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.apache.poi)
+    implementation(libs.pdfbox.android)
     implementation(libs.kizitonwose.calendar.compose)
     kapt(libs.androidx.room.compiler)
     testImplementation(libs.junit)

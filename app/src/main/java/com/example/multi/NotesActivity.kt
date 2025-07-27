@@ -1,6 +1,9 @@
 package com.example.multi
 
 import android.content.Intent
+import android.net.Uri
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -42,6 +45,7 @@ import com.example.multi.data.toModel
 import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
 import com.example.multi.util.shareNotesAsTxt
+import com.example.multi.util.readTextFromUri
 import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -51,6 +55,25 @@ import com.example.multi.data.toEntity
 
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
+    private lateinit var importLauncher: ActivityResultLauncher<Array<String>>
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        importLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            uri ?: return@registerForActivityResult
+            lifecycleScope.launch {
+                val (name, text) = readTextFromUri(this@NotesActivity, uri)
+                val header = name.substringBeforeLast('.')
+                val dao = EventDatabase.getInstance(this@NotesActivity).noteDao()
+                val id = withContext(Dispatchers.IO) {
+                    dao.insert(
+                        Note(header = header, content = text).toEntity()
+                    )
+                }
+                notes.add(0, Note(id = id, header = header, content = text))
+            }
+        }
+        super.onCreate(savedInstanceState)
+    }
 
     override fun onResume() {
         super.onResume()
@@ -300,6 +323,13 @@ class NotesActivity : SegmentActivity("Notes") {
     @Composable
     override fun OverflowMenuItems(onDismiss: () -> Unit) {
         val context = LocalContext.current
+        DropdownMenuItem(
+            text = { M3Text("Import") },
+            onClick = {
+                onDismiss()
+                importLauncher.launch(arrayOf("*/*"))
+            }
+        )
         DropdownMenuItem(
             text = { M3Text("Trash") },
             onClick = {
