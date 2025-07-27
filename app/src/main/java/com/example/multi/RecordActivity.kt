@@ -38,6 +38,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.ThemePreferences
+import com.example.multi.data.toEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

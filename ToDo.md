@@ -1,15 +1,6 @@
 /*
 
-- The record screen looks a bit ugly and doesn't record which days had weekly goals done.
-
-- Add trash button to the events in the three dots to the top also any other settings like dark theme.
-
-- Remove workout and adding Addresses book. It will contain addresses and will display 
-that address in google maps.
-
-- Change UI. The + button in the notes will create a new note. The trash will be displayed after 
-clicking the three dots that will go in the right top corner. It will display trash or import. When
-you click import it will bring a pdf or word or pic or text file as a note.
+- Add import button. When you click import it will bring a pdf or word or pic or text file as a note.
 
 - Add importing a PDF file or Word or Image as a Note if I will keep checking it. Like I do in my
 notes app for FIU. I downloaded the char of my classes and I can check the pic to see my classes.
@@ -17,14 +8,7 @@ notes app for FIU. I downloaded the char of my classes and I can check the pic t
 - Architecture – Introducing ViewModel and repository layers for notes would better separate UI and 
 data logic.
 
-- Make sure the Record activity is still working.
-
 - Make notes able to add addresses and display google maps. Same with events.
-
-- Delete everything 30 days old in the trash when the Notes Activity is opened instead of when
-  the trash is opened.
-
-- Add dark and light theme
 
 - Allow notes to have an address besides the date. The address will be in the note and display a
   Google map in that address. Inside the Note there will be an option to add address.
