@@ -35,11 +35,13 @@ import com.example.multi.data.toModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.lifecycleScope
 
 const val EXTRA_DATE = "extra_date"
 
 /** Activity displaying the list of user events. */
 class EventsActivity : SegmentActivity("Events") {
+    private val events = mutableStateListOf<Event>()
     private var initialDate: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,9 +49,19 @@ class EventsActivity : SegmentActivity("Events") {
         super.onCreate(savedInstanceState)
     }
 
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            val dao = EventDatabase.getInstance(this@EventsActivity).eventDao()
+            val stored = withContext(Dispatchers.IO) { dao.getEvents() }
+            events.clear(); events.addAll(stored.map { it.toModel() })
+        }
+    }
+
     @Composable
     override fun SegmentContent() {
-        EventsScreen(initialDate)
+        val events = remember { this@EventsActivity.events }
+        EventsScreen(events, initialDate)
         initialDate = null
     }
 
@@ -67,20 +79,12 @@ class EventsActivity : SegmentActivity("Events") {
 }
 
 @Composable
-private fun EventsScreen(initialDate: String? = null) {
+private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null) {
     val context = LocalContext.current
-    val events = remember { mutableStateListOf<Event>() }
     var editingIndex by remember { mutableStateOf<Int?>(if (initialDate != null) -1 else null) }
     var newDate by remember { mutableStateOf(initialDate) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        val dao = EventDatabase.getInstance(context).eventDao()
-        val stored = withContext(Dispatchers.IO) { dao.getEvents() }
-        events.clear()
-        events.addAll(stored.map { it.toModel() })
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
