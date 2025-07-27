@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -32,11 +33,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.ThemePreferences
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -60,6 +63,7 @@ class RecordActivity : ComponentActivity() {
 fun RecordScreen() {
     val context = LocalContext.current
     val records = remember { mutableStateListOf<WeeklyGoalRecord>() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
@@ -155,6 +159,18 @@ fun RecordScreen() {
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 DayButtonsRow(states = rec.dayStates) { }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(onClick = {
+                                        scope.launch {
+                                            val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
+                                            withContext(Dispatchers.IO) { dao.delete(rec.toEntity()) }
+                                            records.remove(rec)
+                                        }
+                                    }) { Text("Delete") }
+                                }
                             }
                         }
                     }
