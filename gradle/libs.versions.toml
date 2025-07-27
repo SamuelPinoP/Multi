@@ -12,6 +12,7 @@ desugarJdk = "2.0.4"
 room = "2.6.1"
 poi = "5.2.5"
 kizCalendar = "2.5.0"
+pdfbox = "2.0.27.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,6 +37,7 @@ androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = 
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 apache-poi = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poi" }
 kizitonwose-calendar-compose = { group = "com.kizitonwose.calendar", name = "compose", version.ref = "kizCalendar" }
+pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfbox" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -23,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.runtime.Composable
@@ -42,6 +45,8 @@ import com.example.multi.data.toModel
 import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
 import com.example.multi.util.shareNotesAsTxt
+import com.example.multi.util.getFileName
+import com.example.multi.util.readTextFromUri
 import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -72,6 +77,23 @@ class NotesActivity : SegmentActivity("Notes") {
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+        val importLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument()
+        ) { uri ->
+            if (uri != null) {
+                scope.launch {
+                    val text = readTextFromUri(context, uri)
+                    val header = getFileName(context, uri)
+                    val note = Note(header = header, content = text)
+                    withContext(Dispatchers.IO) {
+                        val dao = EventDatabase.getInstance(context).noteDao()
+                        val id = dao.insert(note.toEntity())
+                        note.id = id
+                    }
+                    notes.add(0, note)
+                }
+            }
+        }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -281,17 +303,28 @@ class NotesActivity : SegmentActivity("Notes") {
                     }
                 }
             } else {
-                FloatingActionButton(
-                    onClick = {
-                        context.startActivity(Intent(context, NoteEditorActivity::class.java))
-                    },
+                Row(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 80.dp),
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "New Note")
+                    FloatingActionButton(
+                        onClick = { importLauncher.launch(arrayOf("*/*")) },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(Icons.Default.FileOpen, contentDescription = "Import")
+                    }
+                    FloatingActionButton(
+                        onClick = {
+                            context.startActivity(Intent(context, NoteEditorActivity::class.java))
+                        },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "New Note")
+                    }
                 }
             }
         }
