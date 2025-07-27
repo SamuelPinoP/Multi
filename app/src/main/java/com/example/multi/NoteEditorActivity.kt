@@ -61,6 +61,7 @@ const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
 const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
+const val EXTRA_NOTE_ATTACHMENT_URI = "extra_note_attachment_uri"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -73,6 +74,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var currentHeader: String = ""
     private var currentText: String = ""
     private var saved = false
+    private var attachmentUri: String? = null
 
     private val textSizeState = mutableIntStateOf(20)
     private val showSizeDialogState = mutableStateOf(false)
@@ -87,6 +89,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         readOnly = intent.getBooleanExtra(EXTRA_NOTE_READ_ONLY, false)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        attachmentUri = intent.getStringExtra(EXTRA_NOTE_ATTACHMENT_URI)
         noteScroll = intent.getIntExtra(EXTRA_NOTE_SCROLL, 0)
         noteCursor = intent.getIntExtra(EXTRA_NOTE_CURSOR, 0)
         noteLastOpened = System.currentTimeMillis()
@@ -132,7 +135,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
-                                    cursor = textState.value.selection.start
+                                    cursor = textState.value.selection.start,
+                                    attachmentUri = attachmentUri
                                 ).toEntity()
                             )
                         } else {
@@ -144,7 +148,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
-                                    cursor = textState.value.selection.start
+                                    cursor = textState.value.selection.start,
+                                    attachmentUri = attachmentUri
                                 ).toEntity()
                             )
                         }
@@ -315,7 +320,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     header = currentHeader,
                     content = currentText,
                     created = noteCreated,
-                    lastOpened = noteLastOpened
+                    lastOpened = noteLastOpened,
+                    attachmentUri = attachmentUri
                 )
                 note.shareAsTxt(context)
             }
@@ -340,13 +346,15 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            attachmentUri = attachmentUri
                         )
                         db.trashedNoteDao().insert(
                             TrashedNote(
                                 header = note.header,
                                 content = note.content,
-                                created = note.created
+                                created = note.created,
+                                attachmentUri = note.attachmentUri
                             ).toEntity()
                         )
                         db.noteDao().delete(note.toEntity())
@@ -375,7 +383,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             created = noteCreated,
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
-                            cursor = noteCursor
+                            cursor = noteCursor,
+                            attachmentUri = attachmentUri
                         ).toEntity()
                     )
                 } else {
@@ -387,7 +396,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             created = noteCreated,
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
-                            cursor = noteCursor
+                            cursor = noteCursor,
+                            attachmentUri = attachmentUri
                         ).toEntity()
                     )
                 }
