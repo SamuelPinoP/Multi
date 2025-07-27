@@ -6,7 +6,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.CardDefaults
@@ -27,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 
 /** Enum describing each clickable segment of the medallion. */
-enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, WORKOUT, NOTES }
+enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, NOTES }
 
 /**
  * Basic button used by [Medallion] segments.
@@ -72,8 +71,8 @@ private fun SegmentButton(
 }
 
 /**
- * Displays four clickable squares representing calendar, events, workout and
- * notes.
+ * Displays four clickable squares representing calendar, events, weekly goals
+ * and notes.
  */
 @Composable
 fun Medallion(
@@ -92,16 +91,6 @@ fun Medallion(
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
             textAlign = TextAlign.Center
-        )
-        SegmentButton(
-            label = stringResource(R.string.label_weekly_goals),
-            icon = Icons.Default.Flag,
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            onClick = { onSegmentClick(MedallionSegment.WEEKLY_GOALS) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(70.dp),
-            square = false
         )
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -125,10 +114,10 @@ fun Medallion(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SegmentButton(
-                label = stringResource(R.string.label_workout),
-                icon = Icons.Default.FitnessCenter,
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                onClick = { onSegmentClick(MedallionSegment.WORKOUT) },
+                label = stringResource(R.string.label_weekly_goals),
+                icon = Icons.Default.Flag,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                onClick = { onSegmentClick(MedallionSegment.WEEKLY_GOALS) },
                 modifier = Modifier.weight(1f)
             )
             SegmentButton(
@@ -159,7 +148,6 @@ fun MedallionScreen() {
                 MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
                 MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
                 MedallionSegment.EVENTS -> EventsActivity::class.java
-                MedallionSegment.WORKOUT -> WorkoutActivity::class.java
                 MedallionSegment.NOTES -> NotesActivity::class.java
             }
             context.startActivity(Intent(context, cls))
