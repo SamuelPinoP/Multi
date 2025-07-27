@@ -46,14 +46,8 @@ import com.example.multi.data.toEntity
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
-import com.example.multi.util.shareAsDocx
-import com.example.multi.util.shareAsPdf
 import com.example.multi.util.shareAsTxt
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -82,13 +76,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     private val textSizeState = mutableIntStateOf(20)
     private val showSizeDialogState = mutableStateOf(false)
-    private val shareMenuExpandedState = mutableStateOf(false)
-    private val overflowMenuExpandedState = mutableStateOf(false)
 
     private var textSize by textSizeState
     private var showSizeDialog by showSizeDialogState
-    private var shareMenuExpanded by shareMenuExpandedState
-    private var overflowMenuExpanded by overflowMenuExpandedState
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
@@ -122,8 +112,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
-            var shareMenuExpanded by shareMenuExpandedState
-            var overflowMenuExpanded by overflowMenuExpandedState
+            
             val density = LocalDensity.current
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
@@ -309,21 +298,43 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     @Composable
     override fun SegmentActions() {
+        /* No top bar actions - menu provided via overflow */
+    }
+
+    @Composable
+    override fun OverflowMenuItems(onDismiss: () -> Unit) {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
 
-        Box {
-            IconButton(onClick = { shareMenuExpanded = true }) {
-                Icon(Icons.Default.Share, contentDescription = "Share")
+        DropdownMenuItem(
+            text = { Text("Share") },
+            onClick = {
+                onDismiss()
+                val note = Note(
+                    id = noteId,
+                    header = currentHeader,
+                    content = currentText,
+                    created = noteCreated,
+                    lastOpened = noteLastOpened
+                )
+                note.shareAsTxt(context)
             }
-            DropdownMenu(
-                expanded = shareMenuExpanded,
-                onDismissRequest = { shareMenuExpanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Word") },
-                    onClick = {
-                        shareMenuExpanded = false
+        )
+        DropdownMenuItem(
+            text = { Text("Text Size") },
+            onClick = {
+                onDismiss()
+                showSizeDialog = true
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Delete") },
+            onClick = {
+                onDismiss()
+                if (noteId != 0L) {
+                    saved = true
+                    scope.launch(Dispatchers.IO) {
+                        val db = EventDatabase.getInstance(context)
                         val note = Note(
                             id = noteId,
                             header = currentHeader,
@@ -331,85 +342,19 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             created = noteCreated,
                             lastOpened = noteLastOpened
                         )
-                        note.shareAsDocx(context)
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Text File") },
-                    onClick = {
-                        shareMenuExpanded = false
-                        val note = Note(
-                            id = noteId,
-                            header = currentHeader,
-                            content = currentText,
-                            created = noteCreated,
-                            lastOpened = noteLastOpened
+                        db.trashedNoteDao().insert(
+                            TrashedNote(
+                                header = note.header,
+                                content = note.content,
+                                created = note.created
+                            ).toEntity()
                         )
-                        note.shareAsTxt(context)
+                        db.noteDao().delete(note.toEntity())
                     }
-                )
-                DropdownMenuItem(
-                    text = { Text("PDF") },
-                    onClick = {
-                        shareMenuExpanded = false
-                        val note = Note(
-                            id = noteId,
-                            header = currentHeader,
-                            content = currentText,
-                            created = noteCreated,
-                            lastOpened = noteLastOpened
-                        )
-                        note.shareAsPdf(context)
-                    }
-                )
+                    (context as? android.app.Activity)?.finish()
+                }
             }
-        }
-
-        Box {
-            IconButton(onClick = { overflowMenuExpanded = true }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Menu")
-            }
-            DropdownMenu(
-                expanded = overflowMenuExpanded,
-                onDismissRequest = { overflowMenuExpanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Text Size") },
-                    onClick = {
-                        overflowMenuExpanded = false
-                        showSizeDialog = true
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Delete") },
-                    onClick = {
-                        overflowMenuExpanded = false
-                        if (noteId != 0L) {
-                            saved = true
-                            scope.launch(Dispatchers.IO) {
-                                val db = EventDatabase.getInstance(context)
-                                val note = Note(
-                                    id = noteId,
-                                    header = currentHeader,
-                                    content = currentText,
-                                    created = noteCreated,
-                                    lastOpened = noteLastOpened
-                                )
-                                db.trashedNoteDao().insert(
-                                    TrashedNote(
-                                        header = note.header,
-                                        content = note.content,
-                                        created = note.created
-                                    ).toEntity()
-                                )
-                                db.noteDao().delete(note.toEntity())
-                            }
-                            (context as? android.app.Activity)?.finish()
-                        }
-                    }
-                )
-            }
-        }
+        )
     }
 
     override fun onStop() {
