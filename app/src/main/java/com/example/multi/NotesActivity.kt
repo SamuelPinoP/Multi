@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +43,10 @@ import com.example.multi.data.toModel
 import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
 import com.example.multi.util.shareNotesAsTxt
+import com.example.multi.util.importNoteFromUri
 import com.example.multi.util.toDateString
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -72,6 +76,18 @@ class NotesActivity : SegmentActivity("Notes") {
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+        val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            uri?.let {
+                scope.launch {
+                    val note = context.importNoteFromUri(it)
+                    val id = withContext(Dispatchers.IO) {
+                        EventDatabase.getInstance(context).noteDao().insert(note.toEntity())
+                    }
+                    note.id = id
+                    notes.add(0, note)
+                }
+            }
+        }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -281,6 +297,17 @@ class NotesActivity : SegmentActivity("Notes") {
                     }
                 }
             } else {
+                FloatingActionButton(
+                    onClick = { importLauncher.launch(arrayOf("*/*")) },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, bottom = 80.dp),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ) {
+                    Icon(Icons.Default.FileOpen, contentDescription = "Import")
+                }
+
                 FloatingActionButton(
                     onClick = {
                         context.startActivity(Intent(context, NoteEditorActivity::class.java))
