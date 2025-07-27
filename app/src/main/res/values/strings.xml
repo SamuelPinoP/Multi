@@ -2,7 +2,6 @@
     <string name="app_name">Multi</string>
     <string name="label_calendar">Calendar</string>
     <string name="label_events">Events</string>
-    <string name="label_workout">Workout</string>
     <string name="label_notes">Notes</string>
     <string name="label_weekly_goals">Weekly Goals</string>
 </resources>

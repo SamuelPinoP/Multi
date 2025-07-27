@@ -49,9 +49,6 @@
             android:name=".CreateEventActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".WorkoutActivity"
-            android:screenOrientation="portrait" />
-        <activity
             android:name=".NotesActivity"
             android:screenOrientation="portrait" />
         <activity
