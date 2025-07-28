@@ -58,7 +58,8 @@ data class NoteEntity(
     val created: Long,
     val lastOpened: Long,
     val scroll: Int = 0,
-    val cursor: Int = 0
+    val cursor: Int = 0,
+    val attachmentUri: String? = null
 )
 
 @Entity(tableName = "trashed_notes")
@@ -67,7 +68,8 @@ data class TrashedNoteEntity(
     val header: String,
     val content: String,
     val created: Long,
-    val deleted: Long
+    val deleted: Long,
+    val attachmentUri: String? = null
 )
 
 @Entity(tableName = "trashed_events")
@@ -179,7 +181,7 @@ interface TrashedEventDao {
         TrashedEventEntity::class,
         DailyCompletionEntity::class
     ],
-    version = 12
+    version = 13
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -225,11 +227,17 @@ fun WeeklyGoalRecordEntity.toModel() =
 fun WeeklyGoalRecord.toEntity() =
     WeeklyGoalRecordEntity(id, header, completed, frequency, weekStart, weekEnd, dayStates)
 
-fun NoteEntity.toModel() = Note(id, header, content, created, lastOpened, scroll, cursor)
-fun Note.toEntity() = NoteEntity(id, header, content, created, lastOpened, scroll, cursor)
+fun NoteEntity.toModel() =
+    Note(id, header, content, created, lastOpened, scroll, cursor, attachmentUri)
 
-fun TrashedNoteEntity.toModel() = TrashedNote(id, header, content, created, deleted)
-fun TrashedNote.toEntity() = TrashedNoteEntity(id, header, content, created, deleted)
+fun Note.toEntity() =
+    NoteEntity(id, header, content, created, lastOpened, scroll, cursor, attachmentUri)
+
+fun TrashedNoteEntity.toModel() =
+    TrashedNote(id, header, content, created, deleted, attachmentUri)
+
+fun TrashedNote.toEntity() =
+    TrashedNoteEntity(id, header, content, created, deleted, attachmentUri)
 
 fun TrashedEventEntity.toModel() = TrashedEvent(id, title, description, date, deleted)
 fun TrashedEvent.toEntity() = TrashedEventEntity(id, title, description, date, deleted)

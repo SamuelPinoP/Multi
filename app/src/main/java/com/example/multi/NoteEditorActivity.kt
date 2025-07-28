@@ -132,7 +132,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
-                                    cursor = textState.value.selection.start
+                                    cursor = textState.value.selection.start,
+                                    attachmentUri = null
                                 ).toEntity()
                             )
                         } else {
@@ -144,7 +145,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
-                                    cursor = textState.value.selection.start
+                                    cursor = textState.value.selection.start,
+                                    attachmentUri = null
                                 ).toEntity()
                             )
                         }
@@ -315,7 +317,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     header = currentHeader,
                     content = currentText,
                     created = noteCreated,
-                    lastOpened = noteLastOpened
+                    lastOpened = noteLastOpened,
+                    attachmentUri = null
                 )
                 note.shareAsTxt(context)
             }
@@ -340,13 +343,15 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             header = currentHeader,
                             content = currentText,
                             created = noteCreated,
-                            lastOpened = noteLastOpened
+                            lastOpened = noteLastOpened,
+                            attachmentUri = null
                         )
                         db.trashedNoteDao().insert(
                             TrashedNote(
                                 header = note.header,
                                 content = note.content,
-                                created = note.created
+                                created = note.created,
+                                attachmentUri = null
                             ).toEntity()
                         )
                         db.noteDao().delete(note.toEntity())
@@ -375,7 +380,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             created = noteCreated,
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
-                            cursor = noteCursor
+                            cursor = noteCursor,
+                            attachmentUri = null
                         ).toEntity()
                     )
                 } else {
@@ -387,7 +393,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             created = noteCreated,
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
-                            cursor = noteCursor
+                            cursor = noteCursor,
+                            attachmentUri = null
                         ).toEntity()
                     )
                 }
