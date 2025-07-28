@@ -38,7 +38,9 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.format.TextStyle
+import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -59,6 +61,39 @@ class KizCalendarActivity : SegmentActivity("Events Calendar") {
     override fun SegmentContent() {
         KizCalendarScreen()
     }
+}
+
+/**
+ * Determine if this [Event] should be shown on the given [date].
+ * Supports ISO date strings (yyyy-MM-dd) and recurring patterns like
+ * "Every Tuesday" or "Tuesday and Thursday".
+ */
+fun Event.occursOn(date: LocalDate): Boolean {
+    val saved = this.date ?: return false
+    val isoRegex = Regex("\\d{4}-\\d{2}-\\d{2}")
+    if (isoRegex.matches(saved)) {
+        return saved == date.toString()
+    }
+
+    val lower = saved.lowercase(Locale.getDefault())
+    val everyOther = lower.startsWith("every other ")
+    val every = lower.startsWith("every ")
+    val trimmed = when {
+        everyOther -> saved.substring(11).trim()
+        every -> saved.substring(5).trim()
+        else -> saved.trim()
+    }
+
+    val parts = trimmed.split(Regex(",\\s*|\\s+and\\s+")).map { it.trim().lowercase(Locale.getDefault()) }
+    val target = date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault()).lowercase(Locale.getDefault())
+    if (parts.none { it == target }) return false
+
+    if (everyOther) {
+        val week = date.get(WeekFields.ISO.weekOfWeekBasedYear())
+        return week % 2 == 0
+    }
+
+    return true
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -173,7 +208,7 @@ private fun KizCalendarScreen() {
                 .height(420.dp),
             state = state,
             dayContent = { day ->
-                val dayEvents = events.filter { it.date == day.date.toString() }
+                val dayEvents = events.filter { it.occursOn(day.date) }
                 val isCurrentMonth = day.position == DayPosition.MonthDate
                 val textColor = when {
                     dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primary
