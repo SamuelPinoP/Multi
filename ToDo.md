@@ -1,9 +1,8 @@
 /*
+- Move import into the three dots FAB and turn add note into just the +.
 
-- Add import button. When you click import it will bring a pdf or word or pic or text file as a note.
-
-- Add importing a PDF file or Word or Image as a Note if I will keep checking it. Like I do in my
-notes app for FIU. I downloaded the char of my classes and I can check the pic to see my classes.
+- I need to see if I can import pic into the note and incorporate active-clickable links that will 
+redirect to a page, links both as a note by themselves and inside a note.
 
 - Architecture – Introducing ViewModel and repository layers for notes would better separate UI and 
 data logic.
