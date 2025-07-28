@@ -52,6 +52,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.ui.graphics.Color
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
+import com.example.multi.util.occursOn
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -173,7 +174,7 @@ private fun KizCalendarScreen() {
                 .height(420.dp),
             state = state,
             dayContent = { day ->
-                val dayEvents = events.filter { it.date == day.date.toString() }
+                val dayEvents = events.filter { it.occursOn(day.date) }
                 val isCurrentMonth = day.position == DayPosition.MonthDate
                 val textColor = when {
                     dayEvents.isNotEmpty() -> MaterialTheme.colorScheme.primary
