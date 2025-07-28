@@ -1,6 +1,8 @@
 package com.example.multi
 
 import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.runtime.Composable
@@ -30,6 +33,8 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -72,6 +77,33 @@ class NotesActivity : SegmentActivity("Notes") {
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+        val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            uri?.let {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                var name: String? = null
+                context.contentResolver.query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                    if (c.moveToFirst()) {
+                        val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (idx >= 0) name = c.getString(idx)
+                    }
+                }
+                val newNote = Note(
+                    header = name ?: "Imported File",
+                    content = "",
+                    created = System.currentTimeMillis(),
+                    lastOpened = System.currentTimeMillis(),
+                    attachmentUri = it.toString()
+                )
+                scope.launch {
+                    val dao = EventDatabase.getInstance(context).noteDao()
+                    val id = withContext(Dispatchers.IO) { dao.insert(newNote.toEntity()) }
+                    notes.add(0, newNote.copy(id = id))
+                }
+            }
+        }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -123,14 +155,27 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 selectedIds.add(note.id)
                                             }
                                         } else {
-                                            val intent = Intent(context, NoteEditorActivity::class.java)
-                                            intent.putExtra(EXTRA_NOTE_ID, note.id)
-                                            intent.putExtra(EXTRA_NOTE_HEADER, note.header)
-                                            intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
-                                            intent.putExtra(EXTRA_NOTE_CREATED, note.created)
-                                            intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
-                                            intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
-                                            context.startActivity(intent)
+                                            if (note.attachmentUri != null) {
+                                                val uri = Uri.parse(note.attachmentUri)
+                                                context.contentResolver.takePersistableUriPermission(
+                                                    uri,
+                                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                                )
+                                                val open = Intent(Intent.ACTION_VIEW).apply {
+                                                    data = uri
+                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                }
+                                                context.startActivity(open)
+                                            } else {
+                                                val intent = Intent(context, NoteEditorActivity::class.java)
+                                                intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                                intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                                intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                                intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                                intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
+                                                intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                context.startActivity(intent)
+                                            }
                                         }
                                     },
                                     onLongClick = {
@@ -218,7 +263,8 @@ class NotesActivity : SegmentActivity("Notes") {
                                             TrashedNote(
                                                 header = note.header,
                                                 content = note.content,
-                                                created = note.created
+                                                created = note.created,
+                                                attachmentUri = note.attachmentUri
                                             ).toEntity()
                                         )
                                         noteDao.delete(note.toEntity())
@@ -281,17 +327,28 @@ class NotesActivity : SegmentActivity("Notes") {
                     }
                 }
             } else {
-                FloatingActionButton(
-                    onClick = {
-                        context.startActivity(Intent(context, NoteEditorActivity::class.java))
-                    },
+                Row(
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 80.dp),
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "New Note")
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            context.startActivity(Intent(context, NoteEditorActivity::class.java))
+                        },
+                        icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                        text = { M3Text("Add Note") },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    ExtendedFloatingActionButton(
+                        onClick = { importLauncher.launch(arrayOf("*/*")) },
+                        icon = { Icon(Icons.Default.FileOpen, contentDescription = null) },
+                        text = { M3Text("Import") },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 }
             }
         }
