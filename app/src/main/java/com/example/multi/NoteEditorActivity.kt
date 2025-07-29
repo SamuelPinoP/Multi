@@ -41,6 +41,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
+import android.net.Uri
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import androidx.lifecycle.lifecycleScope
@@ -80,6 +84,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var textSize by textSizeState
     private var showSizeDialog by showSizeDialogState
 
+    private var insertImageRequest: (() -> Unit)? = null
+
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
         noteCreated = intent.getLongExtra(EXTRA_NOTE_CREATED, noteCreated)
@@ -110,6 +116,22 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
+            val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+                uri?.let {
+                    context.contentResolver.takePersistableUriPermission(
+                        it,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                    val insert = "![](${'$'}it)"
+                    val cur = textState.value
+                    val start = cur.selection.start
+                    val newText = cur.text.substring(0, start) + insert + cur.text.substring(start)
+                    textState.value = TextFieldValue(newText, TextRange(start + insert.length))
+                    currentText = newText
+                    saved = false
+                }
+            }
+            insertImageRequest = { imageLauncher.launch(arrayOf("image/*")) }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
             
@@ -321,6 +343,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     attachmentUri = null
                 )
                 note.shareAsTxt(context)
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Insert Image") },
+            onClick = {
+                onDismiss()
+                insertImageRequest?.invoke()
             }
         )
         DropdownMenuItem(

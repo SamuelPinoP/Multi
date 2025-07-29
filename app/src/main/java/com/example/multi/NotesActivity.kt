@@ -169,13 +169,11 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 }
                                                 context.startActivity(open)
                                             } else {
-                                                val intent = Intent(context, NoteEditorActivity::class.java)
+                                                val intent = Intent(context, NoteViewActivity::class.java)
                                                 intent.putExtra(EXTRA_NOTE_ID, note.id)
                                                 intent.putExtra(EXTRA_NOTE_HEADER, note.header)
                                                 intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
                                                 intent.putExtra(EXTRA_NOTE_CREATED, note.created)
-                                                intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
-                                                intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
                                                 context.startActivity(intent)
                                             }
                                         }
