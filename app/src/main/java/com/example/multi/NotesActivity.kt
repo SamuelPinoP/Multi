@@ -56,6 +56,7 @@ import com.example.multi.data.toEntity
 
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
+    private var importRequest: (() -> Unit)? = null
 
     override fun onResume() {
         super.onResume()
@@ -104,6 +105,7 @@ class NotesActivity : SegmentActivity("Notes") {
                 }
             }
         }
+        importRequest = { importLauncher.launch(arrayOf("*/*")) }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -333,22 +335,15 @@ class NotesActivity : SegmentActivity("Notes") {
                         .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    ExtendedFloatingActionButton(
+                    FloatingActionButton(
                         onClick = {
                             context.startActivity(Intent(context, NoteEditorActivity::class.java))
                         },
-                        icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                        text = { M3Text("Add Note") },
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    ExtendedFloatingActionButton(
-                        onClick = { importLauncher.launch(arrayOf("*/*")) },
-                        icon = { Icon(Icons.Default.FileOpen, contentDescription = null) },
-                        text = { M3Text("Import") },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                    }
                 }
             }
         }
@@ -357,6 +352,13 @@ class NotesActivity : SegmentActivity("Notes") {
     @Composable
     override fun OverflowMenuItems(onDismiss: () -> Unit) {
         val context = LocalContext.current
+        DropdownMenuItem(
+            text = { M3Text("Import") },
+            onClick = {
+                onDismiss()
+                importRequest?.invoke()
+            }
+        )
         DropdownMenuItem(
             text = { M3Text("Trash") },
             onClick = {
