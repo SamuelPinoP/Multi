@@ -36,6 +36,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -47,6 +50,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsTxt
+import com.example.multi.RenderNoteContent
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -73,6 +77,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var currentHeader: String = ""
     private var currentText: String = ""
     private var saved = false
+
+    private val previewModeState = mutableStateOf(false)
+    private var imageRequest: (() -> Unit)? = null
 
     private val textSizeState = mutableIntStateOf(20)
     private val showSizeDialogState = mutableStateOf(false)
@@ -110,6 +117,25 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
+
+            val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                uri?.let {
+                    context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    val insertText = "[img:${'$'}it]"
+                    val start = textState.value.selection.start
+                    val end = textState.value.selection.end
+                    val newText = buildString {
+                        append(textState.value.text.substring(0, start))
+                        append(insertText)
+                        append(textState.value.text.substring(end))
+                    }
+                    val newSelection = start + insertText.length
+                    textState.value = TextFieldValue(newText, TextRange(newSelection))
+                    currentText = newText
+                    saved = false
+                }
+            }
+            imageRequest = { imageLauncher.launch(arrayOf("image/*")) }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
             
@@ -182,84 +208,88 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
-                    Box {
-                        if (headerState.value.isEmpty()) {
-                            Text(
-                                text = "Header",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    if (readOnly || previewModeState.value) {
+                        RenderNoteContent(headerState.value, textState.value.text)
+                    } else {
+                        Box {
+                            if (headerState.value.isEmpty()) {
+                                Text(
+                                    text = "Header",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            BasicTextField(
+                                value = headerState.value,
+                                onValueChange = {
+                                    if (it.lines().size <= 3) {
+                                        val formatted = it.capitalizeSentences()
+                                        headerState.value = formatted
+                                        currentHeader = formatted
+                                        saved = false
+                                    }
+                                },
+                                enabled = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .bringIntoViewRequester(headerBringIntoView)
+                                    .onFocusEvent {
+                                        if (it.isFocused) {
+                                            scope.launch {
+                                                headerBringIntoView.bringIntoView()
+                                            }
+                                        }
+                                    },
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = textSize.sp
+                                ),
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                ),
+                                maxLines = 3
                             )
                         }
-                        BasicTextField(
-                            value = headerState.value,
-                            onValueChange = {
-                                if (it.lines().size <= 3) {
-                                    val formatted = it.capitalizeSentences()
-                                    headerState.value = formatted
-                                    currentHeader = formatted
+
+                        androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                        Box(modifier = Modifier.weight(1f)) {
+                            if (textState.value.text.isEmpty()) {
+                                Text(
+                                    text = "Start writing...",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            BasicTextField(
+                                value = textState.value,
+                                onValueChange = {
+                                    val formatted = it.text.capitalizeSentences()
+                                    textState.value = it.copy(text = formatted)
+                                    currentText = formatted
+                                    noteCursor = it.selection.start
                                     saved = false
-                                }
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .bringIntoViewRequester(headerBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            headerBringIntoView.bringIntoView()
-                                        }
-                                    }
                                 },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            ),
-                            maxLines = 3
-                        )
-                    }
-
-                    androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (textState.value.text.isEmpty()) {
-                            Text(
-                                text = "Start writing...",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                enabled = true,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .bringIntoViewRequester(textBringIntoView)
+                                    .onFocusEvent {
+                                        if (it.isFocused) {
+                                            scope.launch {
+                                                textBringIntoView.bringIntoView()
+                                            }
+                                        }
+                                    },
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = textSize.sp
+                                ),
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                )
                             )
                         }
-                        BasicTextField(
-                            value = textState.value,
-                            onValueChange = {
-                                val formatted = it.text.capitalizeSentences()
-                                textState.value = it.copy(text = formatted)
-                                currentText = formatted
-                                noteCursor = it.selection.start
-                                saved = false
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .bringIntoViewRequester(textBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            textBringIntoView.bringIntoView()
-                                        }
-                                    }
-                                },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            )
-                        )
                     }
                 }
 
@@ -321,6 +351,20 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     attachmentUri = null
                 )
                 note.shareAsTxt(context)
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(if (previewModeState.value) "Edit" else "Preview") },
+            onClick = {
+                onDismiss()
+                previewModeState.value = !previewModeState.value
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Add Image") },
+            onClick = {
+                onDismiss()
+                imageRequest?.invoke()
             }
         )
         DropdownMenuItem(
