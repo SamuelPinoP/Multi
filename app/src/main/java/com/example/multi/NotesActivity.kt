@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.runtime.Composable
@@ -56,6 +55,7 @@ import com.example.multi.data.toEntity
 
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
+    private var importAction: (() -> Unit)? = null
 
     override fun onResume() {
         super.onResume()
@@ -104,6 +104,7 @@ class NotesActivity : SegmentActivity("Notes") {
                 }
             }
         }
+        importAction = { importLauncher.launch(arrayOf("*/*")) }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -333,22 +334,15 @@ class NotesActivity : SegmentActivity("Notes") {
                         .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    ExtendedFloatingActionButton(
+                    FloatingActionButton(
                         onClick = {
                             context.startActivity(Intent(context, NoteEditorActivity::class.java))
                         },
-                        icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                        text = { M3Text("Add Note") },
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    ExtendedFloatingActionButton(
-                        onClick = { importLauncher.launch(arrayOf("*/*")) },
-                        icon = { Icon(Icons.Default.FileOpen, contentDescription = null) },
-                        text = { M3Text("Import") },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                    }
                 }
             }
         }
@@ -357,6 +351,13 @@ class NotesActivity : SegmentActivity("Notes") {
     @Composable
     override fun OverflowMenuItems(onDismiss: () -> Unit) {
         val context = LocalContext.current
+        DropdownMenuItem(
+            text = { M3Text("Import") },
+            onClick = {
+                onDismiss()
+                importAction?.invoke()
+            }
+        )
         DropdownMenuItem(
             text = { M3Text("Trash") },
             onClick = {

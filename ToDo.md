@@ -1,5 +1,4 @@
 /*
-- Move import into the three dots FAB and turn add note into just the +.
 
 - I need to see if I can import pic into the note and incorporate active-clickable links that will 
 redirect to a page, links both as a note by themselves and inside a note.
