@@ -38,6 +38,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.example.multi.EXTRA_NOTE_ATTACHMENT_URI
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -168,6 +169,8 @@ class NotesActivity : SegmentActivity("Notes") {
                                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                                 }
                                                 context.startActivity(open)
+                                            } else if (note.content.trim().matches("(https?://\\S+|app://\\S+)".toRegex()) && note.header.isBlank()) {
+                                                openLink(context, note.content.trim())
                                             } else {
                                                 val intent = Intent(context, NoteEditorActivity::class.java)
                                                 intent.putExtra(EXTRA_NOTE_ID, note.id)
@@ -176,6 +179,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                                 intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
                                                 intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
                                                 context.startActivity(intent)
                                             }
                                         }
