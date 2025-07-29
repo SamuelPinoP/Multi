@@ -4,6 +4,8 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import com.example.multi.Event
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 /** Return the set of [DayOfWeek] mentioned in this string, or null if it's not
  *  a recurring pattern. Recognizes day names like "Monday" or "Tue" anywhere
@@ -33,7 +35,14 @@ fun Event.occursOn(date: LocalDate): Boolean {
     val info = date?.let { this.date } ?: return false
     val recurring = info.recurringDays()
     return if (recurring != null) {
-        date.dayOfWeek in recurring
+        val lower = info.lowercase(Locale.getDefault())
+        val everyOther = lower.contains("every other")
+        if (everyOther) {
+            val weekOfYear = date.get(WeekFields.ISO.weekOfWeekBasedYear())
+            weekOfYear % 2 == 0 && date.dayOfWeek in recurring
+        } else {
+            date.dayOfWeek in recurring
+        }
     } else {
         info == date.toString()
     }
