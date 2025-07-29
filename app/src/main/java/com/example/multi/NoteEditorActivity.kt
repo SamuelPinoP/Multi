@@ -33,6 +33,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -47,6 +51,8 @@ import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsTxt
+import com.example.multi.util.NotePreview
+import com.example.multi.util.parseNoteContent
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -79,6 +85,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     private var textSize by textSizeState
     private var showSizeDialog by showSizeDialogState
+    private var insertImageRequest: (() -> Unit)? = null
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
@@ -114,6 +121,27 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var showSizeDialog by showSizeDialogState
             
             val density = LocalDensity.current
+
+            val insertImageLauncher =
+                rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: android.net.Uri? ->
+                    uri?.let {
+                        context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        val placeholder = "[img:${'$'}it]"
+                        val cursorPos = textState.value.selection.start
+                        val newText = buildString {
+                            append(textState.value.text.substring(0, cursorPos))
+                            append(placeholder)
+                            append(textState.value.text.substring(cursorPos))
+                        }
+                        textState.value = textState.value.copy(
+                            text = newText,
+                            selection = TextRange(cursorPos + placeholder.length)
+                        )
+                        currentText = textState.value.text
+                        saved = false
+                    }
+                }
+            insertImageRequest = { insertImageLauncher.launch(arrayOf("image/*")) }
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
@@ -182,84 +210,93 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
-                    Box {
-                        if (headerState.value.isEmpty()) {
+                    if (readOnly) {
+                        if (headerState.value.isNotBlank()) {
                             Text(
-                                text = "Header",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = headerState.value,
+                                style = MaterialTheme.typography.titleLarge.copy(fontSize = textSize.sp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        NotePreview(
+                            parts = parseNoteContent(textState.value.text),
+                            textSize = textSize,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        Box {
+                            if (headerState.value.isEmpty()) {
+                                Text(
+                                    text = "Header",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            BasicTextField(
+                                value = headerState.value,
+                                onValueChange = {
+                                    if (it.lines().size <= 3) {
+                                        val formatted = it.capitalizeSentences()
+                                        headerState.value = formatted
+                                        currentHeader = formatted
+                                        saved = false
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .bringIntoViewRequester(headerBringIntoView)
+                                    .onFocusEvent {
+                                        if (it.isFocused) {
+                                            scope.launch { headerBringIntoView.bringIntoView() }
+                                        }
+                                    },
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = textSize.sp
+                                ),
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                ),
+                                maxLines = 3
                             )
                         }
-                        BasicTextField(
-                            value = headerState.value,
-                            onValueChange = {
-                                if (it.lines().size <= 3) {
-                                    val formatted = it.capitalizeSentences()
-                                    headerState.value = formatted
-                                    currentHeader = formatted
+
+                        androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                        Box(modifier = Modifier.weight(1f)) {
+                            if (textState.value.text.isEmpty()) {
+                                Text(
+                                    text = "Start writing...",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            BasicTextField(
+                                value = textState.value,
+                                onValueChange = {
+                                    val formatted = it.text.capitalizeSentences()
+                                    textState.value = it.copy(text = formatted)
+                                    currentText = formatted
+                                    noteCursor = it.selection.start
                                     saved = false
-                                }
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .bringIntoViewRequester(headerBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            headerBringIntoView.bringIntoView()
-                                        }
-                                    }
                                 },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            ),
-                            maxLines = 3
-                        )
-                    }
-
-                    androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (textState.value.text.isEmpty()) {
-                            Text(
-                                text = "Start writing...",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .bringIntoViewRequester(textBringIntoView)
+                                    .onFocusEvent {
+                                        if (it.isFocused) {
+                                            scope.launch { textBringIntoView.bringIntoView() }
+                                        }
+                                    },
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = textSize.sp
+                                ),
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                )
                             )
                         }
-                        BasicTextField(
-                            value = textState.value,
-                            onValueChange = {
-                                val formatted = it.text.capitalizeSentences()
-                                textState.value = it.copy(text = formatted)
-                                currentText = formatted
-                                noteCursor = it.selection.start
-                                saved = false
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .bringIntoViewRequester(textBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            textBringIntoView.bringIntoView()
-                                        }
-                                    }
-                                },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            )
-                        )
                     }
                 }
 
@@ -330,6 +367,31 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 showSizeDialog = true
             }
         )
+        if (!readOnly) {
+            DropdownMenuItem(
+                text = { Text("Insert Image") },
+                onClick = {
+                    onDismiss()
+                    insertImageRequest?.invoke()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Preview") },
+                onClick = {
+                    onDismiss()
+                    val intent = Intent(context, NoteEditorActivity::class.java)
+                    intent.putExtra(EXTRA_NOTE_ID, noteId)
+                    intent.putExtra(EXTRA_NOTE_HEADER, currentHeader)
+                    intent.putExtra(EXTRA_NOTE_CONTENT, currentText)
+                    intent.putExtra(EXTRA_NOTE_CREATED, noteCreated)
+                    intent.putExtra(EXTRA_NOTE_READ_ONLY, true)
+                    intent.putExtra(EXTRA_NOTE_DELETED, noteDeleted)
+                    intent.putExtra(EXTRA_NOTE_SCROLL, noteScroll)
+                    intent.putExtra(EXTRA_NOTE_CURSOR, noteCursor)
+                    context.startActivity(intent)
+                }
+            )
+        }
         DropdownMenuItem(
             text = { Text("Delete") },
             onClick = {
