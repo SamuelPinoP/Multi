@@ -9,6 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import android.content.Intent
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -76,9 +80,11 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     private val textSizeState = mutableIntStateOf(20)
     private val showSizeDialogState = mutableStateOf(false)
+    private val showPreviewState = mutableStateOf(false)
 
     private var textSize by textSizeState
     private var showSizeDialog by showSizeDialogState
+    private var showPreview by showPreviewState
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
@@ -112,6 +118,25 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
+            var showPreview by showPreviewState
+
+            val insertImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+                uri?.let {
+                    context.contentResolver.takePersistableUriPermission(
+                        it,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                    val token = "[image:${'$'}it]"
+                    val value = textState.value
+                    val start = value.selection.start
+                    val end = value.selection.end
+                    val newText = value.text.substring(0, start) + token + value.text.substring(end)
+                    val newSelection = start + token.length
+                    textState.value = value.copy(text = newText, selection = TextRange(newSelection))
+                    currentText = textState.value.text
+                    saved = false
+                }
+            }
             
             val density = LocalDensity.current
 
@@ -261,6 +286,11 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             )
                         )
                     }
+
+                    if (showPreview || readOnly) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        NotePreview(textState.value.text)
+                    }
                 }
 
 
@@ -328,6 +358,20 @@ class NoteEditorActivity : SegmentActivity("Note") {
             onClick = {
                 onDismiss()
                 showSizeDialog = true
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Insert Image") },
+            onClick = {
+                onDismiss()
+                insertImageLauncher.launch(arrayOf("image/*"))
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(if (showPreview) "Hide Preview" else "Show Preview") },
+            onClick = {
+                onDismiss()
+                showPreview = !showPreview
             }
         )
         DropdownMenuItem(
