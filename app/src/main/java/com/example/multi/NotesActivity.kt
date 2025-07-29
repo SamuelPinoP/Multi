@@ -2,6 +2,7 @@ package com.example.multi
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Patterns
 import android.provider.OpenableColumns
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
@@ -163,10 +164,26 @@ class NotesActivity : SegmentActivity("Notes") {
                                                     uri,
                                                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                                                 )
-                                                val open = Intent(Intent.ACTION_VIEW).apply {
-                                                    data = uri
-                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                val type = context.contentResolver.getType(uri)
+                                                if (type != null && type.startsWith("image/")) {
+                                                    val intent = Intent(context, NoteEditorActivity::class.java)
+                                                    intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                                    intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                                    intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                                    intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                                    intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
+                                                    intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                    intent.putExtra(EXTRA_NOTE_ATTACHMENT, note.attachmentUri)
+                                                    context.startActivity(intent)
+                                                } else {
+                                                    val open = Intent(Intent.ACTION_VIEW).apply {
+                                                        data = uri
+                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                    }
+                                                    context.startActivity(open)
                                                 }
+                                            } else if (note.header.isBlank() && android.util.Patterns.WEB_URL.matcher(note.content.trim()).matches()) {
+                                                val open = Intent(Intent.ACTION_VIEW, Uri.parse(note.content.trim()))
                                                 context.startActivity(open)
                                             } else {
                                                 val intent = Intent(context, NoteEditorActivity::class.java)
@@ -176,6 +193,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                                 intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
                                                 intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                intent.putExtra(EXTRA_NOTE_ATTACHMENT, note.attachmentUri)
                                                 context.startActivity(intent)
                                             }
                                         }

@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
+import coil.compose.AsyncImage
+import android.net.Uri
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.multi.util.LinkifyText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -61,6 +67,7 @@ const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
 const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
+const val EXTRA_NOTE_ATTACHMENT = "extra_note_attachment"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -73,6 +80,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var currentHeader: String = ""
     private var currentText: String = ""
     private var saved = false
+    private val attachmentUriState = mutableStateOf<String?>(null)
+    private var attachmentUri by attachmentUriState
 
     private val textSizeState = mutableIntStateOf(20)
     private val showSizeDialogState = mutableStateOf(false)
@@ -87,6 +96,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         readOnly = intent.getBooleanExtra(EXTRA_NOTE_READ_ONLY, false)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        attachmentUri = intent.getStringExtra(EXTRA_NOTE_ATTACHMENT)
         noteScroll = intent.getIntExtra(EXTRA_NOTE_SCROLL, 0)
         noteCursor = intent.getIntExtra(EXTRA_NOTE_CURSOR, 0)
         noteLastOpened = System.currentTimeMillis()
@@ -110,6 +120,14 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
+            var attachmentUri by attachmentUriState
+            val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+                uri?.let {
+                    context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    attachmentUri = it.toString()
+                    saved = false
+                }
+            }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
             
@@ -118,7 +136,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
 
-            LaunchedEffect(headerState.value, textState.value) {
+            LaunchedEffect(headerState.value, textState.value, attachmentUri) {
                 if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
                     val dao = EventDatabase.getInstance(context).noteDao()
                     withContext(Dispatchers.IO) {
@@ -133,7 +151,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
                                     cursor = textState.value.selection.start,
-                                    attachmentUri = null
+                                    attachmentUri = attachmentUri
                                 ).toEntity()
                             )
                         } else {
@@ -146,7 +164,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
                                     cursor = textState.value.selection.start,
-                                    attachmentUri = null
+                                    attachmentUri = attachmentUri
                                 ).toEntity()
                             )
                         }
@@ -183,82 +201,97 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                     Box {
-                        if (headerState.value.isEmpty()) {
-                            Text(
-                                text = "Header",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        BasicTextField(
-                            value = headerState.value,
-                            onValueChange = {
-                                if (it.lines().size <= 3) {
-                                    val formatted = it.capitalizeSentences()
-                                    headerState.value = formatted
-                                    currentHeader = formatted
-                                    saved = false
-                                }
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .bringIntoViewRequester(headerBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            headerBringIntoView.bringIntoView()
-                                        }
+                        if (readOnly) {
+                            LinkifyText(headerState.value, Modifier.fillMaxWidth())
+                        } else {
+                            if (headerState.value.isEmpty()) {
+                                Text(
+                                    text = "Header",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            BasicTextField(
+                                value = headerState.value,
+                                onValueChange = {
+                                    if (it.lines().size <= 3) {
+                                        val formatted = it.capitalizeSentences()
+                                        headerState.value = formatted
+                                        currentHeader = formatted
+                                        saved = false
                                     }
                                 },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            ),
-                            maxLines = 3
-                        )
+                                enabled = !readOnly,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .bringIntoViewRequester(headerBringIntoView)
+                                    .onFocusEvent {
+                                        if (it.isFocused) {
+                                            scope.launch { headerBringIntoView.bringIntoView() }
+                                        }
+                                    },
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = textSize.sp
+                                ),
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                ),
+                                maxLines = 3
+                            )
+                        }
                     }
 
                     androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                     Box(modifier = Modifier.weight(1f)) {
-                        if (textState.value.text.isEmpty()) {
-                            Text(
-                                text = "Start writing...",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        if (readOnly) {
+                            LinkifyText(textState.value.text, Modifier.fillMaxWidth())
+                        } else {
+                            if (textState.value.text.isEmpty()) {
+                                Text(
+                                    text = "Start writing...",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            BasicTextField(
+                                value = textState.value,
+                                onValueChange = {
+                                    val formatted = it.text.capitalizeSentences()
+                                    textState.value = it.copy(text = formatted)
+                                    currentText = formatted
+                                    noteCursor = it.selection.start
+                                    saved = false
+                                },
+                                enabled = !readOnly,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .bringIntoViewRequester(textBringIntoView)
+                                    .onFocusEvent {
+                                        if (it.isFocused) {
+                                            scope.launch { textBringIntoView.bringIntoView() }
+                                        }
+                                    },
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = textSize.sp
+                                ),
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                )
                             )
                         }
-                        BasicTextField(
-                            value = textState.value,
-                            onValueChange = {
-                                val formatted = it.text.capitalizeSentences()
-                                textState.value = it.copy(text = formatted)
-                                currentText = formatted
-                                noteCursor = it.selection.start
-                                saved = false
-                            },
-                            enabled = !readOnly,
+                    }
+                    attachmentUri?.let { uriString ->
+                        val uri = Uri.parse(uriString)
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = null,
                             modifier = Modifier
-                                .fillMaxSize()
-                                .bringIntoViewRequester(textBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            textBringIntoView.bringIntoView()
-                                        }
-                                    }
-                                },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            )
+                                .fillMaxWidth()
+                                .heightIn(max = 240.dp)
+                                .padding(top = 8.dp)
                         )
                     }
                 }
@@ -318,7 +351,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     content = currentText,
                     created = noteCreated,
                     lastOpened = noteLastOpened,
-                    attachmentUri = null
+                    attachmentUri = attachmentUri
                 )
                 note.shareAsTxt(context)
             }
@@ -330,6 +363,15 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 showSizeDialog = true
             }
         )
+        if (!readOnly) {
+            DropdownMenuItem(
+                text = { Text("Add Image") },
+                onClick = {
+                    onDismiss()
+                    imageLauncher.launch(arrayOf("image/*"))
+                }
+            )
+        }
         DropdownMenuItem(
             text = { Text("Delete") },
             onClick = {
@@ -344,14 +386,14 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             content = currentText,
                             created = noteCreated,
                             lastOpened = noteLastOpened,
-                            attachmentUri = null
+                            attachmentUri = attachmentUri
                         )
                         db.trashedNoteDao().insert(
                             TrashedNote(
                                 header = note.header,
                                 content = note.content,
                                 created = note.created,
-                                attachmentUri = null
+                                attachmentUri = attachmentUri
                             ).toEntity()
                         )
                         db.noteDao().delete(note.toEntity())
@@ -381,7 +423,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
                             cursor = noteCursor,
-                            attachmentUri = null
+                            attachmentUri = attachmentUri
                         ).toEntity()
                     )
                 } else {
@@ -394,7 +436,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
                             cursor = noteCursor,
-                            attachmentUri = null
+                            attachmentUri = attachmentUri
                         ).toEntity()
                     )
                 }
