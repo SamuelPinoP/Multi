@@ -331,9 +331,9 @@ class NotesActivity : SegmentActivity("Notes") {
             } else {
                 Row(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 80.dp, end = 32.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
                     FloatingActionButton(
                         onClick = {
