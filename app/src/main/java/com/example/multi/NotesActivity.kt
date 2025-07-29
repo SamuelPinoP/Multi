@@ -3,6 +3,8 @@ package com.example.multi
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.example.multi.util.isLinkOnly
+import com.example.multi.util.openLink
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -157,17 +159,36 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 selectedIds.add(note.id)
                                             }
                                         } else {
-                                            if (note.attachmentUri != null) {
+                                            val headerLink = note.header.trim()
+                                            val contentLink = note.content.trim()
+                                            if (headerLink.isLinkOnly() && note.content.isBlank()) {
+                                                openLink(context, headerLink)
+                                            } else if (contentLink.isLinkOnly() && note.header.isBlank()) {
+                                                openLink(context, contentLink)
+                                            } else if (note.attachmentUri != null) {
                                                 val uri = Uri.parse(note.attachmentUri)
                                                 context.contentResolver.takePersistableUriPermission(
                                                     uri,
                                                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                                                 )
-                                                val open = Intent(Intent.ACTION_VIEW).apply {
-                                                    data = uri
-                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                val type = context.contentResolver.getType(uri)
+                                                if (type != null && type.startsWith("image/")) {
+                                                    val intent = Intent(context, NoteEditorActivity::class.java)
+                                                    intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                                    intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                                    intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                                    intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                                    intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
+                                                    intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                    intent.putExtra(EXTRA_NOTE_ATTACHMENT, note.attachmentUri)
+                                                    context.startActivity(intent)
+                                                } else {
+                                                    val open = Intent(Intent.ACTION_VIEW).apply {
+                                                        data = uri
+                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                    }
+                                                    context.startActivity(open)
                                                 }
-                                                context.startActivity(open)
                                             } else {
                                                 val intent = Intent(context, NoteEditorActivity::class.java)
                                                 intent.putExtra(EXTRA_NOTE_ID, note.id)
