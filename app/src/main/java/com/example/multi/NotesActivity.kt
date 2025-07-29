@@ -3,6 +3,7 @@ package com.example.multi
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Patterns
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -157,27 +158,36 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 selectedIds.add(note.id)
                                             }
                                         } else {
-                                            if (note.attachmentUri != null) {
-                                                val uri = Uri.parse(note.attachmentUri)
+                                            val uriString = note.attachmentUri
+                                            val isImage = uriString?.let {
+                                                val type = context.contentResolver.getType(Uri.parse(it)) ?: ""
+                                                type.startsWith("image/")
+                                            } ?: false
+                                            val isLink = note.attachmentUri == null && note.header.isBlank() && Patterns.WEB_URL.matcher(note.content.trim()).matches()
+                                            val intent = if (uriString != null && !isImage) {
+                                                val uri = Uri.parse(uriString)
                                                 context.contentResolver.takePersistableUriPermission(
                                                     uri,
                                                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                                                 )
-                                                val open = Intent(Intent.ACTION_VIEW).apply {
+                                                Intent(Intent.ACTION_VIEW).apply {
                                                     data = uri
                                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                                 }
-                                                context.startActivity(open)
+                                            } else if (isLink) {
+                                                Intent(Intent.ACTION_VIEW, Uri.parse(note.content.trim()))
                                             } else {
-                                                val intent = Intent(context, NoteEditorActivity::class.java)
-                                                intent.putExtra(EXTRA_NOTE_ID, note.id)
-                                                intent.putExtra(EXTRA_NOTE_HEADER, note.header)
-                                                intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
-                                                intent.putExtra(EXTRA_NOTE_CREATED, note.created)
-                                                intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
-                                                intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
-                                                context.startActivity(intent)
+                                                Intent(context, NoteEditorActivity::class.java).apply {
+                                                    putExtra(EXTRA_NOTE_ID, note.id)
+                                                    putExtra(EXTRA_NOTE_HEADER, note.header)
+                                                    putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                                    putExtra(EXTRA_NOTE_CREATED, note.created)
+                                                    putExtra(EXTRA_NOTE_SCROLL, note.scroll)
+                                                    putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                    putExtra(EXTRA_NOTE_ATTACHMENT, uriString)
+                                                }
                                             }
+                                            context.startActivity(intent)
                                         }
                                     },
                                     onLongClick = {

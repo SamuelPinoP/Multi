@@ -37,6 +37,14 @@ To run unit tests:
 ./gradlew test
 ```
 
+## Images and Links
+
+Notes can include an attached image. Use the overflow menu in the note editor to
+attach or remove a picture. Image attachments appear above the note text.
+
+Web links written in a note become clickable when the note is viewed in read
+only mode. Links starting with `note://<id>` open another note inside the app.
+
 ## Trash Bin
 
 Deleted notes are moved to a temporary trash bin. Items remain there for 30 days
