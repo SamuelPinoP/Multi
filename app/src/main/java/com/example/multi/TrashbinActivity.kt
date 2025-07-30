@@ -87,6 +87,7 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                     intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                     intent.putExtra(EXTRA_NOTE_DELETED, note.deleted)
                                     intent.putExtra(EXTRA_NOTE_READ_ONLY, true)
+                                    intent.putExtra(EXTRA_NOTE_ATTACHMENT, note.attachmentUri)
                                     context.startActivity(intent)
                                 }
                         ) {

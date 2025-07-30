@@ -26,7 +26,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
@@ -47,6 +46,15 @@ import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsTxt
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
+import android.net.Uri
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -61,6 +69,7 @@ const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
 const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
+const val EXTRA_NOTE_ATTACHMENT = "extra_note_attachment"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -76,9 +85,11 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     private val textSizeState = mutableIntStateOf(20)
     private val showSizeDialogState = mutableStateOf(false)
+    private val attachmentUriState = mutableStateOf<String?>(null)
 
     private var textSize by textSizeState
     private var showSizeDialog by showSizeDialogState
+    private var attachmentUri by attachmentUriState
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
@@ -87,6 +98,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         readOnly = intent.getBooleanExtra(EXTRA_NOTE_READ_ONLY, false)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        attachmentUri = intent.getStringExtra(EXTRA_NOTE_ATTACHMENT)
         noteScroll = intent.getIntExtra(EXTRA_NOTE_SCROLL, 0)
         noteCursor = intent.getIntExtra(EXTRA_NOTE_CURSOR, 0)
         noteLastOpened = System.currentTimeMillis()
@@ -133,7 +145,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
                                     cursor = textState.value.selection.start,
-                                    attachmentUri = null
+                                    attachmentUri = attachmentUri
                                 ).toEntity()
                             )
                         } else {
@@ -146,7 +158,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
                                     cursor = textState.value.selection.start,
-                                    attachmentUri = null
+                                    attachmentUri = attachmentUri
                                 ).toEntity()
                             )
                         }
@@ -174,6 +186,29 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         text = "Created: ${noteCreated.toDateString()}",
                         style = MaterialTheme.typography.labelSmall
                     )
+                    attachmentUri?.let { uriString ->
+                        val imageBitmap = remember(uriString) {
+                            try {
+                                context.contentResolver.openInputStream(Uri.parse(uriString))?.use { stream ->
+                                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                                }
+                            } catch (_: Exception) {
+                                null
+                            }
+                        }
+                        imageBitmap?.let {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Image(
+                                bitmap = it,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp),
+                                contentScale = ContentScale.Crop
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
                     if (readOnly && noteDeleted != 0L) {
                         val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
                         Text(
@@ -307,6 +342,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
     override fun OverflowMenuItems(onDismiss: () -> Unit) {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
+        val attachLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            uri?.let {
+                context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                attachmentUri = it.toString()
+                saved = false
+            }
+        }
 
         DropdownMenuItem(
             text = { Text("Share") },
@@ -318,7 +360,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     content = currentText,
                     created = noteCreated,
                     lastOpened = noteLastOpened,
-                    attachmentUri = null
+                    attachmentUri = attachmentUri
                 )
                 note.shareAsTxt(context)
             }
@@ -328,6 +370,17 @@ class NoteEditorActivity : SegmentActivity("Note") {
             onClick = {
                 onDismiss()
                 showSizeDialog = true
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(if (attachmentUri == null) "Add Image" else "Remove Image") },
+            onClick = {
+                onDismiss()
+                if (attachmentUri == null) {
+                    attachLauncher.launch(arrayOf("image/*"))
+                } else {
+                    attachmentUri = null
+                }
             }
         )
         DropdownMenuItem(
@@ -344,14 +397,14 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             content = currentText,
                             created = noteCreated,
                             lastOpened = noteLastOpened,
-                            attachmentUri = null
+                            attachmentUri = attachmentUri
                         )
                         db.trashedNoteDao().insert(
                             TrashedNote(
                                 header = note.header,
                                 content = note.content,
                                 created = note.created,
-                                attachmentUri = null
+                                attachmentUri = attachmentUri
                             ).toEntity()
                         )
                         db.noteDao().delete(note.toEntity())
@@ -381,7 +434,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
                             cursor = noteCursor,
-                            attachmentUri = null
+                            attachmentUri = attachmentUri
                         ).toEntity()
                     )
                 } else {
@@ -394,7 +447,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
                             cursor = noteCursor,
-                            attachmentUri = null
+                            attachmentUri = attachmentUri
                         ).toEntity()
                     )
                 }

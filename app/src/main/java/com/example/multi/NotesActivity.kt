@@ -159,15 +159,28 @@ class NotesActivity : SegmentActivity("Notes") {
                                         } else {
                                             if (note.attachmentUri != null) {
                                                 val uri = Uri.parse(note.attachmentUri)
-                                                context.contentResolver.takePersistableUriPermission(
-                                                    uri,
-                                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                                )
-                                                val open = Intent(Intent.ACTION_VIEW).apply {
-                                                    data = uri
-                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                val type = context.contentResolver.getType(uri) ?: ""
+                                                if (type.startsWith("image/")) {
+                                                    val intent = Intent(context, NoteEditorActivity::class.java)
+                                                    intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                                    intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                                    intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                                    intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                                    intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
+                                                    intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                    intent.putExtra(EXTRA_NOTE_ATTACHMENT, note.attachmentUri)
+                                                    context.startActivity(intent)
+                                                } else {
+                                                    context.contentResolver.takePersistableUriPermission(
+                                                        uri,
+                                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                                    )
+                                                    val open = Intent(Intent.ACTION_VIEW).apply {
+                                                        data = uri
+                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                    }
+                                                    context.startActivity(open)
                                                 }
-                                                context.startActivity(open)
                                             } else {
                                                 val intent = Intent(context, NoteEditorActivity::class.java)
                                                 intent.putExtra(EXTRA_NOTE_ID, note.id)
