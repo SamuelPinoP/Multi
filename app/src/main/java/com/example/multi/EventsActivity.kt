@@ -119,6 +119,20 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
+                        event.address?.takeIf { it.isNotBlank() }?.let { addr ->
+                            Text(
+                                text = addr,
+                                color = Color.Blue,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .clickable {
+                                        val uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(addr))
+                                        val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                                        context.startActivity(mapIntent)
+                                    }
+                            )
+                        }
                     }
                 }
             }
@@ -194,26 +208,26 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
-            val event = if (isNew) Event(0L, "", "", null) else events[index]
+            val event = if (isNew) Event(0L, "", "", null, null) else events[index]
             EventDialog(
                 initial = event,
                 onDismiss = {
                     editingIndex = null
                     newDate = null
                 },
-                onSave = { title, desc, date ->
+                onSave = { title, desc, date, addr ->
                     editingIndex = null
                     newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
                             val id = withContext(Dispatchers.IO) {
-                                dao.insert(Event(title = title, description = desc, date = date).toEntity())
+                                dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
                             }
-                            events.add(Event(id, title, desc, date))
+                            events.add(Event(id, title, desc, date, addr))
                             snackbarHostState.showSnackbar("New Event added")
                         } else {
-                            val updated = Event(event.id, title, desc, date)
+                            val updated = Event(event.id, title, desc, date, addr)
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                             events[index] = updated
                         }
@@ -228,7 +242,8 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                     TrashedEvent(
                                         title = event.title,
                                         description = event.description,
-                                        date = event.date
+                                        date = event.date,
+                                        address = event.address
                                     ).toEntity()
                                 )
                                 db.eventDao().delete(event.toEntity())
