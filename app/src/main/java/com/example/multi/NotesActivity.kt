@@ -157,18 +157,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 selectedIds.add(note.id)
                                             }
                                         } else {
-                                            if (note.attachmentUri != null) {
-                                                val uri = Uri.parse(note.attachmentUri)
-                                                context.contentResolver.takePersistableUriPermission(
-                                                    uri,
-                                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                                )
-                                                val open = Intent(Intent.ACTION_VIEW).apply {
-                                                    data = uri
-                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                }
-                                                context.startActivity(open)
-                                            } else {
+                                            val openEditor = {
                                                 val intent = Intent(context, NoteEditorActivity::class.java)
                                                 intent.putExtra(EXTRA_NOTE_ID, note.id)
                                                 intent.putExtra(EXTRA_NOTE_HEADER, note.header)
@@ -176,7 +165,28 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                                 intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
                                                 intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
                                                 context.startActivity(intent)
+                                            }
+
+                                            if (note.attachmentUri != null) {
+                                                val uri = Uri.parse(note.attachmentUri)
+                                                val mime = context.contentResolver.getType(uri)
+                                                if (mime != null && mime.startsWith("image/")) {
+                                                    openEditor()
+                                                } else {
+                                                    context.contentResolver.takePersistableUriPermission(
+                                                        uri,
+                                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                                    )
+                                                    val open = Intent(Intent.ACTION_VIEW).apply {
+                                                        data = uri
+                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                    }
+                                                    context.startActivity(open)
+                                                }
+                                            } else {
+                                                openEditor()
                                             }
                                         }
                                     },

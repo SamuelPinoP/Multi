@@ -1,6 +1,7 @@
 package com.example.multi
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -35,12 +36,24 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import androidx.lifecycle.lifecycleScope
@@ -61,6 +74,7 @@ const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
 const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
+const val EXTRA_NOTE_ATTACHMENT_URI = "extra_note_attachment_uri"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -72,13 +86,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
     private var readOnly: Boolean = false
     private var currentHeader: String = ""
     private var currentText: String = ""
+    private var currentAttachmentUri: String? = null
     private var saved = false
 
     private val textSizeState = mutableIntStateOf(20)
     private val showSizeDialogState = mutableStateOf(false)
+    private val attachmentUriState = mutableStateOf<String?>(null)
 
     private var textSize by textSizeState
     private var showSizeDialog by showSizeDialogState
+    private var attachmentUri by attachmentUriState
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
@@ -87,6 +104,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         readOnly = intent.getBooleanExtra(EXTRA_NOTE_READ_ONLY, false)
         currentHeader = intent.getStringExtra(EXTRA_NOTE_HEADER) ?: ""
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
+        currentAttachmentUri = intent.getStringExtra(EXTRA_NOTE_ATTACHMENT_URI)
         noteScroll = intent.getIntExtra(EXTRA_NOTE_SCROLL, 0)
         noteCursor = intent.getIntExtra(EXTRA_NOTE_CURSOR, 0)
         noteLastOpened = System.currentTimeMillis()
@@ -96,6 +114,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 withContext(Dispatchers.IO) { dao.touch(noteId, noteLastOpened) }
             }
         }
+        attachmentUriState.value = currentAttachmentUri
         super.onCreate(savedInstanceState)
     }
 
@@ -112,14 +131,24 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
+            var attachmentUri by attachmentUriState
+
+            val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+                uri?.let {
+                    context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    attachmentUri = it.toString()
+                    currentAttachmentUri = attachmentUri
+                    saved = false
+                }
+            }
             
             val density = LocalDensity.current
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
 
-            LaunchedEffect(headerState.value, textState.value) {
-                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
+            LaunchedEffect(headerState.value, textState.value, attachmentUri) {
+                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank() || attachmentUri != null)) {
                     val dao = EventDatabase.getInstance(context).noteDao()
                     withContext(Dispatchers.IO) {
                         val formattedHeader = headerState.value.trim().capitalizeSentences()
@@ -133,7 +162,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
                                     cursor = textState.value.selection.start,
-                                    attachmentUri = null
+                                    attachmentUri = attachmentUri
                                 ).toEntity()
                             )
                         } else {
@@ -146,7 +175,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
                                     cursor = textState.value.selection.start,
-                                    attachmentUri = null
+                                    attachmentUri = attachmentUri
                                 ).toEntity()
                             )
                         }
@@ -156,6 +185,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     currentText = textState.value.text
                     noteScroll = scrollState.value
                     noteCursor = textState.value.selection.start
+                    currentAttachmentUri = attachmentUri
                 }
             }
 
@@ -174,6 +204,38 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         text = "Created: ${noteCreated.toDateString()}",
                         style = MaterialTheme.typography.labelSmall
                     )
+                    if (attachmentUri != null) {
+                        val bitmap = remember(attachmentUri) {
+                            val uri = Uri.parse(attachmentUri)
+                            runCatching {
+                                context.contentResolver.openInputStream(uri)?.use { stream ->
+                                    BitmapFactory.decodeStream(stream)
+                                }
+                            }.getOrNull()
+                        }
+                        bitmap?.let {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Box {
+                                Image(
+                                    bitmap = it.asImageBitmap(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                )
+                                if (!readOnly) {
+                                    IconButton(
+                                        onClick = { attachmentUri = null },
+                                        modifier = Modifier.align(Alignment.TopEnd)
+                                    ) { Icon(Icons.Default.Delete, contentDescription = "Remove image") }
+                                }
+                            }
+                        }
+                    } else if (!readOnly) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { imageLauncher.launch(arrayOf("image/*")) }) { Text("Add Image") }
+                    }
                     if (readOnly && noteDeleted != 0L) {
                         val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
                         Text(
@@ -338,23 +400,23 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     saved = true
                     scope.launch(Dispatchers.IO) {
                         val db = EventDatabase.getInstance(context)
-                        val note = Note(
-                            id = noteId,
-                            header = currentHeader,
-                            content = currentText,
-                            created = noteCreated,
-                            lastOpened = noteLastOpened,
-                            attachmentUri = null
-                        )
-                        db.trashedNoteDao().insert(
-                            TrashedNote(
-                                header = note.header,
-                                content = note.content,
-                                created = note.created,
-                                attachmentUri = null
-                            ).toEntity()
-                        )
-                        db.noteDao().delete(note.toEntity())
+                    val note = Note(
+                        id = noteId,
+                        header = currentHeader,
+                        content = currentText,
+                        created = noteCreated,
+                        lastOpened = noteLastOpened,
+                        attachmentUri = currentAttachmentUri
+                    )
+                    db.trashedNoteDao().insert(
+                        TrashedNote(
+                            header = note.header,
+                            content = note.content,
+                            created = note.created,
+                            attachmentUri = note.attachmentUri
+                        ).toEntity()
+                    )
+                    db.noteDao().delete(note.toEntity())
                     }
                     (context as? android.app.Activity)?.finish()
                 }
@@ -366,7 +428,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         super.onStop()
         val text = currentText.trim()
         val header = currentHeader.trim()
-        if (!readOnly && !saved && (text.isNotEmpty() || header.isNotEmpty())) {
+        if (!readOnly && !saved && (text.isNotEmpty() || header.isNotEmpty() || currentAttachmentUri != null)) {
             saved = true
             lifecycleScope.launch(Dispatchers.IO) {
                 val dao = EventDatabase.getInstance(applicationContext).noteDao()
@@ -381,7 +443,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
                             cursor = noteCursor,
-                            attachmentUri = null
+                            attachmentUri = currentAttachmentUri
                         ).toEntity()
                     )
                 } else {
@@ -394,7 +456,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
                             cursor = noteCursor,
-                            attachmentUri = null
+                            attachmentUri = currentAttachmentUri
                         ).toEntity()
                     )
                 }
