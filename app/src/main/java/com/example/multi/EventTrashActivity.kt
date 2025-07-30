@@ -83,6 +83,20 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                 event.date?.let {
                                     Text(it, style = MaterialTheme.typography.labelSmall)
                                 }
+                                if (!event.address.isNullOrBlank()) {
+                                    val context = LocalContext.current
+                                    Text(
+                                        text = event.address!!,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.Blue,
+                                        modifier = Modifier
+                                            .padding(top = 2.dp)
+                                            .clickable {
+                                                val uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(event.address))
+                                                context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri))
+                                            }
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     "Days remaining: $daysLeft",
@@ -102,7 +116,8 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                                     Event(
                                                         title = event.title,
                                                         description = event.description,
-                                                        date = event.date
+                                                        date = event.date,
+                                                        address = event.address
                                                     ).toEntity()
                                                 )
                                                 db.trashedEventDao().delete(event.toEntity())
