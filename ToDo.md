@@ -1,8 +1,5 @@
 /*
 
-- I want to import pics into the note and incorporate active-clickable links that will 
-redirect to a page, links both as a note by themselves and inside a note.
-
 - Architecture – Introducing ViewModel and repository layers for notes would better separate UI and 
 data logic.
 
@@ -10,9 +7,6 @@ data logic.
 
 - Allow notes to have an address besides the date. The address will be in the note and display a
   Google map in that address. Inside the Note there will be an option to add address.
-
-- Improving UI of Events in Calendar. If I choose every tuesday, then I want every tuesday to be
-  marked in the Calendar.
 
 -I need to add levels of priority to the notes. Priority green. It is high. Yellow is medium. Red
 is low. By clicking each of them we can display the notes with that priority.
@@ -26,9 +20,6 @@ red priority will make it somehow a todo item.
 entering the app. As a Remainder, only for active users.
 -----------------------------------------------------------------------------
 
-- Consider adding a new note button inside each note for users who might want to create a second
-note while writing one. Create a go back button to go back to the previous note and a go forward to 
-go to the next note.
 
 5- Add Attach button in the events activity to attach notes to an specific event. It could be a new
 note or an existing one or even multiple of them. I must select the event first and then the note.
@@ -40,13 +31,6 @@ note or an existing one or even multiple of them. I must select the event first 
 keyboard doesn't adjust to not cover it until I type something. It should adjust right after I put
 the cursor there.
 
-2- Launch the Notes app as a separate lightweight app.
-
-3- When reopening a note, I want the scroll position to automatically adjust so that the line or
-paragraph where the cursor was last placed appears centered in the visible area of the note editor.
-Currently, the note opens with the cursor’s position somewhere nearby, but not centered. Please
-update the behavior so that, upon opening a note, the cursor’s location is always vertically
-centered in the note.
 
 4- Create a system that receives an intelligent command such as: Create event on Saturday 12. It
 will be camping with my friends Josh and Mara. Then it will add camping trip as header. Description
