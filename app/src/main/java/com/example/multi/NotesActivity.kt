@@ -1,6 +1,7 @@
 package com.example.multi
 
 import android.content.Intent
+import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -11,6 +12,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clip
 import androidx.compose.material3.Surface
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.combinedClickable
@@ -42,6 +44,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.util.shareNotesAsDocx
@@ -157,7 +161,17 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 selectedIds.add(note.id)
                                             }
                                         } else {
-                                            if (note.attachmentUri != null) {
+                                            if (note.attachmentUri != null && isImageUri(context, note.attachmentUri)) {
+                                                val intent = Intent(context, NoteEditorActivity::class.java)
+                                                intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                                intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                                intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                                intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                                intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
+                                                intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
+                                                context.startActivity(intent)
+                                            } else if (note.attachmentUri != null) {
                                                 val uri = Uri.parse(note.attachmentUri)
                                                 context.contentResolver.takePersistableUriPermission(
                                                     uri,
@@ -202,18 +216,29 @@ class NotesActivity : SegmentActivity("Notes") {
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    modifier = Modifier.size(40.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
-                                        M3Text(
-                                            text = initial,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
+                                if (note.attachmentUri != null && isImageUri(context, note.attachmentUri)) {
+                                    AsyncImage(
+                                        model = Uri.parse(note.attachmentUri),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
+                                            M3Text(
+                                                text = initial,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -366,5 +391,10 @@ class NotesActivity : SegmentActivity("Notes") {
                 context.startActivity(Intent(context, TrashbinActivity::class.java))
             }
         )
+    }
+
+    private fun isImageUri(context: Context, uriString: String): Boolean {
+        val type = context.contentResolver.getType(Uri.parse(uriString))
+        return type?.startsWith("image/") == true
     }
 }
