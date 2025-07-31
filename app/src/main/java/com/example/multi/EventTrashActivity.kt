@@ -119,10 +119,14 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                                         title = event.title,
                                                         description = event.description,
                                                         date = event.date,
-                                                        address = event.address
+                                                        address = event.address,
+                                                        notify = event.notify
                                                     ).toEntity()
                                                 )
                                                 db.trashedEventDao().delete(event.toEntity())
+                                            }
+                                            if (event.notify) {
+                                                EventNotifier.schedule(context, Event(0L, event.title, event.description, event.date, event.address, event.notify))
                                             }
                                             events.remove(event)
                                         }

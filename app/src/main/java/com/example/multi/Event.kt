@@ -8,5 +8,6 @@ data class Event(
     var title: String,
     var description: String,
     var date: String? = null,
-    var address: String? = null
+    var address: String? = null,
+    var notify: Boolean = true
 )
