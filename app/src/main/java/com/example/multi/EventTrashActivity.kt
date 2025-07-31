@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -83,6 +85,20 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                 event.date?.let {
                                     Text(it, style = MaterialTheme.typography.labelSmall)
                                 }
+                                event.address?.takeIf { it.isNotBlank() }?.let { addr ->
+                                    Text(
+                                        addr,
+                                        color = Color.Blue,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier
+                                            .padding(top = 4.dp)
+                                            .clickable {
+                                                val uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(addr))
+                                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                                                context.startActivity(intent)
+                                            }
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     "Days remaining: $daysLeft",
@@ -102,7 +118,8 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                                     Event(
                                                         title = event.title,
                                                         description = event.description,
-                                                        date = event.date
+                                                        date = event.date,
+                                                        address = event.address
                                                     ).toEntity()
                                                 )
                                                 db.trashedEventDao().delete(event.toEntity())

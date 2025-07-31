@@ -25,7 +25,8 @@ data class EventEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val title: String,
     val description: String,
-    val date: String?
+    val date: String?,
+    val address: String?
 )
 
 @Entity(tableName = "weekly_goals")
@@ -78,6 +79,7 @@ data class TrashedEventEntity(
     val title: String,
     val description: String,
     val date: String?,
+    val address: String?,
     val deleted: Long
 )
 
@@ -181,7 +183,7 @@ interface TrashedEventDao {
         TrashedEventEntity::class,
         DailyCompletionEntity::class
     ],
-    version = 13
+    version = 14
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -212,8 +214,8 @@ abstract class EventDatabase : RoomDatabase() {
     }
 }
 
-fun EventEntity.toModel() = Event(id, title, description, date)
-fun Event.toEntity() = EventEntity(id, title, description, date)
+fun EventEntity.toModel() = Event(id, title, description, date, address)
+fun Event.toEntity() = EventEntity(id, title, description, date, address)
 
 fun WeeklyGoalEntity.toModel() =
     WeeklyGoal(id, header, frequency, remaining, lastCheckedDate, weekNumber, dayStates)
@@ -239,5 +241,5 @@ fun TrashedNoteEntity.toModel() =
 fun TrashedNote.toEntity() =
     TrashedNoteEntity(id, header, content, created, deleted, attachmentUri)
 
-fun TrashedEventEntity.toModel() = TrashedEvent(id, title, description, date, deleted)
-fun TrashedEvent.toEntity() = TrashedEventEntity(id, title, description, date, deleted)
+fun TrashedEventEntity.toModel() = TrashedEvent(id, title, description, date, address, deleted)
+fun TrashedEvent.toEntity() = TrashedEventEntity(id, title, description, date, address, deleted)

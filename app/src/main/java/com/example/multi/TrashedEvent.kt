@@ -6,5 +6,6 @@ data class TrashedEvent(
     var title: String,
     var description: String,
     var date: String?,
+    var address: String? = null,
     var deleted: Long = System.currentTimeMillis()
 )
