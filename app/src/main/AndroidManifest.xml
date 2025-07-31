@@ -70,6 +70,9 @@
         <activity
             android:name=".EventTrashActivity"
             android:screenOrientation="portrait" />
+        <receiver
+            android:name=".EventReminderReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

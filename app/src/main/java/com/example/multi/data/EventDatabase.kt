@@ -26,7 +26,9 @@ data class EventEntity(
     val title: String,
     val description: String,
     val date: String?,
-    val address: String?
+    val address: String?,
+    val reminderEnabled: Boolean = true,
+    val reminderTime: String? = "11:00"
 )
 
 @Entity(tableName = "weekly_goals")
@@ -80,7 +82,9 @@ data class TrashedEventEntity(
     val description: String,
     val date: String?,
     val address: String?,
-    val deleted: Long
+    val deleted: Long,
+    val reminderEnabled: Boolean = true,
+    val reminderTime: String? = "11:00"
 )
 
 @Dao
@@ -183,7 +187,7 @@ interface TrashedEventDao {
         TrashedEventEntity::class,
         DailyCompletionEntity::class
     ],
-    version = 14
+    version = 15
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -214,8 +218,24 @@ abstract class EventDatabase : RoomDatabase() {
     }
 }
 
-fun EventEntity.toModel() = Event(id, title, description, date, address)
-fun Event.toEntity() = EventEntity(id, title, description, date, address)
+fun EventEntity.toModel() = Event(
+    id,
+    title,
+    description,
+    date,
+    address,
+    reminderEnabled,
+    reminderTime
+)
+fun Event.toEntity() = EventEntity(
+    id,
+    title,
+    description,
+    date,
+    address,
+    reminderEnabled,
+    reminderTime
+)
 
 fun WeeklyGoalEntity.toModel() =
     WeeklyGoal(id, header, frequency, remaining, lastCheckedDate, weekNumber, dayStates)
@@ -241,5 +261,23 @@ fun TrashedNoteEntity.toModel() =
 fun TrashedNote.toEntity() =
     TrashedNoteEntity(id, header, content, created, deleted, attachmentUri)
 
-fun TrashedEventEntity.toModel() = TrashedEvent(id, title, description, date, address, deleted)
-fun TrashedEvent.toEntity() = TrashedEventEntity(id, title, description, date, address, deleted)
+fun TrashedEventEntity.toModel() = TrashedEvent(
+    id,
+    title,
+    description,
+    date,
+    address,
+    deleted,
+    reminderEnabled,
+    reminderTime
+)
+fun TrashedEvent.toEntity() = TrashedEventEntity(
+    id,
+    title,
+    description,
+    date,
+    address,
+    deleted,
+    reminderEnabled,
+    reminderTime
+)

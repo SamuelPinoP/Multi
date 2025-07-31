@@ -17,11 +17,18 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -40,7 +47,7 @@ import com.example.multi.util.capitalizeSentences
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?, String?) -> Unit,
+    onSave: (String, String, String?, String?, Boolean, String?) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
 ) {
@@ -48,12 +55,15 @@ fun EventDialog(
     var description by remember { mutableStateOf(initial.description) }
     var address by remember { mutableStateOf(initial.address ?: "") }
     var selectedDate by remember { mutableStateOf(initial.date) }
-    var showPicker by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
+    var reminderEnabled by remember { mutableStateOf(initial.reminderEnabled) }
+    var reminderTime by remember { mutableStateOf(initial.reminderTime ?: "11:00") }
+    var showTimePicker by remember { mutableStateOf(false) }
     val previewDate by remember {
         derivedStateOf {
             val daysFull = listOf(
@@ -114,7 +124,14 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    onSave(
+                        title,
+                        description,
+                        finalDate,
+                        address.ifBlank { null },
+                        reminderEnabled,
+                        reminderTime
+                    )
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -160,8 +177,22 @@ fun EventDialog(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { showPicker = true }) { Text("Date") }
+                    TextButton(onClick = { showDatePicker = true }) { Text("Date") }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = null,
+                        tint = if (reminderEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Switch(checked = reminderEnabled, onCheckedChange = { reminderEnabled = it })
+                    if (reminderEnabled) {
+                        Text(reminderTime, modifier = Modifier.padding(start = 8.dp))
+                        TextButton(onClick = { showTimePicker = true }) { Text("Change") }
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -203,12 +234,12 @@ fun EventDialog(
         }
     )
 
-    if (showPicker) {
+    if (showDatePicker) {
         DatePickerDialog(
-            onDismissRequest = { showPicker = false },
+            onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    showPicker = false
+                    showDatePicker = false
                     pickerState.selectedDateMillis?.let { millis ->
                         selectedDate = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                             java.time.Instant.ofEpochMilli(millis)
@@ -223,10 +254,31 @@ fun EventDialog(
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
             }
         ) {
             DatePicker(state = pickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            val timeState = rememberTimePickerState(
+                initialHour = reminderTime.split(":").getOrNull(0)?.toIntOrNull() ?: 11,
+                initialMinute = reminderTime.split(":").getOrNull(1)?.toIntOrNull() ?: 0
+            )
+            TimePicker(state = timeState)
+            LaunchedEffect(timeState.hour, timeState.minute) {
+                reminderTime = "%02d:%02d".format(timeState.hour, timeState.minute)
+            }
         }
     }
 }
