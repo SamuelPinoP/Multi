@@ -61,4 +61,11 @@ any other marked famous date and relevant event is in the Calendar plus any addi
 feature of creating custom Events. So I make sure people enjoy their lives and use their time with
 their families because that is the kind of app I would use.
 
+---------------------------------------------------------------------------------------------
+/* 
+Failed tasks:
+- Stopping the keyboard from covering part of the note. This is possible!
+- Allowing the insertion of images in the notes. This is also possible!
+- Adding remainders to the events and sending notifications on specific times. This is also possible!
+
 */
