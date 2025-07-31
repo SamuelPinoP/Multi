@@ -18,8 +18,10 @@ is low. By clicking each of them we can display the notes with that priority.
 
 2- Add highlighted text in different colors inside the notes.
 
-3- Add notifications for the Events we have. Adding remainders and a todo tag in red to the note with
-red priority will make it somehow a todo item.
+3- Add notifications for the Events we have. 
+
+- Adding remainders and a todo tag in red to the note with red priority will make it somehow a todo 
+item.
 
 4- Add feature of having a notification about daily activities. The user can click progress without
 entering the app. As a Remainder, only for active users.
