@@ -1,17 +1,22 @@
 /*
 
+- Allow the app to swap activities by swapping to the side. If I am in the notes activity but swap 
+to the left side then the events activity will display, if I swap to the right then the remainders
+activity will display and so on.
+
+- Make sure I can save a default activity. If I choose in settings the notes activity by default then
+the app will open there by default. 
+
+- Add a remainders page that will allow to set alarms and remainders in specific days in the 
+Calendar.
+
 - Architecture – Introducing ViewModel and repository layers for notes would better separate UI and 
 data logic.
-
-- Make notes able to add addresses and display google maps. Same with events.
-
-- Allow notes to have an address besides the date. The address will be in the note and display a
-  Google map in that address. Inside the Note there will be an option to add address.
 
 -I need to add levels of priority to the notes. Priority green. It is high. Yellow is medium. Red
 is low. By clicking each of them we can display the notes with that priority.
 
-2- Add highlighted text in different colors.
+2- Add highlighted text in different colors inside the notes.
 
 3- Add notifications for the Events we have. Adding remainders and a todo tag in red to the note with
 red priority will make it somehow a todo item.
