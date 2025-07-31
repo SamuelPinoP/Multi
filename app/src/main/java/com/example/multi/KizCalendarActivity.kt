@@ -298,6 +298,13 @@ private fun KizCalendarScreen() {
                                             }
                                     )
                                 }
+                                event.notifyTime?.let {
+                                    Text(
+                                        "Notification at $it",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -312,16 +319,24 @@ private fun KizCalendarScreen() {
 
         if (creatingEvent) {
             EventDialog(
-                initial = Event(0L, "", "", null, null),
+                initial = Event(0L, "", "", null, null, DEFAULT_NOTIFY_TIME),
                 onDismiss = { creatingEvent = false },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, notify ->
                     creatingEvent = false
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         val id = withContext(Dispatchers.IO) {
-                            dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
+                            dao.insert(
+                                Event(
+                                    title = title,
+                                    description = desc,
+                                    date = date,
+                                    address = addr,
+                                    notifyTime = notify
+                                ).toEntity()
+                            )
                         }
-                        events.add(Event(id, title, desc, date, addr))
+                        events.add(Event(id, title, desc, date, addr, notify))
                         context.startActivity(android.content.Intent(context, EventsActivity::class.java))
                     }
                 },
@@ -333,11 +348,11 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = event,
                 onDismiss = { editingEvent = null },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, notify ->
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = Event(event.id, title, desc, date, addr, notify)
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
@@ -355,7 +370,8 @@ private fun KizCalendarScreen() {
                                     title = event.title,
                                     description = event.description,
                                     date = event.date,
-                                    address = event.address
+                                    address = event.address,
+                                    notifyTime = event.notifyTime
                                 ).toEntity()
                             )
                             db.eventDao().delete(event.toEntity())

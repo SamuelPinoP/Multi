@@ -99,6 +99,13 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                             }
                                     )
                                 }
+                                event.notifyTime?.let {
+                                    Text(
+                                        "Notification at $it",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     "Days remaining: $daysLeft",
@@ -119,7 +126,8 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                                         title = event.title,
                                                         description = event.description,
                                                         date = event.date,
-                                                        address = event.address
+                                                        address = event.address,
+                                                        notifyTime = event.notifyTime
                                                     ).toEntity()
                                                 )
                                                 db.trashedEventDao().delete(event.toEntity())
