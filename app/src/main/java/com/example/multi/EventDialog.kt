@@ -13,10 +13,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -31,24 +36,35 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.multi.util.capitalizeSentences
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?, String?) -> Unit,
+    onSave: (String, String, String?, String?, Boolean, String) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
     var address by remember { mutableStateOf(initial.address ?: "") }
+    var reminderEnabled by remember { mutableStateOf(initial.reminderEnabled) }
+    var reminderTime by remember { mutableStateOf(initial.reminderTime) }
     var selectedDate by remember { mutableStateOf(initial.date) }
     var showPicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    val timePickerState = rememberTimePickerState(
+        initialHour = reminderTime.substringBefore(":").toInt(),
+        initialMinute = reminderTime.substringAfter(":").toInt(),
+        is24Hour = false
+    )
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember {
@@ -114,7 +130,14 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    onSave(
+                        title,
+                        description,
+                        finalDate,
+                        address.ifBlank { null },
+                        reminderEnabled,
+                        reminderTime
+                    )
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -158,6 +181,30 @@ fun EventDialog(
                         capitalization = KeyboardCapitalization.Sentences
                     )
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { reminderEnabled = !reminderEnabled }) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = if (reminderEnabled) Color.Blue else Color.Gray
+                        )
+                    }
+                    Text("Reminder")
+                    Spacer(modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = reminderEnabled,
+                        onCheckedChange = { reminderEnabled = it }
+                    )
+                }
+                if (reminderEnabled) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Time: $reminderTime")
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(onClick = { showTimePicker = true }) { Text("Change") }
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
@@ -227,6 +274,23 @@ fun EventDialog(
             }
         ) {
             DatePicker(state = pickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    showTimePicker = false
+                    reminderTime = "%02d:%02d".format(timePickerState.hour, timePickerState.minute)
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            TimePicker(state = timePickerState)
         }
     }
 }

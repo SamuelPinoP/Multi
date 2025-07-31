@@ -14,11 +14,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,9 +33,14 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDialog
+import androidx.compose.material3.rememberTimePickerState
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.scheduleReminder
+import com.example.multi.cancelReminder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -86,6 +94,7 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
     var newDate by remember { mutableStateOf(initialDate) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var pickerIndex by remember { mutableStateOf<Int?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -118,6 +127,27 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
+                            IconButton(
+                                onClick = {
+                                    if (!event.reminderEnabled) {
+                                        event.reminderEnabled = true
+                                        event.reminderTime = "11:00"
+                                        scope.launch {
+                                            val dao = EventDatabase.getInstance(context).eventDao()
+                                            withContext(Dispatchers.IO) { dao.update(event.toEntity()) }
+                                        }
+                                        scheduleReminder(context, event)
+                                    }
+                                    pickerIndex = index
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = if (event.reminderEnabled) Color.Blue else Color.Gray
+                                )
+                            }
                         }
                         event.address?.takeIf { it.isNotBlank() }?.let { addr ->
                             Text(
@@ -135,6 +165,39 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                         }
                     }
                 }
+
+            }
+        }
+
+        pickerIndex?.let { idx ->
+            val event = events[idx]
+            val timeState = remember(idx) {
+                rememberTimePickerState(
+                    initialHour = event.reminderTime.substringBefore(":").toInt(),
+                    initialMinute = event.reminderTime.substringAfter(":").toInt(),
+                    is24Hour = false
+                )
+            }
+            TimePickerDialog(
+                onDismissRequest = { pickerIndex = null },
+                confirmButton = {
+                    TextButton(onClick = {
+                        pickerIndex = null
+                        val newTime = "%02d:%02d".format(timeState.hour, timeState.minute)
+                        event.reminderEnabled = true
+                        event.reminderTime = newTime
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).eventDao()
+                            withContext(Dispatchers.IO) { dao.update(event.toEntity()) }
+                        }
+                        scheduleReminder(context, event)
+                    }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pickerIndex = null }) { Text("Cancel") }
+                }
+            ) {
+                TimePicker(state = timeState)
             }
         }
 
@@ -215,21 +278,41 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                     editingIndex = null
                     newDate = null
                 },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, reminder, time ->
                     editingIndex = null
                     newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
                             val id = withContext(Dispatchers.IO) {
-                                dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
+                                dao.insert(
+                                    Event(
+                                        title = title,
+                                        description = desc,
+                                        date = date,
+                                        address = addr,
+                                        reminderEnabled = reminder,
+                                        reminderTime = time
+                                    ).toEntity()
+                                )
                             }
-                            events.add(Event(id, title, desc, date, addr))
+                            val newEvent = Event(
+                                id,
+                                title,
+                                desc,
+                                date,
+                                addr,
+                                reminder,
+                                time
+                            )
+                            events.add(newEvent)
+                            if (reminder) scheduleReminder(context, newEvent)
                             snackbarHostState.showSnackbar("New Event added")
                         } else {
-                            val updated = Event(event.id, title, desc, date, addr)
+                            val updated = Event(event.id, title, desc, date, addr, reminder, time)
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                             events[index] = updated
+                            if (reminder) scheduleReminder(context, updated) else cancelReminder(context, updated)
                         }
                     }
                 },
@@ -248,6 +331,7 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                 )
                                 db.eventDao().delete(event.toEntity())
                             }
+                            cancelReminder(context, event)
                             events.removeAt(index)
                             editingIndex = null
                             newDate = null
