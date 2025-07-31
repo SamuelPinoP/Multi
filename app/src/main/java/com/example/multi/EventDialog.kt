@@ -10,13 +10,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Switch
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDialog
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -33,6 +38,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsNone
 import com.example.multi.util.capitalizeSentences
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +48,7 @@ import com.example.multi.util.capitalizeSentences
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?, String?) -> Unit,
+    onSave: (String, String, String?, String?, Boolean, String) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
 ) {
@@ -50,6 +58,9 @@ fun EventDialog(
     var selectedDate by remember { mutableStateOf(initial.date) }
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
+    var reminderEnabled by remember { mutableStateOf(initial.reminderEnabled) }
+    var reminderTime by remember { mutableStateOf(initial.reminderTime) }
+    var showTimePicker by remember { mutableStateOf(false) }
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
@@ -114,7 +125,7 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    onSave(title, description, finalDate, address.ifBlank { null }, reminderEnabled, reminderTime)
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -162,6 +173,24 @@ fun EventDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(
+                        checked = reminderEnabled,
+                        onCheckedChange = { reminderEnabled = it }
+                    )
+                    Icon(
+                        imageVector = if (reminderEnabled) Icons.Default.Notifications else Icons.Default.NotificationsNone,
+                        contentDescription = "Reminder",
+                        tint = if (reminderEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .clickable { showTimePicker = true }
+                    )
+                    if (reminderEnabled) {
+                        Text(reminderTime, modifier = Modifier.padding(start = 8.dp))
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -227,6 +256,23 @@ fun EventDialog(
             }
         ) {
             DatePicker(state = pickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        val (h, m) = reminderTime.split(":").let { it[0].toInt() to it[1].toInt() }
+        val timeState = rememberTimePickerState(h, m, false)
+        TimePickerDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    reminderTime = String.format("%02d:%02d", timeState.hour, timeState.minute)
+                    showTimePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text("Cancel") } }
+        ) {
+            TimePicker(state = timeState)
         }
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.multi.scheduleEventNotification
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
@@ -113,20 +114,36 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                     TextButton(onClick = {
                                         scope.launch {
                                             val db = EventDatabase.getInstance(context)
-                                            withContext(Dispatchers.IO) {
-                                                db.eventDao().insert(
+                                            val newId = withContext(Dispatchers.IO) {
+                                                val inserted = db.eventDao().insert(
                                                     Event(
                                                         title = event.title,
                                                         description = event.description,
                                                         date = event.date,
-                                                        address = event.address
+                                                        address = event.address,
+                                                        reminderEnabled = event.reminderEnabled,
+                                                        reminderTime = event.reminderTime
                                                     ).toEntity()
                                                 )
                                                 db.trashedEventDao().delete(event.toEntity())
+                                                inserted
                                             }
                                             events.remove(event)
+                                            scheduleEventNotification(
+                                                context,
+                                                Event(
+                                                    newId,
+                                                    event.title,
+                                                    event.description,
+                                                    event.date,
+                                                    event.address,
+                                                    event.reminderEnabled,
+                                                    event.reminderTime
+                                                )
+                                            )
                                         }
-                                    }) { Text("Restore") }
+                                    }
+                                }) { Text("Restore") }
                                     Spacer(modifier = Modifier.width(8.dp))
                                     TextButton(onClick = {
                                         scope.launch {
