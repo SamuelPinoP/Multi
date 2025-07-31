@@ -53,6 +53,8 @@ import androidx.compose.ui.graphics.Color
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
 import com.example.multi.util.occursOn
+import com.example.multi.util.scheduleEventReminder
+import com.example.multi.util.cancelEventReminder
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -314,14 +316,22 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = Event(0L, "", "", null, null),
                 onDismiss = { creatingEvent = false },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, enabled, time ->
                     creatingEvent = false
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val id = withContext(Dispatchers.IO) {
-                            dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
-                        }
-                        events.add(Event(id, title, desc, date, addr))
+                        val newEvent = Event(
+                            title = title,
+                            description = desc,
+                            date = date,
+                            address = addr,
+                            reminderTime = time,
+                            reminderEnabled = enabled
+                        )
+                        val id = withContext(Dispatchers.IO) { dao.insert(newEvent.toEntity()) }
+                        newEvent.id = id
+                        events.add(newEvent)
+                        scheduleEventReminder(context, newEvent)
                         context.startActivity(android.content.Intent(context, EventsActivity::class.java))
                     }
                 },
@@ -333,16 +343,17 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = event,
                 onDismiss = { editingEvent = null },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, enabled, time ->
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = Event(event.id, title, desc, date, addr, time, enabled)
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
                             events[idx] = updated
                         }
+                        if (enabled) scheduleEventReminder(context, updated) else cancelEventReminder(context, updated.id)
                     }
                 },
                 onDelete = {
@@ -364,6 +375,7 @@ private fun KizCalendarScreen() {
                         if (idx >= 0) {
                             events.removeAt(idx)
                         }
+                        cancelEventReminder(context, event.id)
                     }
                 },
                 isNew = false

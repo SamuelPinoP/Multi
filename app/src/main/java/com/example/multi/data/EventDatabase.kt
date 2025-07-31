@@ -26,7 +26,9 @@ data class EventEntity(
     val title: String,
     val description: String,
     val date: String?,
-    val address: String?
+    val address: String?,
+    val reminderTime: String?,
+    val reminderEnabled: Boolean
 )
 
 @Entity(tableName = "weekly_goals")
@@ -183,7 +185,7 @@ interface TrashedEventDao {
         TrashedEventEntity::class,
         DailyCompletionEntity::class
     ],
-    version = 14
+    version = 15
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -214,8 +216,10 @@ abstract class EventDatabase : RoomDatabase() {
     }
 }
 
-fun EventEntity.toModel() = Event(id, title, description, date, address)
-fun Event.toEntity() = EventEntity(id, title, description, date, address)
+fun EventEntity.toModel() =
+    Event(id, title, description, date, address, reminderTime, reminderEnabled)
+fun Event.toEntity() =
+    EventEntity(id, title, description, date, address, reminderTime, reminderEnabled)
 
 fun WeeklyGoalEntity.toModel() =
     WeeklyGoal(id, header, frequency, remaining, lastCheckedDate, weekNumber, dayStates)
