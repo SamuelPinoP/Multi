@@ -29,8 +29,10 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.multi.util.capitalizeSentences
@@ -40,7 +42,7 @@ import com.example.multi.util.capitalizeSentences
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?, String?) -> Unit,
+    onSave: (String, String, String?, String?, String?) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
 ) {
@@ -49,6 +51,9 @@ fun EventDialog(
     var address by remember { mutableStateOf(initial.address ?: "") }
     var selectedDate by remember { mutableStateOf(initial.date) }
     var showPicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var reminderEnabled by remember { mutableStateOf(initial.reminderTime != null) }
+    var reminderTime by remember { mutableStateOf(initial.reminderTime ?: "11:00") }
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember {
@@ -114,7 +119,13 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    onSave(
+                        title,
+                        description,
+                        finalDate,
+                        address.ifBlank { null },
+                        if (reminderEnabled) reminderTime else null
+                    )
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -162,6 +173,28 @@ fun EventDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    androidx.compose.material3.Switch(
+                        checked = reminderEnabled,
+                        onCheckedChange = { reminderEnabled = it }
+                    )
+                    androidx.compose.material3.IconButton(onClick = {
+                        if (reminderEnabled) showTimePicker = true else { reminderEnabled = true; showTimePicker = true }
+                    }) {
+                        androidx.compose.material3.Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = if (reminderEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (reminderEnabled) {
+                        Text(reminderTime)
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -227,6 +260,22 @@ fun EventDialog(
             }
         ) {
             DatePicker(state = pickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        val context = LocalContext.current
+        LaunchedEffect(Unit) {
+            android.app.TimePickerDialog(
+                context,
+                { _, hour, minute ->
+                    reminderTime = String.format("%02d:%02d", hour, minute)
+                    showTimePicker = false
+                },
+                reminderTime.split(":")[0].toInt(),
+                reminderTime.split(":")[1].toInt(),
+                false
+            ).apply { setOnCancelListener { showTimePicker = false } }.show()
         }
     }
 }

@@ -37,6 +37,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import com.example.multi.util.cancelReminder
+import com.example.multi.util.scheduleReminder
 
 const val EXTRA_DATE = "extra_date"
 
@@ -117,6 +119,17 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                 text = it,
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(top = 4.dp)
+                            )
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = if (event.reminderTime != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .padding(start = 8.dp)
+                                    .size(16.dp)
+                                    .clickable {
+                                        editingIndex = index
+                                    }
                             )
                         }
                         event.address?.takeIf { it.isNotBlank() }?.let { addr ->
@@ -208,27 +221,41 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
-            val event = if (isNew) Event(0L, "", "", null, null) else events[index]
+            val event = if (isNew) Event(0L, "", "", null, null, null) else events[index]
             EventDialog(
                 initial = event,
                 onDismiss = {
                     editingIndex = null
                     newDate = null
                 },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, time ->
                     editingIndex = null
                     newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
                             val id = withContext(Dispatchers.IO) {
-                                dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
+                                dao.insert(
+                                    Event(
+                                        title = title,
+                                        description = desc,
+                                        date = date,
+                                        address = addr,
+                                        reminderTime = time
+                                    ).toEntity()
+                                )
                             }
-                            events.add(Event(id, title, desc, date, addr))
+                            events.add(Event(id, title, desc, date, addr, time))
+                            scheduleReminder(context, id, title, date, time)
                             snackbarHostState.showSnackbar("New Event added")
                         } else {
-                            val updated = Event(event.id, title, desc, date, addr)
+                            val updated = Event(event.id, title, desc, date, addr, time)
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                            if (time != null) {
+                                scheduleReminder(context, event.id, title, date, time)
+                            } else {
+                                cancelReminder(context, event.id)
+                            }
                             events[index] = updated
                         }
                     }
@@ -243,7 +270,8 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                         title = event.title,
                                         description = event.description,
                                         date = event.date,
-                                        address = event.address
+                                        address = event.address,
+                                        reminderTime = event.reminderTime
                                     ).toEntity()
                                 )
                                 db.eventDao().delete(event.toEntity())
