@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.util.EventNotificationScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -133,6 +134,13 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                     }
                             )
                         }
+                        event.notifyTime?.let {
+                            Text(
+                                text = "Notification at $it",
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -215,20 +223,24 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                     editingIndex = null
                     newDate = null
                 },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, time ->
                     editingIndex = null
                     newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
                             val id = withContext(Dispatchers.IO) {
-                                dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
+                                dao.insert(Event(title = title, description = desc, date = date, address = addr, notifyTime = time).toEntity())
                             }
-                            events.add(Event(id, title, desc, date, addr))
+                            val newEvent = Event(id, title, desc, date, addr, time)
+                            events.add(newEvent)
+                            EventNotificationScheduler.schedule(context, newEvent)
                             snackbarHostState.showSnackbar("New Event added")
                         } else {
-                            val updated = Event(event.id, title, desc, date, addr)
+                            val updated = Event(event.id, title, desc, date, addr, time)
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                            EventNotificationScheduler.cancel(context, event.id)
+                            EventNotificationScheduler.schedule(context, updated)
                             events[index] = updated
                         }
                     }
@@ -248,6 +260,7 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                 )
                                 db.eventDao().delete(event.toEntity())
                             }
+                            EventNotificationScheduler.cancel(context, event.id)
                             events.removeAt(index)
                             editingIndex = null
                             newDate = null
