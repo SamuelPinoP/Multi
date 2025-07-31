@@ -1,5 +1,7 @@
 /*
 
+- Allow changing font color!
+
 - Allow the app to swap activities by swapping to the side. If I am in the notes activity but swap 
 to the left side then the events activity will display, if I swap to the right then the remainders
 activity will display and so on.
