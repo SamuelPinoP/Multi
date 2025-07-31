@@ -119,7 +119,9 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                                         title = event.title,
                                                         description = event.description,
                                                         date = event.date,
-                                                        address = event.address
+                                                        address = event.address,
+                                                        reminderEnabled = false,
+                                                        reminderTime = "11:00"
                                                     ).toEntity()
                                                 )
                                                 db.trashedEventDao().delete(event.toEntity())
