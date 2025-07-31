@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.scheduleEventNotification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -113,17 +114,30 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                     TextButton(onClick = {
                                         scope.launch {
                                             val db = EventDatabase.getInstance(context)
-                                            withContext(Dispatchers.IO) {
-                                                db.eventDao().insert(
+                                            val newId = withContext(Dispatchers.IO) {
+                                                val id = db.eventDao().insert(
                                                     Event(
                                                         title = event.title,
                                                         description = event.description,
                                                         date = event.date,
-                                                        address = event.address
+                                                        address = event.address,
+                                                        notifyTime = event.notifyTime
                                                     ).toEntity()
                                                 )
                                                 db.trashedEventDao().delete(event.toEntity())
+                                                id
                                             }
+                                            scheduleEventNotification(
+                                                context,
+                                                Event(
+                                                    id = newId,
+                                                    title = event.title,
+                                                    description = event.description,
+                                                    date = event.date,
+                                                    address = event.address,
+                                                    notifyTime = event.notifyTime
+                                                )
+                                            )
                                             events.remove(event)
                                         }
                                     }) { Text("Restore") }

@@ -14,6 +14,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,13 +36,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.multi.util.capitalizeSentences
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?, String?) -> Unit,
+    onSave: (String, String, String?, String?, String?) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
 ) {
@@ -48,6 +53,7 @@ fun EventDialog(
     var description by remember { mutableStateOf(initial.description) }
     var address by remember { mutableStateOf(initial.address ?: "") }
     var selectedDate by remember { mutableStateOf(initial.date) }
+    var notifyOn by remember { mutableStateOf(initial.notifyTime != null) }
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
@@ -114,7 +120,8 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    val nTime = if (notifyOn) "11:00" else null
+                    onSave(title, description, finalDate, address.ifBlank { null }, nTime)
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -158,6 +165,20 @@ fun EventDialog(
                         capitalization = KeyboardCapitalization.Sentences
                     )
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { notifyOn = !notifyOn }) {
+                        Icon(
+                            if (notifyOn) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(
+                        if (notifyOn) "On" else "Off",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }

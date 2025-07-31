@@ -47,6 +47,8 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.data.toEntity
+import com.example.multi.scheduleEventNotification
+import com.example.multi.cancelEventNotification
 import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.ui.graphics.Color
@@ -298,6 +300,13 @@ private fun KizCalendarScreen() {
                                             }
                                     )
                                 }
+                                event.notifyTime?.let { nt ->
+                                    Text(
+                                        "Notification: $nt",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -314,14 +323,16 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = Event(0L, "", "", null, null),
                 onDismiss = { creatingEvent = false },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, ntime ->
                     creatingEvent = false
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         val id = withContext(Dispatchers.IO) {
-                            dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
+                            dao.insert(Event(title = title, description = desc, date = date, address = addr, notifyTime = ntime).toEntity())
                         }
-                        events.add(Event(id, title, desc, date, addr))
+                        val newE = Event(id, title, desc, date, addr, ntime)
+                        events.add(newE)
+                        scheduleEventNotification(context, newE)
                         context.startActivity(android.content.Intent(context, EventsActivity::class.java))
                     }
                 },
@@ -333,16 +344,17 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = event,
                 onDismiss = { editingEvent = null },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, ntime ->
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = Event(event.id, title, desc, date, addr, ntime)
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
                             events[idx] = updated
                         }
+                        if (ntime == null) cancelEventNotification(context, updated) else scheduleEventNotification(context, updated)
                     }
                 },
                 onDelete = {
@@ -355,11 +367,13 @@ private fun KizCalendarScreen() {
                                     title = event.title,
                                     description = event.description,
                                     date = event.date,
-                                    address = event.address
+                                    address = event.address,
+                                    notifyTime = event.notifyTime
                                 ).toEntity()
                             )
                             db.eventDao().delete(event.toEntity())
                         }
+                        cancelEventNotification(context, event)
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
                             events.removeAt(idx)
