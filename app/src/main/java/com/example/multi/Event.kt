@@ -8,5 +8,8 @@ data class Event(
     var title: String,
     var description: String,
     var date: String? = null,
-    var address: String? = null
+    var address: String? = null,
+    var reminderEnabled: Boolean = true,
+    /** Stored as HH:mm in 24h format */
+    var reminderTime: String = "11:00"
 )

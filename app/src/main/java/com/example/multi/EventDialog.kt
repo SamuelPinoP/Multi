@@ -22,6 +22,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDialog
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -40,7 +46,7 @@ import com.example.multi.util.capitalizeSentences
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?, String?) -> Unit,
+    onSave: (String, String, String?, String?, Boolean, String) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
 ) {
@@ -50,6 +56,14 @@ fun EventDialog(
     var selectedDate by remember { mutableStateOf(initial.date) }
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
+    var reminderEnabled by remember { mutableStateOf(initial.reminderEnabled) }
+    var reminderTime by remember { mutableStateOf(initial.reminderTime) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    val timeState = rememberTimePickerState(
+        initialHour = reminderTime.substringBefore(":").toInt(),
+        initialMinute = reminderTime.substringAfter(":").toInt(),
+        is24Hour = true
+    )
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
@@ -114,7 +128,7 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    onSave(title, description, finalDate, address.ifBlank { null }, reminderEnabled, reminderTime)
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -158,6 +172,21 @@ fun EventDialog(
                         capitalization = KeyboardCapitalization.Sentences
                     )
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { reminderEnabled = !reminderEnabled }) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = if (reminderEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text("Reminder")
+                    if (reminderEnabled) {
+                        Text(reminderTime, modifier = Modifier.padding(start = 8.dp))
+                        TextButton(onClick = { showTimePicker = true }) { Text("Change") }
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
@@ -227,6 +256,23 @@ fun EventDialog(
             }
         ) {
             DatePicker(state = pickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    showTimePicker = false
+                    reminderTime = "%02d:%02d".format(timeState.hour, timeState.minute)
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            TimePicker(state = timeState)
         }
     }
 }

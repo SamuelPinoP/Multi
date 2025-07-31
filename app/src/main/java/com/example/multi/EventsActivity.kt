@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -30,9 +31,14 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TimePickerDialog
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.NotificationScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -86,6 +92,9 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
     var newDate by remember { mutableStateOf(initialDate) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var reminderEditIndex by remember { mutableStateOf<Int?>(null) }
+    var showReminderPicker by remember { mutableStateOf(false) }
+    val timeState = rememberTimePickerState(is24Hour = true)
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -132,6 +141,37 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                         context.startActivity(mapIntent)
                                     }
                             )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            IconButton(onClick = {
+                                val current = events[index]
+                                if (!current.reminderEnabled) {
+                                    val updated = current.copy(reminderEnabled = true)
+                                    events[index] = updated
+                                    scope.launch {
+                                        val dao = EventDatabase.getInstance(context).eventDao()
+                                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                    }
+                                    NotificationScheduler.schedule(context, updated)
+                                }
+                                val parts = events[index].reminderTime.split(":")
+                                timeState.hour = parts[0].toInt()
+                                timeState.minute = parts[1].toInt()
+                                reminderEditIndex = index
+                                showReminderPicker = true
+                            }) {
+                                Icon(
+                                    Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = if (event.reminderEnabled) Color.Blue else Color.Gray
+                                )
+                            }
+                            if (event.reminderEnabled) {
+                                Text(event.reminderTime, style = MaterialTheme.typography.labelSmall)
+                            }
                         }
                     }
                 }
@@ -215,21 +255,24 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                     editingIndex = null
                     newDate = null
                 },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, rem, time ->
                     editingIndex = null
                     newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
                             val id = withContext(Dispatchers.IO) {
-                                dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
+                                dao.insert(Event(title = title, description = desc, date = date, address = addr, reminderEnabled = rem, reminderTime = time).toEntity())
                             }
-                            events.add(Event(id, title, desc, date, addr))
+                            val newEvent = Event(id, title, desc, date, addr, rem, time)
+                            events.add(newEvent)
+                            NotificationScheduler.schedule(context, newEvent)
                             snackbarHostState.showSnackbar("New Event added")
                         } else {
-                            val updated = Event(event.id, title, desc, date, addr)
+                            val updated = Event(event.id, title, desc, date, addr, rem, time)
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                             events[index] = updated
+                            if (rem) NotificationScheduler.schedule(context, updated) else NotificationScheduler.cancel(context, updated.id)
                         }
                     }
                 },
@@ -256,6 +299,33 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                 },
                 isNew = isNew
             )
+        }
+
+        val remIndex = reminderEditIndex
+        if (showReminderPicker && remIndex != null) {
+            TimePickerDialog(
+                onDismissRequest = { showReminderPicker = false; reminderEditIndex = null },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showReminderPicker = false
+                        val e = events[remIndex]
+                        val newTime = "%02d:%02d".format(timeState.hour, timeState.minute)
+                        val updated = e.copy(reminderTime = newTime, reminderEnabled = true)
+                        events[remIndex] = updated
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).eventDao()
+                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                        }
+                        NotificationScheduler.schedule(context, updated)
+                        reminderEditIndex = null
+                    }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showReminderPicker = false; reminderEditIndex = null }) { Text("Cancel") }
+                }
+            ) {
+                TimePicker(state = timeState)
+            }
         }
 
         SnackbarHost(
