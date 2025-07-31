@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,6 +23,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -31,8 +37,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import android.app.TimePickerDialog
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 import com.example.multi.util.capitalizeSentences
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +52,7 @@ import com.example.multi.util.capitalizeSentences
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?, String?) -> Unit,
+    onSave: (String, String, String?, String?, Long?) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
 ) {
@@ -54,6 +66,17 @@ fun EventDialog(
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
+    var reminderEnabled by remember { mutableStateOf(initial.reminderTime != null) }
+    var reminderMillis by remember {
+        mutableStateOf(
+            initial.reminderTime ?: initial.date?.let {
+                try {
+                    LocalDate.parse(it).atTime(LocalTime.of(11, 0)).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                } catch (_: Exception) { null }
+            }
+        )
+    }
+    var showTimePicker by remember { mutableStateOf(false) }
     val previewDate by remember {
         derivedStateOf {
             val daysFull = listOf(
@@ -114,7 +137,8 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    val reminder = if (reminderEnabled) reminderMillis else null
+                    onSave(title, description, finalDate, address.ifBlank { null }, reminder)
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -162,6 +186,31 @@ fun EventDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(
+                        checked = reminderEnabled,
+                        onCheckedChange = { reminderEnabled = it }
+                    )
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Reminder",
+                        tint = if (reminderEnabled) Color.Blue else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .clickable { reminderEnabled = true; showTimePicker = true }
+                    )
+                    reminderMillis?.let {
+                        val time = java.time.Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalTime()
+                        val formatted = String.format("%02d:%02d", time.hour, time.minute)
+                        Text(
+                            formatted,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .clickable { showTimePicker = true }
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -227,6 +276,31 @@ fun EventDialog(
             }
         ) {
             DatePicker(state = pickerState)
+        }
+    }
+
+    val context = LocalContext.current
+    if (showTimePicker) {
+        LaunchedEffect(Unit) {
+            val cal = java.util.Calendar.getInstance()
+            reminderMillis?.let { cal.timeInMillis = it }
+            TimePickerDialog(
+                context,
+                { _: android.widget.TimePicker, h: Int, m: Int ->
+                    val date = selectedDate?.let {
+                        try { LocalDate.parse(it) } catch (_: Exception) { null }
+                    } ?: LocalDate.now()
+                    val instant = date.atTime(h, m).atZone(ZoneId.systemDefault()).toInstant()
+                    reminderMillis = instant.toEpochMilli()
+                    reminderEnabled = true
+                    showTimePicker = false
+                },
+                cal.get(java.util.Calendar.HOUR_OF_DAY),
+                cal.get(java.util.Calendar.MINUTE),
+                false
+            ).apply {
+                setOnCancelListener { showTimePicker = false }
+            }.show()
         }
     }
 }

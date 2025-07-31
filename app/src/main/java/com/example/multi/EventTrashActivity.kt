@@ -119,11 +119,14 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                                         title = event.title,
                                                         description = event.description,
                                                         date = event.date,
-                                                        address = event.address
+                                                        address = event.address,
+                                                        reminderTime = event.reminderTime
                                                     ).toEntity()
                                                 )
                                                 db.trashedEventDao().delete(event.toEntity())
                                             }
+                                            event.id = 0L
+                                            EventReminderScheduler.schedule(context, event)
                                             events.remove(event)
                                         }
                                     }) { Text("Restore") }
@@ -132,6 +135,7 @@ class EventTrashActivity : SegmentActivity("Trash") {
                                         scope.launch {
                                             val dao = EventDatabase.getInstance(context).trashedEventDao()
                                             withContext(Dispatchers.IO) { dao.delete(event.toEntity()) }
+                                            EventReminderScheduler.cancel(context, event.id)
                                             events.remove(event)
                                         }
                                     }) { Text("Delete") }

@@ -312,16 +312,18 @@ private fun KizCalendarScreen() {
 
         if (creatingEvent) {
             EventDialog(
-                initial = Event(0L, "", "", null, null),
+                initial = Event(0L, "", "", null, null, null),
                 onDismiss = { creatingEvent = false },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, reminder ->
                     creatingEvent = false
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         val id = withContext(Dispatchers.IO) {
-                            dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
+                            dao.insert(Event(title = title, description = desc, date = date, address = addr, reminderTime = reminder).toEntity())
                         }
-                        events.add(Event(id, title, desc, date, addr))
+                        val newEvent = Event(id, title, desc, date, addr, reminder)
+                        events.add(newEvent)
+                        EventReminderScheduler.schedule(context, newEvent)
                         context.startActivity(android.content.Intent(context, EventsActivity::class.java))
                     }
                 },
@@ -333,15 +335,20 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = event,
                 onDismiss = { editingEvent = null },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, reminder ->
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = Event(event.id, title, desc, date, addr, reminder)
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
                             events[idx] = updated
+                        }
+                        if (reminder != null) {
+                            EventReminderScheduler.schedule(context, updated)
+                        } else {
+                            EventReminderScheduler.cancel(context, updated.id)
                         }
                     }
                 },
@@ -355,11 +362,13 @@ private fun KizCalendarScreen() {
                                     title = event.title,
                                     description = event.description,
                                     date = event.date,
-                                    address = event.address
+                                    address = event.address,
+                                    reminderTime = event.reminderTime
                                 ).toEntity()
                             )
                             db.eventDao().delete(event.toEntity())
                         }
+                        EventReminderScheduler.cancel(context, event.id)
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
                             events.removeAt(idx)
