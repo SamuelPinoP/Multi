@@ -14,10 +14,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,10 +35,13 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.util.scheduleEventNotification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import android.app.TimePickerDialog
+import java.util.Calendar
 
 const val EXTRA_DATE = "extra_date"
 
@@ -84,6 +89,7 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(if (initialDate != null) -1 else null) }
     var newDate by remember { mutableStateOf(initialDate) }
+    var notifyIndex by remember { mutableStateOf<Int?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -132,6 +138,14 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                         context.startActivity(mapIntent)
                                     }
                             )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            IconButton(onClick = { notifyIndex = index }) {
+                                Icon(Icons.Default.Notifications, contentDescription = "Notify")
+                            }
                         }
                     }
                 }
@@ -203,6 +217,36 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
+        }
+
+        if (notifyIndex != null) {
+            val event = events[notifyIndex!!]
+            LaunchedEffect(notifyIndex) {
+                val now = Calendar.getInstance()
+                TimePickerDialog(
+                    context,
+                    { _, hour, minute ->
+                        val cal = Calendar.getInstance()
+                        val date = event.date
+                        val regex = Regex("\\d{4}-\\d{2}-\\d{2}")
+                        if (date != null && regex.matches(date)) {
+                            val parts = date.split("-")
+                            cal.set(Calendar.YEAR, parts[0].toInt())
+                            cal.set(Calendar.MONTH, parts[1].toInt() - 1)
+                            cal.set(Calendar.DAY_OF_MONTH, parts[2].toInt())
+                        }
+                        cal.set(Calendar.HOUR_OF_DAY, hour)
+                        cal.set(Calendar.MINUTE, minute)
+                        cal.set(Calendar.SECOND, 0)
+                        cal.set(Calendar.MILLISECOND, 0)
+                        scheduleEventNotification(context, event, cal.timeInMillis)
+                        scope.launch { snackbarHostState.showSnackbar("Notification set") }
+                    },
+                    now.get(Calendar.HOUR_OF_DAY),
+                    now.get(Calendar.MINUTE),
+                    false
+                ).apply { setOnDismissListener { notifyIndex = null } }.show()
+            }
         }
 
         val index = editingIndex
