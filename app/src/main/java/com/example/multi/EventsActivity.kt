@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Bundle
 
 import androidx.compose.foundation.clickable
@@ -76,6 +77,14 @@ class EventsActivity : SegmentActivity("Events") {
                 context.startActivity(android.content.Intent(context, EventTrashActivity::class.java))
             }
         )
+    }
+
+    override fun onSwipeLeft() {
+        startActivity(Intent(this, NotesActivity::class.java))
+    }
+
+    override fun onSwipeRight() {
+        startActivity(Intent(this, CalendarActivity::class.java))
     }
 }
 

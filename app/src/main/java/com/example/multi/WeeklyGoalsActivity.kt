@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
@@ -71,6 +72,14 @@ class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     override fun SegmentContent() {
         val goalId = intent.getLongExtra(EXTRA_GOAL_ID, -1L)
         WeeklyGoalsScreen(highlightGoalId = goalId.takeIf { it > 0 })
+    }
+
+    override fun onSwipeLeft() {
+        startActivity(Intent(this, CalendarActivity::class.java))
+    }
+
+    override fun onSwipeRight() {
+        startActivity(Intent(this, NotesActivity::class.java))
     }
 }
 

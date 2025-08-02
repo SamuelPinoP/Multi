@@ -367,4 +367,12 @@ class NotesActivity : SegmentActivity("Notes") {
             }
         )
     }
+
+    override fun onSwipeLeft() {
+        startActivity(Intent(this, WeeklyGoalsActivity::class.java))
+    }
+
+    override fun onSwipeRight() {
+        startActivity(Intent(this, EventsActivity::class.java))
+    }
 }

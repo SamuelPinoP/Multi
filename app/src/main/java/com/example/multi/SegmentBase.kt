@@ -4,8 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -25,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
@@ -33,9 +36,9 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.ThemePreferences
+import kotlin.math.abs
 
 open class SegmentActivity(
     private val segmentTitle: String
@@ -51,6 +54,10 @@ open class SegmentActivity(
     @Composable
     open fun OverflowMenuItems(onDismiss: () -> Unit) {}
 
+    open fun onSwipeLeft() {}
+
+    open fun onSwipeRight() {}
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -64,7 +71,9 @@ open class SegmentActivity(
                     actions = {
                         ThemeToggleAction(darkThemeState) { OverflowMenuItems(it) }
                         SegmentActions()
-                    }
+                    },
+                    onSwipeLeft = { onSwipeLeft() },
+                    onSwipeRight = { onSwipeRight() }
                 ) {
                     SegmentContent()
                 }
@@ -80,6 +89,8 @@ fun SegmentScreen(
     onBack: () -> Unit,
     onClose: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
+    onSwipeLeft: () -> Unit = {},
+    onSwipeRight: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
     Scaffold(
@@ -125,7 +136,19 @@ fun SegmentScreen(
                             MaterialTheme.colorScheme.surfaceVariant
                         )
                     )
-                ),
+                )
+                .pointerInput(Unit) {
+                    var totalX = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { totalX = 0f },
+                        onHorizontalDrag = { _, dragAmount -> totalX += dragAmount },
+                        onDragEnd = {
+                            if (abs(totalX) > 100f) {
+                                if (totalX > 0f) onSwipeRight() else onSwipeLeft()
+                            }
+                        }
+                    )
+                },
             contentAlignment = Alignment.Center
         ) {
             content()
