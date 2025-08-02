@@ -1,5 +1,12 @@
 package com.example.multi
 
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.app.Activity
+import android.content.pm.PackageManager
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,8 +38,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import android.Manifest
 import com.example.multi.util.capitalizeSentences
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +65,7 @@ fun EventDialog(
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
+    val context = LocalContext.current
     val previewDate by remember {
         derivedStateOf {
             val daysFull = listOf(
@@ -199,6 +211,31 @@ fun EventDialog(
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                TextButton(
+                    onClick = {
+                        selectedDate?.let { date ->
+                            if (
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                ActivityCompat.requestPermissions(
+                                    context as Activity,
+                                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                                    0
+                                )
+                            } else {
+                                scheduleNotification(context, title, description, date)
+                            }
+                        }
+                    },
+                    enabled = selectedDate != null
+                ) {
+                    Text("Schedule Notification")
+                }
             }
         }
     )
@@ -228,5 +265,32 @@ fun EventDialog(
         ) {
             DatePicker(state = pickerState)
         }
+    }
+}
+
+private fun scheduleNotification(context: Context, title: String, desc: String, date: String) {
+    val triggerTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val localDate = java.time.LocalDate.parse(date)
+        val localDateTime = localDate.atTime(9, 0)
+        localDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+    } else {
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+        fmt.parse("$date 09:00")!!.time
+    }
+    val intent = Intent(context, NotificationReceiver::class.java).apply {
+        putExtra("title", title)
+        putExtra("desc", desc)
+    }
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        title.hashCode(),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+    } else {
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
     }
 }
