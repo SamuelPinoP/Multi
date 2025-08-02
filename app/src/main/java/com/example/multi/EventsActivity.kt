@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Bundle
 
 import androidx.compose.foundation.clickable
@@ -48,6 +49,14 @@ class EventsActivity : SegmentActivity("Events") {
     override fun onCreate(savedInstanceState: Bundle?) {
         initialDate = intent.getStringExtra(EXTRA_DATE)
         super.onCreate(savedInstanceState)
+    }
+
+    override fun onSwipeLeft() {
+        startActivity(Intent(this, NotesActivity::class.java))
+    }
+
+    override fun onSwipeRight() {
+        startActivity(Intent(this, CalendarActivity::class.java))
     }
 
     override fun onResume() {

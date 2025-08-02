@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
@@ -66,6 +67,13 @@ import java.time.LocalDate
 const val EXTRA_GOAL_ID = "extra_goal_id"
 
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
+    override fun onSwipeLeft() {
+        startActivity(Intent(this, CalendarActivity::class.java))
+    }
+
+    override fun onSwipeRight() {
+        startActivity(Intent(this, NotesActivity::class.java))
+    }
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     override fun SegmentContent() {

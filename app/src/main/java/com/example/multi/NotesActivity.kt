@@ -58,6 +58,14 @@ class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
     private var importRequest: (() -> Unit)? = null
 
+    override fun onSwipeLeft() {
+        startActivity(Intent(this, WeeklyGoalsActivity::class.java))
+    }
+
+    override fun onSwipeRight() {
+        startActivity(Intent(this, EventsActivity::class.java))
+    }
+
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch {
