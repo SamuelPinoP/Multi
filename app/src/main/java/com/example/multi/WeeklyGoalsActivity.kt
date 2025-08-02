@@ -24,12 +24,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +40,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -314,6 +317,38 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
         Row(
             modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    context.startActivity(
+                        android.content.Intent(context, CalendarMenuActivity::class.java)
+                    )
+                },
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = contentColorFor(MaterialTheme.colorScheme.secondaryContainer)
+            ) {
+                Icon(Icons.Default.DateRange, contentDescription = null)
+            }
+
+            FloatingActionButton(
+                onClick = {
+                    context.startActivity(
+                        android.content.Intent(context, NotesActivity::class.java)
+                    )
+                },
+                containerColor = MaterialTheme.colorScheme.inversePrimary,
+                contentColor = contentColorFor(MaterialTheme.colorScheme.inversePrimary)
+            ) {
+                Icon(Icons.Default.Note, contentDescription = null)
+            }
+        }
+
+        Row(
+            modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -322,17 +357,6 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 onClick = { editingIndex = -1 },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Goal") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
-            ExtendedFloatingActionButton(
-                onClick = {
-                    context.startActivity(
-                        android.content.Intent(context, WeeklyGoalsCalendarActivity::class.java)
-                    )
-                },
-                icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                text = { Text("Calendar") },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
