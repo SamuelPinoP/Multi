@@ -215,21 +215,32 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                     editingIndex = null
                     newDate = null
                 },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, notify ->
                     editingIndex = null
                     newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         if (isNew) {
                             val id = withContext(Dispatchers.IO) {
-                                dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
+                                dao.insert(
+                                    Event(
+                                        title = title,
+                                        description = desc,
+                                        date = date,
+                                        address = addr,
+                                        notificationTime = notify
+                                    ).toEntity()
+                                )
                             }
-                            events.add(Event(id, title, desc, date, addr))
+                            val newEvent = Event(id, title, desc, date, addr, notify)
+                            events.add(newEvent)
+                            notify?.let { scheduleEventNotification(context, newEvent, it) }
                             snackbarHostState.showSnackbar("New Event added")
                         } else {
-                            val updated = Event(event.id, title, desc, date, addr)
+                            val updated = Event(event.id, title, desc, date, addr, notify)
                             withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                             events[index] = updated
+                            notify?.let { scheduleEventNotification(context, updated, it) }
                         }
                     }
                 },

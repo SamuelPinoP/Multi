@@ -314,14 +314,24 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = Event(0L, "", "", null, null),
                 onDismiss = { creatingEvent = false },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, notify ->
                     creatingEvent = false
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
                         val id = withContext(Dispatchers.IO) {
-                            dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
+                            dao.insert(
+                                Event(
+                                    title = title,
+                                    description = desc,
+                                    date = date,
+                                    address = addr,
+                                    notificationTime = notify
+                                ).toEntity()
+                            )
                         }
-                        events.add(Event(id, title, desc, date, addr))
+                        val newEvent = Event(id, title, desc, date, addr, notify)
+                        events.add(newEvent)
+                        notify?.let { scheduleEventNotification(context, newEvent, it) }
                         context.startActivity(android.content.Intent(context, EventsActivity::class.java))
                     }
                 },
@@ -333,16 +343,17 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = event,
                 onDismiss = { editingEvent = null },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, notify ->
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = Event(event.id, title, desc, date, addr, notify)
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
                             events[idx] = updated
                         }
+                        notify?.let { scheduleEventNotification(context, updated, it) }
                     }
                 },
                 onDelete = {

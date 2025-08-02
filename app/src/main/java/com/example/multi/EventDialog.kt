@@ -29,6 +29,10 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import android.app.TimePickerDialog
+import java.util.Calendar
+import java.time.LocalDate
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -40,7 +44,7 @@ import com.example.multi.util.capitalizeSentences
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?, String?) -> Unit,
+    onSave: (String, String, String?, String?, Long?) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
 ) {
@@ -48,6 +52,7 @@ fun EventDialog(
     var description by remember { mutableStateOf(initial.description) }
     var address by remember { mutableStateOf(initial.address ?: "") }
     var selectedDate by remember { mutableStateOf(initial.date) }
+    var notificationTime by remember { mutableStateOf(initial.notificationTime) }
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
@@ -114,7 +119,7 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    onSave(title, description, finalDate, address.ifBlank { null }, notificationTime)
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -162,6 +167,37 @@ fun EventDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val context = LocalContext.current
+                    TextButton(onClick = {
+                        val now = Calendar.getInstance()
+                        TimePickerDialog(
+                            context,
+                            { _, hour, minute ->
+                                val cal = Calendar.getInstance()
+                                selectedDate?.let {
+                                    try {
+                                        val local = java.time.LocalDate.parse(it)
+                                        cal.set(local.year, local.monthValue - 1, local.dayOfMonth)
+                                    } catch (_: Exception) {}
+                                }
+                                cal.set(Calendar.HOUR_OF_DAY, hour)
+                                cal.set(Calendar.MINUTE, minute)
+                                cal.set(Calendar.SECOND, 0)
+                                cal.set(Calendar.MILLISECOND, 0)
+                                notificationTime = cal.timeInMillis
+                            },
+                            now.get(Calendar.HOUR_OF_DAY),
+                            now.get(Calendar.MINUTE),
+                            false
+                        ).show()
+                    }) { Text("Notify") }
+                    notificationTime?.let {
+                        val formatted = android.text.format.DateFormat.getTimeFormat(context).format(java.util.Date(it))
+                        Text(formatted, modifier = Modifier.padding(start = 8.dp))
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
