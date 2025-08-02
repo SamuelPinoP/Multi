@@ -1,6 +1,13 @@
 package com.example.multi
 
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.app.TimePickerDialog
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,10 +21,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,6 +46,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import java.util.Calendar
 
 const val EXTRA_DATE = "extra_date"
 
@@ -76,6 +86,27 @@ class EventsActivity : SegmentActivity("Events") {
                 context.startActivity(android.content.Intent(context, EventTrashActivity::class.java))
             }
         )
+    }
+}
+
+
+private fun scheduleNotification(context: Context, event: Event, triggerAtMillis: Long) {
+    val intent = Intent(context, NotificationReceiver::class.java).apply {
+        putExtra("title", event.title)
+        putExtra("description", event.description)
+        putExtra("id", event.id.toInt())
+    }
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        event.id.toInt(),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+    } else {
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
     }
 }
 
@@ -132,6 +163,40 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                         context.startActivity(mapIntent)
                                     }
                             )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            IconButton(onClick = {
+                                val calendar = Calendar.getInstance()
+                                TimePickerDialog(
+                                    context,
+                                    { _, hour, minute ->
+                                        val trigger = Calendar.getInstance().apply {
+                                            event.date?.let {
+                                                try {
+                                                    val parts = it.split("-")
+                                                    set(Calendar.YEAR, parts[0].toInt())
+                                                    set(Calendar.MONTH, parts[1].toInt() - 1)
+                                                    set(Calendar.DAY_OF_MONTH, parts[2].toInt())
+                                                } catch (_: Exception) {
+                                                }
+                                            }
+                                            set(Calendar.HOUR_OF_DAY, hour)
+                                            set(Calendar.MINUTE, minute)
+                                            set(Calendar.SECOND, 0)
+                                        }.timeInMillis
+                                        scheduleNotification(context, event, trigger)
+                                        Toast.makeText(context, "Notification set", Toast.LENGTH_SHORT).show()
+                                    },
+                                    calendar.get(Calendar.HOUR_OF_DAY),
+                                    calendar.get(Calendar.MINUTE),
+                                    false
+                                ).show()
+                            }) {
+                                Icon(Icons.Default.Notifications, contentDescription = "Notify")
+                            }
                         }
                     }
                 }
@@ -266,4 +331,25 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
         )
     }
 }
+
+private fun scheduleNotification(context: Context, event: Event, triggerAtMillis: Long) {
+    val intent = Intent(context, NotificationReceiver::class.java).apply {
+        putExtra("title", event.title)
+        putExtra("description", event.description)
+        putExtra("id", event.id.toInt())
+    }
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        event.id.toInt(),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+    } else {
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+    }
+}
+
 
