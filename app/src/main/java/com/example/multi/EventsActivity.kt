@@ -19,6 +19,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,10 +34,13 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.util.scheduleEventNotification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import android.app.TimePickerDialog
+import java.util.Calendar
 
 const val EXTRA_DATE = "extra_date"
 
@@ -132,6 +136,23 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                         context.startActivity(mapIntent)
                                     }
                             )
+                        }
+                        TextButton(
+                            onClick = {
+                                val cal = Calendar.getInstance()
+                                TimePickerDialog(
+                                    context,
+                                    { _, hour, minute ->
+                                        scheduleEventNotification(context, event, hour, minute)
+                                    },
+                                    cal.get(Calendar.HOUR_OF_DAY),
+                                    cal.get(Calendar.MINUTE),
+                                    true
+                                ).show()
+                            },
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Text("Notify")
                         }
                     }
                 }
