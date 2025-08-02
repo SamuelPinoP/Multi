@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -196,6 +197,53 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
             Spacer(modifier = Modifier.height(10.dp))
 
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+            ) {
+                ElevatedButton(
+                    onClick = {
+                        context.startActivity(
+                            android.content.Intent(context, CalendarMenuActivity::class.java)
+                        )
+                    },
+                    modifier = Modifier
+                        .height(50.dp)
+                        .weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                ) {
+                    Icon(
+                        Icons.Default.DateRange,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Text("Calendar", fontSize = 18.sp)
+                }
+
+                ElevatedButton(
+                    onClick = {
+                        context.startActivity(
+                            android.content.Intent(context, NotesActivity::class.java)
+                        )
+                    },
+                    modifier = Modifier
+                        .height(50.dp)
+                        .weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF90CAF9))
+                ) {
+                    Icon(
+                        Icons.Default.Note,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Text("Notes", fontSize = 18.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             val remaining = daysRemainingInWeek()
             Text(
                 text = "$remaining days remaining",
@@ -316,23 +364,12 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.Center
         ) {
             ExtendedFloatingActionButton(
                 onClick = { editingIndex = -1 },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Goal") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
-            ExtendedFloatingActionButton(
-                onClick = {
-                    context.startActivity(
-                        android.content.Intent(context, WeeklyGoalsCalendarActivity::class.java)
-                    )
-                },
-                icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                text = { Text("Calendar") },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
