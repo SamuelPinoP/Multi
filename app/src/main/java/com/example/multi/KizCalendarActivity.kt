@@ -99,7 +99,6 @@ private fun KizCalendarScreen() {
     val sheetState = rememberModalBottomSheetState()
     var editingEvent by remember { mutableStateOf<Event?>(null) }
     val scope = rememberCoroutineScope()
-    var creatingEvent by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -239,7 +238,11 @@ private fun KizCalendarScreen() {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             ExtendedFloatingActionButton(
-                onClick = { creatingEvent = true },
+                onClick = {
+                    context.startActivity(
+                        android.content.Intent(context, CreateEventActivity::class.java)
+                    )
+                },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Event") },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -310,25 +313,6 @@ private fun KizCalendarScreen() {
             }
         }
 
-        if (creatingEvent) {
-            EventDialog(
-                initial = Event(0L, "", "", null, null),
-                onDismiss = { creatingEvent = false },
-                onSave = { title, desc, date, addr ->
-                    creatingEvent = false
-                    scope.launch {
-                        val dao = EventDatabase.getInstance(context).eventDao()
-                        val id = withContext(Dispatchers.IO) {
-                            dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
-                        }
-                        events.add(Event(id, title, desc, date, addr))
-                        context.startActivity(android.content.Intent(context, EventsActivity::class.java))
-                    }
-                },
-                isNew = true
-            )
-        }
-
         editingEvent?.let { event ->
             EventDialog(
                 initial = event,
@@ -365,8 +349,7 @@ private fun KizCalendarScreen() {
                             events.removeAt(idx)
                         }
                     }
-                },
-                isNew = false
+                }
             )
         }
     }
