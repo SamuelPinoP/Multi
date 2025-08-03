@@ -26,7 +26,10 @@ data class EventEntity(
     val title: String,
     val description: String,
     val date: String?,
-    val address: String?
+    val address: String?,
+    val notificationHour: Int? = null,  // Hour for notification (0-23)
+    val notificationMinute: Int? = null, // Minute for notification (0-59)
+    val notificationEnabled: Boolean = false // Whether notification is enabled for this event
 )
 
 @Entity(tableName = "weekly_goals")
@@ -183,7 +186,7 @@ interface TrashedEventDao {
         TrashedEventEntity::class,
         DailyCompletionEntity::class
     ],
-    version = 14
+    version = 15  // Incremented from 14 to 15 due to schema change
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -214,8 +217,28 @@ abstract class EventDatabase : RoomDatabase() {
     }
 }
 
-fun EventEntity.toModel() = Event(id, title, description, date, address)
-fun Event.toEntity() = EventEntity(id, title, description, date, address)
+// Updated extension functions to handle notification fields
+fun EventEntity.toModel() = Event(
+    id = id,
+    title = title,
+    description = description,
+    date = date,
+    address = address,
+    notificationHour = notificationHour,
+    notificationMinute = notificationMinute,
+    notificationEnabled = notificationEnabled
+)
+
+fun Event.toEntity() = EventEntity(
+    id = id,
+    title = title,
+    description = description,
+    date = date,
+    address = address,
+    notificationHour = notificationHour,
+    notificationMinute = notificationMinute,
+    notificationEnabled = notificationEnabled
+)
 
 fun WeeklyGoalEntity.toModel() =
     WeeklyGoal(id, header, frequency, remaining, lastCheckedDate, weekNumber, dayStates)
