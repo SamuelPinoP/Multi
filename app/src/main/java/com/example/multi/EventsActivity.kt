@@ -1,11 +1,18 @@
 package com.example.multi
 
+import android.app.AlarmManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
-
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -37,6 +44,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import java.time.LocalDate
+import java.time.ZoneId
 
 const val EXTRA_DATE = "extra_date"
 
@@ -48,6 +57,8 @@ class EventsActivity : SegmentActivity("Events") {
     override fun onCreate(savedInstanceState: Bundle?) {
         initialDate = intent.getStringExtra(EXTRA_DATE)
         super.onCreate(savedInstanceState)
+        createNotificationChannel()
+        requestNotificationPermission()
     }
 
     override fun onResume() {
@@ -62,7 +73,9 @@ class EventsActivity : SegmentActivity("Events") {
     @Composable
     override fun SegmentContent() {
         val events = remember { this@EventsActivity.events }
-        EventsScreen(events, initialDate)
+        EventsScreen(events, initialDate) { event ->
+            scheduleNotification(this@EventsActivity, event)
+        }
         initialDate = null
     }
 
@@ -77,10 +90,59 @@ class EventsActivity : SegmentActivity("Events") {
             }
         )
     }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "events_channel",
+                "Event Reminders",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 0)
+            }
+        }
+    }
+
+    private fun scheduleNotification(context: Context, event: Event) {
+        val date = event.date ?: return
+        runCatching {
+            val triggerTime = LocalDate.parse(date)
+                .atTime(9, 0)
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+            val intent = Intent(context, NotificationReceiver::class.java).apply {
+                putExtra("title", event.title)
+                putExtra("desc", event.description)
+            }
+            val pending = PendingIntent.getBroadcast(
+                context,
+                event.id.toInt(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarm.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pending)
+        }
+    }
 }
 
 @Composable
-private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null) {
+private fun EventsScreen(
+    events: MutableList<Event>,
+    initialDate: String? = null,
+    onNotify: (Event) -> Unit
+) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(if (initialDate != null) -1 else null) }
     var newDate by remember { mutableStateOf(initialDate) }
@@ -133,6 +195,10 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                                     }
                             )
                         }
+                        Button(
+                            onClick = { onNotify(event) },
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) { Text("Notify") }
                     }
                 }
             }
