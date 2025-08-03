@@ -54,10 +54,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toEntity
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.ThemePreferences
 import java.util.Calendar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Activity that allows the user to create a new calendar event with notification scheduling.
@@ -138,8 +143,8 @@ private fun CreateEventScreen(activity: ComponentActivity) {
         }
     }
     var notificationTime by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -269,14 +274,31 @@ private fun CreateEventScreen(activity: ComponentActivity) {
             Button(
                 onClick = {
                     if (title.isNotBlank() && notificationTime != null) {
-                        val (hour, minute) = notificationTime!!
-                        val success = scheduleEventNotification(activity, title, description, hour, minute)
-                        if (success) {
-                            Toast.makeText(context, "Event created with notification scheduled!", Toast.LENGTH_SHORT).show()
-                            // Here you would typically save the event to your database
-                            // and navigate back to the previous screen
-                        } else {
-                            Toast.makeText(context, "Failed to schedule notification", Toast.LENGTH_SHORT).show()
+                        scope.launch {
+                            val (hour, minute) = notificationTime!!
+                            val success = scheduleEventNotification(activity, title, description, hour, minute)
+                            if (success) {
+                                val dao = EventDatabase.getInstance(context).eventDao()
+                                val event = Event(
+                                    title = title,
+                                    description = description,
+                                    date = previewDate,
+                                    address = address
+                                ).apply { setNotificationTime(hour, minute) }
+                                withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
+                                Toast.makeText(
+                                    context,
+                                    "Event created with notification scheduled!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                activity.finish()
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Failed to schedule notification",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     }
                 },
@@ -290,8 +312,22 @@ private fun CreateEventScreen(activity: ComponentActivity) {
             Button(
                 onClick = {
                     if (title.isNotBlank()) {
-                        Toast.makeText(context, "Event created without notification!", Toast.LENGTH_SHORT).show()
-                        // Here you would save the event without notification
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).eventDao()
+                            val event = Event(
+                                title = title,
+                                description = description,
+                                date = previewDate,
+                                address = address
+                            )
+                            withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
+                            Toast.makeText(
+                                context,
+                                "Event created without notification!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            activity.finish()
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
