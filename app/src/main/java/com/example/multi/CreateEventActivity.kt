@@ -1,5 +1,9 @@
 package com.example.multi
 
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,6 +24,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Button
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +33,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.ThemePreferences
@@ -82,6 +88,7 @@ private fun CreateEventScreen() {
     }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp)) {
+            val context = LocalContext.current
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it.capitalizeSentences() },
@@ -101,6 +108,28 @@ private fun CreateEventScreen() {
                     capitalization = KeyboardCapitalization.Sentences
                 )
             )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                scheduleNotification(context, title, description)
+            }) {
+                Text("Schedule Notification")
+            }
         }
     }
+}
+
+private fun scheduleNotification(context: Context, title: String, description: String) {
+    val intent = Intent(context, NotificationReceiver::class.java).apply {
+        putExtra("title", title)
+        putExtra("description", description)
+    }
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    val triggerTime = System.currentTimeMillis() + 5_000 // 5 seconds from now
+    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
 }
