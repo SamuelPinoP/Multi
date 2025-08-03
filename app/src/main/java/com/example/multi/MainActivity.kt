@@ -18,6 +18,7 @@ import com.example.multi.data.EventDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.example.multi.NotificationScheduler
 
 /**
  * Main entry point of the application.
@@ -29,6 +30,7 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        NotificationScheduler.createChannel(this)
         lifecycleScope.launch {
             val db = EventDatabase.getInstance(this@MainActivity)
             val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000

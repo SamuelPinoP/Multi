@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.NotificationScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -254,7 +255,28 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                         }
                     }
                 },
-                isNew = isNew
+                isNew = isNew,
+                onSchedule = { title, desc, date, addr ->
+                    editingIndex = null
+                    newDate = null
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).eventDao()
+                        if (isNew) {
+                            val id = withContext(Dispatchers.IO) {
+                                dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
+                            }
+                            val saved = Event(id, title, desc, date, addr)
+                            events.add(saved)
+                            NotificationScheduler.scheduleEventNotification(context, saved)
+                            snackbarHostState.showSnackbar("Event scheduled")
+                        } else {
+                            val updated = Event(event.id, title, desc, date, addr)
+                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                            events[index] = updated
+                            NotificationScheduler.scheduleEventNotification(context, updated)
+                        }
+                    }
+                }
             )
         }
 

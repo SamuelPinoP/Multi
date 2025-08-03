@@ -43,6 +43,7 @@ fun EventDialog(
     onSave: (String, String, String?, String?) -> Unit,
     onDelete: (() -> Unit)? = null,
     isNew: Boolean = false,
+    onSchedule: ((String, String, String?, String?) -> Unit)? = null,
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
@@ -123,6 +124,39 @@ fun EventDialog(
             Row {
                 onDelete?.let { del ->
                     TextButton(onClick = del) { Text("Delete") }
+                }
+                onSchedule?.let { sched ->
+                    TextButton(
+                        onClick = {
+                            val daysFull = listOf(
+                                "Sunday",
+                                "Monday",
+                                "Tuesday",
+                                "Wednesday",
+                                "Thursday",
+                                "Friday",
+                                "Saturday"
+                            )
+                            val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
+                            val finalDate = if (selectedNames.isNotEmpty()) {
+                                val prefix = when (repeatOption) {
+                                    "Every" -> "Every"
+                                    "Every other" -> "Every other"
+                                    else -> ""
+                                }
+                                val dayString = when (selectedNames.size) {
+                                    1 -> selectedNames.first()
+                                    2 -> "${selectedNames[0]} and ${selectedNames[1]}"
+                                    else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
+                                }
+                                if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
+                            } else {
+                                selectedDate
+                            }
+                            sched(title, description, finalDate, address.ifBlank { null })
+                        },
+                        enabled = title.isNotBlank() && selectedDate != null && dayChecks.none { it } && repeatOption == null,
+                    ) { Text("Schedule Notification") }
                 }
                 TextButton(onClick = onDismiss) { Text("Cancel") }
             }
