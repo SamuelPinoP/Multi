@@ -57,6 +57,11 @@ import androidx.core.content.ContextCompat
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.ThemePreferences
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 /**
@@ -140,6 +145,7 @@ private fun CreateEventScreen(activity: ComponentActivity) {
     var notificationTime by remember { mutableStateOf<Pair<Int, Int>?>(null) }
 
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -272,9 +278,25 @@ private fun CreateEventScreen(activity: ComponentActivity) {
                         val (hour, minute) = notificationTime!!
                         val success = scheduleEventNotification(activity, title, description, hour, minute)
                         if (success) {
-                            Toast.makeText(context, "Event created with notification scheduled!", Toast.LENGTH_SHORT).show()
-                            // Here you would typically save the event to your database
-                            // and navigate back to the previous screen
+                            val event = Event(
+                                title = title,
+                                description = description,
+                                date = previewDate,
+                                address = address.ifBlank { null },
+                                notificationHour = hour,
+                                notificationMinute = minute,
+                                notificationEnabled = true
+                            )
+                            scope.launch {
+                                val dao = EventDatabase.getInstance(context).eventDao()
+                                withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
+                                Toast.makeText(
+                                    context,
+                                    "Event created with notification scheduled!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                activity.finish()
+                            }
                         } else {
                             Toast.makeText(context, "Failed to schedule notification", Toast.LENGTH_SHORT).show()
                         }
@@ -290,8 +312,22 @@ private fun CreateEventScreen(activity: ComponentActivity) {
             Button(
                 onClick = {
                     if (title.isNotBlank()) {
-                        Toast.makeText(context, "Event created without notification!", Toast.LENGTH_SHORT).show()
-                        // Here you would save the event without notification
+                        val event = Event(
+                            title = title,
+                            description = description,
+                            date = previewDate,
+                            address = address.ifBlank { null }
+                        )
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).eventDao()
+                            withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
+                            Toast.makeText(
+                                context,
+                                "Event created without notification!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            activity.finish()
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
