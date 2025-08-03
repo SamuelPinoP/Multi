@@ -1,6 +1,5 @@
 package com.example.multi
 
-import android.os.Bundle
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,8 +7,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -43,12 +40,6 @@ const val EXTRA_DATE = "extra_date"
 /** Activity displaying the list of user events. */
 class EventsActivity : SegmentActivity("Events") {
     private val events = mutableStateListOf<Event>()
-    private var initialDate: String? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        initialDate = intent.getStringExtra(EXTRA_DATE)
-        super.onCreate(savedInstanceState)
-    }
 
     override fun onResume() {
         super.onResume()
@@ -62,8 +53,7 @@ class EventsActivity : SegmentActivity("Events") {
     @Composable
     override fun SegmentContent() {
         val events = remember { this@EventsActivity.events }
-        EventsScreen(events, initialDate)
-        initialDate = null
+        EventsScreen(events)
     }
 
     @Composable
@@ -80,11 +70,9 @@ class EventsActivity : SegmentActivity("Events") {
 }
 
 @Composable
-private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null) {
+private fun EventsScreen(events: MutableList<Event>) {
     val context = LocalContext.current
-    var editingIndex by remember { mutableStateOf<Int?>(if (initialDate != null) -1 else null) }
-    var newDate by remember { mutableStateOf(initialDate) }
-    val snackbarHostState = remember { SnackbarHostState() }
+    var editingIndex by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -168,8 +156,9 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
                     onClick = { offset ->
                         annotated.getStringAnnotations("ADD", offset, offset)
                             .firstOrNull()?.let {
-                                newDate = null
-                                editingIndex = -1
+                                context.startActivity(
+                                    android.content.Intent(context, CreateEventActivity::class.java)
+                                )
                             }
                     }
                 )
@@ -184,8 +173,9 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
         ) {
             ExtendedFloatingActionButton(
                 onClick = {
-                    newDate = null
-                    editingIndex = -1
+                    context.startActivity(
+                        android.content.Intent(context, CreateEventActivity::class.java)
+                    )
                 },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Event") },
@@ -207,63 +197,40 @@ private fun EventsScreen(events: MutableList<Event>, initialDate: String? = null
 
         val index = editingIndex
         if (index != null) {
-            val isNew = index < 0
-            val event = if (isNew) Event(0L, "", "", null, null) else events[index]
+            val event = events[index]
             EventDialog(
                 initial = event,
-                onDismiss = {
-                    editingIndex = null
-                    newDate = null
-                },
+                onDismiss = { editingIndex = null },
                 onSave = { title, desc, date, addr ->
                     editingIndex = null
-                    newDate = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        if (isNew) {
-                            val id = withContext(Dispatchers.IO) {
-                                dao.insert(Event(title = title, description = desc, date = date, address = addr).toEntity())
-                            }
-                            events.add(Event(id, title, desc, date, addr))
-                            snackbarHostState.showSnackbar("New Event added")
-                        } else {
-                            val updated = Event(event.id, title, desc, date, addr)
-                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                            events[index] = updated
-                        }
+                        val updated = Event(event.id, title, desc, date, addr)
+                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                        events[index] = updated
                     }
                 },
-                onDelete = if (isNew) null else {
-                    {
-                        scope.launch {
-                            val db = EventDatabase.getInstance(context)
-                            withContext(Dispatchers.IO) {
-                                db.trashedEventDao().insert(
-                                    TrashedEvent(
-                                        title = event.title,
-                                        description = event.description,
-                                        date = event.date,
-                                        address = event.address
-                                    ).toEntity()
-                                )
-                                db.eventDao().delete(event.toEntity())
-                            }
-                            events.removeAt(index)
-                            editingIndex = null
-                            newDate = null
+                onDelete = {
+                    scope.launch {
+                        val db = EventDatabase.getInstance(context)
+                        withContext(Dispatchers.IO) {
+                            db.trashedEventDao().insert(
+                                TrashedEvent(
+                                    title = event.title,
+                                    description = event.description,
+                                    date = event.date,
+                                    address = event.address
+                                ).toEntity()
+                            )
+                            db.eventDao().delete(event.toEntity())
                         }
+                        events.removeAt(index)
+                        editingIndex = null
                     }
-                },
-                isNew = isNew
+                }
             )
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 124.dp)
-        )
     }
 }
 

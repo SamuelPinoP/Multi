@@ -37,12 +37,12 @@ import com.example.multi.util.capitalizeSentences
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+/** Dialog used for editing existing events without notification support. */
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
     onSave: (String, String, String?, String?) -> Unit,
     onDelete: (() -> Unit)? = null,
-    isNew: Boolean = false,
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }

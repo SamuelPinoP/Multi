@@ -93,7 +93,7 @@ fun CalendarMenuScreen() {
                             val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                             fmt.format(Date(millis))
                         }
-                        val intent = Intent(context, EventsActivity::class.java)
+                        val intent = Intent(context, CreateEventActivity::class.java)
                         intent.putExtra(EXTRA_DATE, dateStr)
                         context.startActivity(intent)
                     }
