@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import android.app.TimePickerDialog
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -18,6 +19,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,9 +33,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.multi.util.capitalizeSentences
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,8 +45,9 @@ import com.example.multi.util.capitalizeSentences
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?, String?) -> Unit,
+    onSave: (String, String, String?, String?, Pair<Int, Int>?) -> Unit,
     onDelete: (() -> Unit)? = null,
+    includeNotification: Boolean = false,
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
@@ -54,6 +59,16 @@ fun EventDialog(
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
+    var notificationTime by remember {
+        mutableStateOf(
+            if (includeNotification && initial.notificationHour != null && initial.notificationMinute != null) {
+                Pair(initial.notificationHour!!, initial.notificationMinute!!)
+            } else {
+                null
+            }
+        )
+    }
+    val context = LocalContext.current
     val previewDate by remember {
         derivedStateOf {
             val daysFull = listOf(
@@ -114,7 +129,7 @@ fun EventDialog(
                     } else {
                         selectedDate
                     }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    onSave(title, description, finalDate, address.ifBlank { null }, notificationTime)
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -196,11 +211,35 @@ fun EventDialog(
                                 onCheckedChange = { dayChecks[i] = it }
                             )
                             Text(letters[i])
-                        }
                     }
                 }
             }
+            if (includeNotification) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = {
+                        val calendar = Calendar.getInstance()
+                        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+                        val minute = calendar.get(Calendar.MINUTE)
+                        TimePickerDialog(
+                            context,
+                            { _, h, m -> notificationTime = Pair(h, m) },
+                            hour,
+                            minute,
+                            true
+                        ).show()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = notificationTime?.let { (h, m) ->
+                            "Notification Time: ${String.format("%02d:%02d", h, m)}"
+                        } ?: "Set Notification Time"
+                    )
+                }
+            }
         }
+    }
     )
 
     if (showPicker) {

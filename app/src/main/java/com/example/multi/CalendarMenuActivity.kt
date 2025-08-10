@@ -3,6 +3,7 @@ package com.example.multi
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +41,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.ThemePreferences
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -76,6 +83,9 @@ fun CalendarMenuScreen() {
     val context = LocalContext.current
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
+    var creating by remember { mutableStateOf(false) }
+    var selectedDate by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     if (showPicker) {
         DatePickerDialog(
@@ -93,9 +103,8 @@ fun CalendarMenuScreen() {
                             val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                             fmt.format(Date(millis))
                         }
-                        val intent = Intent(context, CreateEventActivity::class.java)
-                        intent.putExtra(EXTRA_DATE, dateStr)
-                        context.startActivity(intent)
+                        selectedDate = dateStr
+                        creating = true
                     }
                 }) { Text("OK") }
             },
@@ -105,6 +114,31 @@ fun CalendarMenuScreen() {
         ) {
             DatePicker(state = pickerState)
         }
+    }
+
+    if (creating) {
+        EventDialog(
+            initial = Event(title = "", description = "", date = selectedDate),
+            onDismiss = { creating = false },
+            onSave = { title, desc, date, addr, notif ->
+                creating = false
+                scope.launch {
+                    val dao = EventDatabase.getInstance(context).eventDao()
+                    val event = Event(title = title, description = desc, date = date, address = addr)
+                    notif?.let { (h, m) ->
+                        event.setNotificationTime(h, m)
+                        scheduleEventNotification(context, title, desc, h, m, date)
+                    }
+                    withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
+                    Toast.makeText(
+                        context,
+                        if (notif != null) "Event created with notification scheduled!" else "Event created!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            },
+            includeNotification = true
+        )
     }
 
     Column(

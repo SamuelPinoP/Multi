@@ -34,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import android.widget.Toast
 
 const val EXTRA_DATE = "extra_date"
 
@@ -73,6 +74,7 @@ class EventsActivity : SegmentActivity("Events") {
 private fun EventsScreen(events: MutableList<Event>) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(null) }
+    var creating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -156,9 +158,7 @@ private fun EventsScreen(events: MutableList<Event>) {
                     onClick = { offset ->
                         annotated.getStringAnnotations("ADD", offset, offset)
                             .firstOrNull()?.let {
-                                context.startActivity(
-                                    android.content.Intent(context, CreateEventActivity::class.java)
-                                )
+                                creating = true
                             }
                     }
                 )
@@ -172,11 +172,7 @@ private fun EventsScreen(events: MutableList<Event>) {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             ExtendedFloatingActionButton(
-                onClick = {
-                    context.startActivity(
-                        android.content.Intent(context, CreateEventActivity::class.java)
-                    )
-                },
+                onClick = { creating = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Event") },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -201,7 +197,7 @@ private fun EventsScreen(events: MutableList<Event>) {
             EventDialog(
                 initial = event,
                 onDismiss = { editingIndex = null },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, _ ->
                     editingIndex = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
@@ -228,6 +224,32 @@ private fun EventsScreen(events: MutableList<Event>) {
                         editingIndex = null
                     }
                 }
+            )
+        }
+
+        if (creating) {
+            EventDialog(
+                initial = Event(title = "", description = ""),
+                onDismiss = { creating = false },
+                onSave = { title, desc, date, addr, notif ->
+                    creating = false
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).eventDao()
+                        val event = Event(title = title, description = desc, date = date, address = addr)
+                        notif?.let { (h, m) ->
+                            event.setNotificationTime(h, m)
+                            scheduleEventNotification(context, title, desc, h, m, date)
+                        }
+                        withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
+                        events.add(event)
+                        Toast.makeText(
+                            context,
+                            if (notif != null) "Event created with notification scheduled!" else "Event created!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                includeNotification = true
             )
         }
 

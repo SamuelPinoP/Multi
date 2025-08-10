@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
 import com.example.multi.util.occursOn
+import android.widget.Toast
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -98,6 +99,7 @@ private fun KizCalendarScreen() {
     var showDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     var editingEvent by remember { mutableStateOf<Event?>(null) }
+    var creating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -238,11 +240,7 @@ private fun KizCalendarScreen() {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             ExtendedFloatingActionButton(
-                onClick = {
-                    context.startActivity(
-                        android.content.Intent(context, CreateEventActivity::class.java)
-                    )
-                },
+                onClick = { creating = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Event") },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -317,7 +315,7 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = event,
                 onDismiss = { editingEvent = null },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, _ ->
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
@@ -350,6 +348,32 @@ private fun KizCalendarScreen() {
                         }
                     }
                 }
+            )
+        }
+
+        if (creating) {
+            EventDialog(
+                initial = Event(title = "", description = ""),
+                onDismiss = { creating = false },
+                onSave = { title, desc, date, addr, notif ->
+                    creating = false
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).eventDao()
+                        val event = Event(title = title, description = desc, date = date, address = addr)
+                        notif?.let { (h, m) ->
+                            event.setNotificationTime(h, m)
+                            scheduleEventNotification(context, title, desc, h, m, date)
+                        }
+                        withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
+                        events.add(event)
+                        Toast.makeText(
+                            context,
+                            if (notif != null) "Event created with notification scheduled!" else "Event created!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                includeNotification = true
             )
         }
     }
