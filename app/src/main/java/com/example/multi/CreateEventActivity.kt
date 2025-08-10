@@ -60,6 +60,9 @@ import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.ThemePreferences
 import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -276,7 +279,7 @@ private fun CreateEventScreen(activity: ComponentActivity) {
                     if (title.isNotBlank() && notificationTime != null) {
                         scope.launch {
                             val (hour, minute) = notificationTime!!
-                            val success = scheduleEventNotification(activity, title, description, hour, minute)
+                            val success = scheduleEventNotification(activity, title, description, selectedDate, hour, minute)
                             if (success) {
                                 val dao = EventDatabase.getInstance(context).eventDao()
                                 val event = Event(
@@ -367,15 +370,23 @@ private fun CreateEventScreen(activity: ComponentActivity) {
 }
 
 /**
- * Schedules a notification for the event at the specified time on the same day.
+ * Schedules a notification for the event at the specified date and time.
  * @param activity The ComponentActivity context to check permissions and launch settings
  * @param title The event title
  * @param description The event description
+ * @param date ISO-8601 formatted date string (yyyy-MM-dd) or null for today
  * @param hour The hour for the notification (24-hour format)
  * @param minute The minute for the notification
  * @return true if scheduling was successful, false otherwise
  */
-private fun scheduleEventNotification(activity: ComponentActivity, title: String, description: String, hour: Int, minute: Int): Boolean {
+private fun scheduleEventNotification(
+    activity: ComponentActivity,
+    title: String,
+    description: String,
+    date: String?,
+    hour: Int,
+    minute: Int
+): Boolean {
     val alarmManager = activity.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     // Check for SCHEDULE_EXACT_ALARM permission on Android 12+
@@ -406,14 +417,28 @@ private fun scheduleEventNotification(activity: ComponentActivity, title: String
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Calculate the notification time for today
+        // Calculate the notification time, defaulting to today if date is null
         val calendar = Calendar.getInstance().apply {
+            if (date != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val localDate = LocalDate.parse(date)
+                    set(Calendar.YEAR, localDate.year)
+                    set(Calendar.MONTH, localDate.monthValue - 1)
+                    set(Calendar.DAY_OF_MONTH, localDate.dayOfMonth)
+                } else {
+                    val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    val parsed = fmt.parse(date)
+                    if (parsed != null) {
+                        time = parsed
+                    }
+                }
+            }
             set(Calendar.HOUR_OF_DAY, hour)
             set(Calendar.MINUTE, minute)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
 
-            // If the time has already passed today, schedule for tomorrow
+            // If the time has already passed, schedule for the next day
             if (timeInMillis <= System.currentTimeMillis()) {
                 add(Calendar.DAY_OF_MONTH, 1)
             }
