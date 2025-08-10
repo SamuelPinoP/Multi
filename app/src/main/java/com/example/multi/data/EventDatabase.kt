@@ -27,6 +27,7 @@ data class EventEntity(
     val description: String,
     val date: String?,
     val address: String?,
+    val repeatDays: String? = null, // Comma-separated Calendar.DAY_OF_WEEK values
     val notificationHour: Int? = null,  // Hour for notification (0-23)
     val notificationMinute: Int? = null, // Minute for notification (0-59)
     val notificationEnabled: Boolean = false // Whether notification is enabled for this event
@@ -186,7 +187,7 @@ interface TrashedEventDao {
         TrashedEventEntity::class,
         DailyCompletionEntity::class
     ],
-    version = 15  // Incremented from 14 to 15 due to schema change
+    version = 16  // Incremented to handle repeatDays field addition
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -224,6 +225,7 @@ fun EventEntity.toModel() = Event(
     description = description,
     date = date,
     address = address,
+    repeatDays = repeatDays,
     notificationHour = notificationHour,
     notificationMinute = notificationMinute,
     notificationEnabled = notificationEnabled
@@ -235,6 +237,7 @@ fun Event.toEntity() = EventEntity(
     description = description,
     date = date,
     address = address,
+    repeatDays = repeatDays,
     notificationHour = notificationHour,
     notificationMinute = notificationMinute,
     notificationEnabled = notificationEnabled
