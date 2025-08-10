@@ -99,6 +99,7 @@ private fun KizCalendarScreen() {
     val sheetState = rememberModalBottomSheetState()
     var editingEvent by remember { mutableStateOf<Event?>(null) }
     val scope = rememberCoroutineScope()
+    var showCreateDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -238,11 +239,7 @@ private fun KizCalendarScreen() {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             ExtendedFloatingActionButton(
-                onClick = {
-                    context.startActivity(
-                        android.content.Intent(context, CreateEventActivity::class.java)
-                    )
-                },
+                onClick = { showCreateDialog = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Event") },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -349,6 +346,16 @@ private fun KizCalendarScreen() {
                             events.removeAt(idx)
                         }
                     }
+                }
+            )
+        }
+
+        if (showCreateDialog) {
+            CreateEventDialog(
+                onDismiss = { showCreateDialog = false },
+                onEventCreated = { newEvent ->
+                    events.add(newEvent)
+                    showCreateDialog = false
                 }
             )
         }

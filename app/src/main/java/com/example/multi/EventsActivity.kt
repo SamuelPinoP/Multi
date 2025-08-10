@@ -74,6 +74,7 @@ private fun EventsScreen(events: MutableList<Event>) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
+    var showCreateDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -156,9 +157,7 @@ private fun EventsScreen(events: MutableList<Event>) {
                     onClick = { offset ->
                         annotated.getStringAnnotations("ADD", offset, offset)
                             .firstOrNull()?.let {
-                                context.startActivity(
-                                    android.content.Intent(context, CreateEventActivity::class.java)
-                                )
+                                showCreateDialog = true
                             }
                     }
                 )
@@ -172,11 +171,7 @@ private fun EventsScreen(events: MutableList<Event>) {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             ExtendedFloatingActionButton(
-                onClick = {
-                    context.startActivity(
-                        android.content.Intent(context, CreateEventActivity::class.java)
-                    )
-                },
+                onClick = { showCreateDialog = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Event") },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -227,6 +222,16 @@ private fun EventsScreen(events: MutableList<Event>) {
                         events.removeAt(index)
                         editingIndex = null
                     }
+                }
+            )
+        }
+
+        if (showCreateDialog) {
+            CreateEventDialog(
+                onDismiss = { showCreateDialog = false },
+                onEventCreated = { event ->
+                    events.add(event)
+                    showCreateDialog = false
                 }
             )
         }
