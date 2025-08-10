@@ -76,6 +76,8 @@ fun CalendarMenuScreen() {
     val context = LocalContext.current
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var createDate by remember { mutableStateOf<String?>(null) }
 
     if (showPicker) {
         DatePickerDialog(
@@ -84,7 +86,7 @@ fun CalendarMenuScreen() {
                 TextButton(onClick = {
                     showPicker = false
                     pickerState.selectedDateMillis?.let { millis ->
-                        val dateStr = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        createDate = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             java.time.Instant.ofEpochMilli(millis)
                                 .atZone(java.time.ZoneOffset.UTC)
                                 .toLocalDate()
@@ -93,9 +95,7 @@ fun CalendarMenuScreen() {
                             val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                             fmt.format(Date(millis))
                         }
-                        val intent = Intent(context, CreateEventActivity::class.java)
-                        intent.putExtra(EXTRA_DATE, dateStr)
-                        context.startActivity(intent)
+                        showCreateDialog = true
                     }
                 }) { Text("OK") }
             },
@@ -171,6 +171,14 @@ fun CalendarMenuScreen() {
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+        )
+    }
+
+    if (showCreateDialog) {
+        CreateEventDialog(
+            onDismiss = { showCreateDialog = false },
+            onCreated = { _: Event -> showCreateDialog = false },
+            initialDate = createDate
         )
     }
 }
