@@ -19,10 +19,16 @@
         tools:targetApi="35">
 
         <!-- THIS IS WHERE THE RECEIVER SHOULD BE PLACED -->
+        <!--
+             The notification receiver needs to be exported so that AlarmManager
+             can trigger the broadcast even when the app process is not running.
+             Using an exported receiver keeps the broadcast explicit while
+             allowing the system service to deliver it.
+        -->
         <receiver
             android:name=".NotificationReceiver"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="true" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
