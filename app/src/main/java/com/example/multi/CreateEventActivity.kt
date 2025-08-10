@@ -1,15 +1,10 @@
 package com.example.multi
 
 import android.Manifest
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.app.TimePickerDialog
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -276,7 +271,7 @@ private fun CreateEventScreen(activity: ComponentActivity) {
                     if (title.isNotBlank() && notificationTime != null) {
                         scope.launch {
                             val (hour, minute) = notificationTime!!
-                            val success = scheduleEventNotification(activity, title, description, hour, minute, selectedDate)
+                            val success = scheduleEventNotification(activity, title, description, hour, minute, previewDate)
                             if (success) {
                                 val dao = EventDatabase.getInstance(context).eventDao()
                                 val event = Event(
@@ -363,100 +358,5 @@ private fun CreateEventScreen(activity: ComponentActivity) {
         ) {
             DatePicker(state = pickerState)
         }
-    }
-}
-
-/**
- * Schedules a notification for the event at the specified date and time.
- * @param activity The ComponentActivity context to check permissions and launch settings
- * @param title The event title
- * @param description The event description
- * @param hour The hour for the notification (24-hour format)
- * @param minute The minute for the notification
- * @param date Optional date string in the format `yyyy-MM-dd` specifying the day of the event.
- *             If null or invalid, the notification is scheduled for the next occurrence of the time.
- * @return true if scheduling was successful, false otherwise
- */
-private fun scheduleEventNotification(
-    activity: ComponentActivity,
-    title: String,
-    description: String,
-    hour: Int,
-    minute: Int,
-    date: String?
-): Boolean {
-    val alarmManager = activity.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
-    // Check for SCHEDULE_EXACT_ALARM permission on Android 12+
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        if (!alarmManager.canScheduleExactAlarms()) {
-            // Direct user to settings to grant permission
-            val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-            activity.startActivity(intent)
-            Toast.makeText(activity, "Please grant 'Alarms & reminders' permission to schedule exact notifications.", Toast.LENGTH_LONG).show()
-            return false
-        }
-    }
-
-    return try {
-        val intent = Intent(activity, NotificationReceiver::class.java).apply {
-            putExtra("title", title)
-            putExtra("description", description)
-            putExtra("event_type", "event_reminder")
-        }
-
-        // Create a unique request code based on current time and event details
-        val requestCode = (System.currentTimeMillis() + title.hashCode()).toInt()
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            activity,
-            requestCode,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Calculate the notification time for the given date or the next occurrence
-        val calendar = Calendar.getInstance().apply {
-            if (!date.isNullOrBlank()) {
-                val parts = date.split("-")
-                if (parts.size == 3) {
-                    try {
-                        set(Calendar.YEAR, parts[0].toInt())
-                        set(Calendar.MONTH, parts[1].toInt() - 1)
-                        set(Calendar.DAY_OF_MONTH, parts[2].toInt())
-                    } catch (_: NumberFormatException) {
-                        // If parsing fails, keep the current date
-                    }
-                }
-            }
-
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-
-            // If the scheduled time is in the past, move to the next day
-            if (timeInMillis <= System.currentTimeMillis()) {
-                add(Calendar.DAY_OF_MONTH, 1)
-            }
-        }
-
-        // Use setExactAndAllowWhileIdle for better reliability on newer Android versions
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-        } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-        }
-
-        true
-    } catch (e: SecurityException) {
-        // This catch block handles cases where permission might still be an issue
-        e.printStackTrace()
-        Toast.makeText(activity, "SecurityException: Failed to schedule notification. Check permissions.", Toast.LENGTH_LONG).show()
-        false
-    } catch (e: Exception) {
-        e.printStackTrace()
-        Toast.makeText(activity, "Error scheduling notification: ${e.message}", Toast.LENGTH_LONG).show()
-        false
     }
 }
