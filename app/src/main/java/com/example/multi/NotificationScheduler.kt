@@ -107,3 +107,38 @@ fun scheduleEventNotification(
         false
     }
 }
+
+/**
+ * Schedules a daily reminder at 11:00 AM for pending daily activities.
+ */
+fun scheduleDailyActivityReminder(context: Context) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+        return
+    }
+
+    val intent = Intent(context, NotificationReceiver::class.java).apply {
+        putExtra("event_type", "daily_reminder")
+    }
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        "daily_reminder".hashCode(),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    val calendar = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 11)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+        if (timeInMillis <= System.currentTimeMillis()) {
+            add(Calendar.DAY_OF_MONTH, 1)
+        }
+    }
+    alarmManager.setRepeating(
+        AlarmManager.RTC_WAKEUP,
+        calendar.timeInMillis,
+        AlarmManager.INTERVAL_DAY,
+        pendingIntent
+    )
+}

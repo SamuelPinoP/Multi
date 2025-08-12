@@ -8,6 +8,12 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 const val EVENT_CHANNEL_ID = "event_channel"
 const val EVENT_CHANNEL_NAME = "Event Reminders"
@@ -27,19 +33,19 @@ class NotificationReceiver : BroadcastReceiver() {
         val eventType = intent.getStringExtra("event_type") ?: "general"
 
         // Create the notification
-        val notification = when (eventType) {
+        val builder = when (eventType) {
             "event_reminder" -> createEventReminderNotification(context, title, description)
+            "daily_reminder" -> createDailyReminderNotification(context)
             else -> createGeneralNotification(context, title, description)
         }
 
-        // Generate a unique notification ID based on the current time
-        val notificationId = System.currentTimeMillis().toInt()
-
-        try {
-            NotificationManagerCompat.from(context).notify(notificationId, notification.build())
-        } catch (e: SecurityException) {
-            // Handle the case where notification permission is not granted
-            e.printStackTrace()
+        builder?.let {
+            val notificationId = System.currentTimeMillis().toInt()
+            try {
+                NotificationManagerCompat.from(context).notify(notificationId, it.build())
+            } catch (e: SecurityException) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -77,6 +83,30 @@ class NotificationReceiver : BroadcastReceiver() {
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_EVENT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+    }
+
+    private fun createDailyReminderNotification(context: Context): NotificationCompat.Builder? {
+        val pending = runBlocking {
+            val db = EventDatabase.getInstance(context)
+            val dao = db.weeklyGoalDao()
+            withContext(Dispatchers.IO) { dao.getGoals() }
+                .map { it.toModel() }
+                .filter {
+                    val todayIndex = LocalDate.now().dayOfWeek.value % 7
+                    it.weekNumber == currentWeek() && it.dayStates.getOrNull(todayIndex) == '-'
+                }
+                .map { it.header }
+        }
+        if (pending.isEmpty()) return null
+        val content = pending.joinToString(", ")
+        return NotificationCompat.Builder(context, EVENT_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Pending Daily Activities")
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
     }
 
     /**
