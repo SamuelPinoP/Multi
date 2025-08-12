@@ -8,6 +8,7 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.core.content.FileProvider
+import androidx.core.text.HtmlCompat
 import com.example.multi.Note
 import java.io.File
 import java.io.FileOutputStream
@@ -35,8 +36,9 @@ fun Note.writeToPdf(context: Context): File {
     headerLayout.draw(canvas)
     canvas.restore()
 
+    val plain = HtmlCompat.fromHtml(content, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
     val bodyLayout = StaticLayout.Builder.obtain(
-        content, 0, content.length, bodyPaint, width
+        plain, 0, plain.length, bodyPaint, width
     ).setAlignment(Layout.Alignment.ALIGN_NORMAL).build()
     canvas.save()
     canvas.translate(40f, 40f + headerLayout.height + 20f)

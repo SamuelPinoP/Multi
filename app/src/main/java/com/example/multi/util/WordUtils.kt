@@ -3,6 +3,7 @@ package com.example.multi.util
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
+import androidx.core.text.HtmlCompat
 import com.example.multi.Note
 import org.apache.poi.xwpf.usermodel.XWPFDocument
 import java.io.File
@@ -20,7 +21,8 @@ fun Note.writeToDocx(context: Context): File {
     headerRun.setText(header.ifBlank { "Note" })
     val bodyPara = document.createParagraph()
     val bodyRun = bodyPara.createRun()
-    bodyRun.setText(content)
+    val plain = HtmlCompat.fromHtml(content, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+    bodyRun.setText(plain)
     FileOutputStream(file).use { document.write(it) }
     document.close()
     return file
