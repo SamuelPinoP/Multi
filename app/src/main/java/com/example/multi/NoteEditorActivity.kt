@@ -22,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -38,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,9 +78,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     private val textSizeState = mutableIntStateOf(20)
     private val showSizeDialogState = mutableStateOf(false)
+    private val textColorState = mutableStateOf(Color.Unspecified)
+    private val showColorDialogState = mutableStateOf(false)
 
     private var textSize by textSizeState
     private var showSizeDialog by showSizeDialogState
+    private var textColor by textColorState
+    private var showColorDialog by showColorDialogState
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
@@ -112,6 +118,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
+            var textColor by textColorState
+            var showColorDialog by showColorDialogState
+            val resolvedColor = if (textColor == Color.Unspecified) MaterialTheme.colorScheme.onSurface else textColor
             
             val density = LocalDensity.current
 
@@ -212,7 +221,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     }
                                 },
                             textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = resolvedColor,
                                 fontSize = textSize.sp
                             ),
                             keyboardOptions = KeyboardOptions.Default.copy(
@@ -253,7 +262,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     }
                                 },
                             textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = resolvedColor,
                                 fontSize = textSize.sp
                             ),
                             keyboardOptions = KeyboardOptions.Default.copy(
@@ -265,7 +274,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
 
                 if (!readOnly) {
-                    // Top bar actions handle share and delete. Only dialog is shown here.
+                    // Top bar actions handle share and delete. Only dialogs are shown here.
                     if (showSizeDialog) {
                         AlertDialog(
                             onDismissRequest = { showSizeDialog = false },
@@ -286,6 +295,38 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                                 .padding(vertical = 4.dp)
                                         ) {
                                             Text("${size}sp")
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
+                    if (showColorDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showColorDialog = false },
+                            confirmButton = {
+                                TextButton(onClick = { showColorDialog = false }) { Text("Close") }
+                            },
+                            title = { Text("Select Text Color") },
+                            text = {
+                                Column {
+                                    listOf(
+                                        Color.Black to "Black",
+                                        Color.Red to "Red",
+                                        Color.Green to "Green",
+                                        Color.Blue to "Blue"
+                                    ).forEach { (c, name) ->
+                                        Button(
+                                            onClick = {
+                                                textColor = c
+                                                showColorDialog = false
+                                            },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = c, contentColor = Color.White)
+                                        ) {
+                                            Text(name)
                                         }
                                     }
                                 }
@@ -328,6 +369,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
             onClick = {
                 onDismiss()
                 showSizeDialog = true
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Text Color") },
+            onClick = {
+                onDismiss()
+                showColorDialog = true
             }
         )
         DropdownMenuItem(

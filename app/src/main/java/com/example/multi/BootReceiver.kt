@@ -28,6 +28,7 @@ class BootReceiver : BroadcastReceiver() {
                         it.date
                     )
                 }
+                scheduleDailyGoalReminder(context)
             }
         }
     }
