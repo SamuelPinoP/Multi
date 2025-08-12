@@ -8,10 +8,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import android.view.LayoutInflater
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -126,7 +126,7 @@ fun CreateEventDialog(
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
                                 val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
                                 context.startActivity(intent)
-                                Toast.makeText(context, "Please grant 'Alarms & reminders' permission to schedule exact notifications.", Toast.LENGTH_LONG).show()
+                                showStyledToast(context, "Please grant 'Alarms & reminders' permission to schedule exact notifications.")
                             } else {
                                 val success = scheduleEventNotification(context, title, description, hour, minute, previewDate)
                                 if (success) {
@@ -139,10 +139,10 @@ fun CreateEventDialog(
                                     ).apply { setNotificationTime(hour, minute) }
                                     val id = withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
                                     onCreated(event.copy(id = id))
-                                    Toast.makeText(context, "Event created with notification scheduled!", Toast.LENGTH_SHORT).show()
+                                    showStyledToast(context, "Event created with notification scheduled!")
                                     onDismiss()
                                 } else {
-                                    Toast.makeText(context, "Failed to schedule notification", Toast.LENGTH_SHORT).show()
+                                    showStyledToast(context, "Failed to schedule notification")
                                 }
                             }
                         }
@@ -166,7 +166,7 @@ fun CreateEventDialog(
                                 )
                                 val id = withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
                                 onCreated(event.copy(id = id))
-                                Toast.makeText(context, "Event created without notification!", Toast.LENGTH_SHORT).show()
+                                showStyledToast(context, "Event created without notification!")
                                 onDismiss()
                             }
                         }
@@ -213,38 +213,40 @@ fun CreateEventDialog(
                     previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     val selectedColor = MaterialTheme.colorScheme.primary
                     val unselectedColor = MaterialTheme.colorScheme.surfaceVariant
-                    Button(
+                    OutlinedButton(
                         onClick = { repeatOption = "Every" },
-                        colors = ButtonDefaults.buttonColors(
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
                             containerColor = if (repeatOption == "Every") selectedColor else unselectedColor
                         )
                     ) { Text("Every") }
-                    Button(
+                    OutlinedButton(
                         onClick = { repeatOption = "Every other" },
-                        colors = ButtonDefaults.buttonColors(
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
                             containerColor = if (repeatOption == "Every other") selectedColor else unselectedColor
                         )
                     ) { Text("Every Other") }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                val scrollState = rememberScrollState()
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(scrollState),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     val letters = listOf("S", "M", "T", "W", "T", "F", "S")
-                    for (i in 0..6) {
+                    letters.forEachIndexed { i, letter ->
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Checkbox(
                                 checked = dayChecks[i],
                                 onCheckedChange = { dayChecks[i] = it }
                             )
-                            Text(letters[i])
+                            Text(letter)
                         }
                     }
                 }
@@ -301,6 +303,16 @@ fun CreateEventDialog(
         ) {
             DatePicker(state = pickerState)
         }
+    }
+}
+
+private fun showStyledToast(context: Context, message: String) {
+    val view = LayoutInflater.from(context).inflate(R.layout.modern_toast, null)
+    view.findViewById<TextView>(R.id.toast_text).text = message
+    with(Toast(context)) {
+        duration = Toast.LENGTH_SHORT
+        this.view = view
+        show()
     }
 }
 
