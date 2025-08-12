@@ -15,6 +15,7 @@ import com.example.multi.data.EventDatabase
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (Intent.ACTION_BOOT_COMPLETED == intent.action) {
+            scheduleDailyGoalsNotification(context)
             CoroutineScope(Dispatchers.Default).launch {
                 val dao = EventDatabase.getInstance(context).eventDao()
                 val events = withContext(Dispatchers.IO) { dao.getEvents() }

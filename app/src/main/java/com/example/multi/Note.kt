@@ -9,5 +9,6 @@ data class Note(
     var lastOpened: Long = System.currentTimeMillis(),
     var scroll: Int = 0,
     var cursor: Int = 0,
-    var attachmentUri: String? = null
+    var attachmentUri: String? = null,
+    var textColor: Int = 0xFF000000.toInt()
 )

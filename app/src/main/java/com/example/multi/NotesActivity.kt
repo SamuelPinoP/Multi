@@ -176,6 +176,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                                 intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
                                                 intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                intent.putExtra(EXTRA_NOTE_COLOR, note.textColor)
                                                 context.startActivity(intent)
                                             }
                                         }
@@ -266,7 +267,8 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 header = note.header,
                                                 content = note.content,
                                                 created = note.created,
-                                                attachmentUri = note.attachmentUri
+                                                attachmentUri = note.attachmentUri,
+                                                textColor = note.textColor
                                             ).toEntity()
                                         )
                                         noteDao.delete(note.toEntity())

@@ -22,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -41,6 +42,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import androidx.lifecycle.lifecycleScope
@@ -61,6 +64,7 @@ const val EXTRA_NOTE_READ_ONLY = "extra_note_read_only"
 const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
+const val EXTRA_NOTE_COLOR = "extra_note_color"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -76,9 +80,12 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     private val textSizeState = mutableIntStateOf(20)
     private val showSizeDialogState = mutableStateOf(false)
+    private val showColorDialogState = mutableStateOf(false)
 
     private var textSize by textSizeState
     private var showSizeDialog by showSizeDialogState
+    private var showColorDialog by showColorDialogState
+    private var noteColor: Int = Color.Black.toArgb()
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, 0L)
@@ -89,6 +96,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         currentText = intent.getStringExtra(EXTRA_NOTE_CONTENT) ?: ""
         noteScroll = intent.getIntExtra(EXTRA_NOTE_SCROLL, 0)
         noteCursor = intent.getIntExtra(EXTRA_NOTE_CURSOR, 0)
+        noteColor = intent.getIntExtra(EXTRA_NOTE_COLOR, Color.Black.toArgb())
         noteLastOpened = System.currentTimeMillis()
         if (noteId != 0L && !readOnly) {
             lifecycleScope.launch {
@@ -112,6 +120,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
+            var showColorDialog by showColorDialogState
+            var textColor by remember { mutableStateOf(Color(noteColor)) }
             
             val density = LocalDensity.current
 
@@ -124,6 +134,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     withContext(Dispatchers.IO) {
                         val formattedHeader = headerState.value.trim().capitalizeSentences()
                         val formattedContent = textState.value.text.trim().capitalizeSentences()
+                        val colorInt = textColor.toArgb()
                         if (noteId == 0L) {
                             noteId = dao.insert(
                                 Note(
@@ -133,7 +144,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
                                     cursor = textState.value.selection.start,
-                                    attachmentUri = null
+                                    attachmentUri = null,
+                                    textColor = colorInt
                                 ).toEntity()
                             )
                         } else {
@@ -146,10 +158,12 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     lastOpened = noteLastOpened,
                                     scroll = scrollState.value,
                                     cursor = textState.value.selection.start,
-                                    attachmentUri = null
+                                    attachmentUri = null,
+                                    textColor = colorInt
                                 ).toEntity()
                             )
                         }
+                        noteColor = colorInt
                     }
                     saved = true
                     currentHeader = headerState.value
@@ -212,7 +226,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     }
                                 },
                             textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = textColor,
                                 fontSize = textSize.sp
                             ),
                             keyboardOptions = KeyboardOptions.Default.copy(
@@ -253,7 +267,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     }
                                 },
                             textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = textColor,
                                 fontSize = textSize.sp
                             ),
                             keyboardOptions = KeyboardOptions.Default.copy(
@@ -292,6 +306,36 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             }
                         )
                     }
+                    if (showColorDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showColorDialog = false },
+                            confirmButton = {
+                                TextButton(onClick = { showColorDialog = false }) { Text("Close") }
+                            },
+                            title = { Text("Select Text Color") },
+                            text = {
+                                Column {
+                                    listOf(Color.Black, Color.Red, Color.Blue, Color(0xFF388E3C)).forEach { c ->
+                                        Button(
+                                            onClick = {
+                                                textColor = c
+                                                noteColor = c.toArgb()
+                                                saved = false
+                                                showColorDialog = false
+                                            },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = c,
+                                                contentColor = Color.White
+                                            )
+                                        ) { }
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
 
             }
@@ -318,7 +362,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     content = currentText,
                     created = noteCreated,
                     lastOpened = noteLastOpened,
-                    attachmentUri = null
+                    attachmentUri = null,
+                    textColor = noteColor
                 )
                 note.shareAsTxt(context)
             }
@@ -328,6 +373,13 @@ class NoteEditorActivity : SegmentActivity("Note") {
             onClick = {
                 onDismiss()
                 showSizeDialog = true
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Text Color") },
+            onClick = {
+                onDismiss()
+                showColorDialog = true
             }
         )
         DropdownMenuItem(
@@ -344,14 +396,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             content = currentText,
                             created = noteCreated,
                             lastOpened = noteLastOpened,
-                            attachmentUri = null
+                            attachmentUri = null,
+                            textColor = noteColor
                         )
                         db.trashedNoteDao().insert(
                             TrashedNote(
                                 header = note.header,
                                 content = note.content,
                                 created = note.created,
-                                attachmentUri = null
+                                attachmentUri = null,
+                                textColor = note.textColor
                             ).toEntity()
                         )
                         db.noteDao().delete(note.toEntity())
@@ -381,7 +435,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
                             cursor = noteCursor,
-                            attachmentUri = null
+                            attachmentUri = null,
+                            textColor = noteColor
                         ).toEntity()
                     )
                 } else {
@@ -394,7 +449,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             lastOpened = noteLastOpened,
                             scroll = noteScroll,
                             cursor = noteCursor,
-                            attachmentUri = null
+                            attachmentUri = null,
+                            textColor = noteColor
                         ).toEntity()
                     )
                 }

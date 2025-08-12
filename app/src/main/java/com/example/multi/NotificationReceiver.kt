@@ -8,6 +8,12 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.example.multi.data.EventDatabase
+import java.time.LocalDate
 
 const val EVENT_CHANNEL_ID = "event_channel"
 const val EVENT_CHANNEL_NAME = "Event Reminders"
@@ -29,17 +35,38 @@ class NotificationReceiver : BroadcastReceiver() {
         // Create the notification
         val notification = when (eventType) {
             "event_reminder" -> createEventReminderNotification(context, title, description)
+            "daily_goals" -> {
+                CoroutineScope(Dispatchers.Default).launch {
+                    val pending = withContext(Dispatchers.IO) {
+                        val today = LocalDate.now().dayOfWeek.value % 7
+                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                        dao.getGoals().filter { it.dayStates[today] == '-' }.map { it.header }
+                    }
+                    if (pending.isNotEmpty()) {
+                        val desc = pending.joinToString(", ")
+                        val builder = createGeneralNotification(context, "Daily Goals Reminder", desc)
+                        try {
+                            NotificationManagerCompat.from(context)
+                                .notify(System.currentTimeMillis().toInt(), builder.build())
+                        } catch (e: SecurityException) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+                null
+            }
             else -> createGeneralNotification(context, title, description)
         }
 
-        // Generate a unique notification ID based on the current time
-        val notificationId = System.currentTimeMillis().toInt()
-
-        try {
-            NotificationManagerCompat.from(context).notify(notificationId, notification.build())
-        } catch (e: SecurityException) {
-            // Handle the case where notification permission is not granted
-            e.printStackTrace()
+        if (notification != null) {
+            // Generate a unique notification ID based on the current time
+            val notificationId = System.currentTimeMillis().toInt()
+            try {
+                NotificationManagerCompat.from(context).notify(notificationId, notification.build())
+            } catch (e: SecurityException) {
+                // Handle the case where notification permission is not granted
+                e.printStackTrace()
+            }
         }
     }
 
