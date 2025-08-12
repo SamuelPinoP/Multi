@@ -7,5 +7,6 @@ data class TrashedNote(
     var content: String,
     var created: Long,
     var deleted: Long = System.currentTimeMillis(),
-    var attachmentUri: String? = null
+    var attachmentUri: String? = null,
+    var color: Int = 0xFF000000.toInt()
 )

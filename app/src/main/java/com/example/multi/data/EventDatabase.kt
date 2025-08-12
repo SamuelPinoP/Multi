@@ -63,7 +63,8 @@ data class NoteEntity(
     val lastOpened: Long,
     val scroll: Int = 0,
     val cursor: Int = 0,
-    val attachmentUri: String? = null
+    val attachmentUri: String? = null,
+    val color: Int = 0xFF000000.toInt()
 )
 
 @Entity(tableName = "trashed_notes")
@@ -73,7 +74,8 @@ data class TrashedNoteEntity(
     val content: String,
     val created: Long,
     val deleted: Long,
-    val attachmentUri: String? = null
+    val attachmentUri: String? = null,
+    val color: Int = 0xFF000000.toInt()
 )
 
 @Entity(tableName = "trashed_events")
@@ -186,7 +188,7 @@ interface TrashedEventDao {
         TrashedEventEntity::class,
         DailyCompletionEntity::class
     ],
-    version = 15  // Incremented from 14 to 15 due to schema change
+    version = 16  // Incremented from 15 to 16 due to schema change
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -253,16 +255,16 @@ fun WeeklyGoalRecord.toEntity() =
     WeeklyGoalRecordEntity(id, header, completed, frequency, weekStart, weekEnd, dayStates)
 
 fun NoteEntity.toModel() =
-    Note(id, header, content, created, lastOpened, scroll, cursor, attachmentUri)
+    Note(id, header, content, created, lastOpened, scroll, cursor, attachmentUri, color)
 
 fun Note.toEntity() =
-    NoteEntity(id, header, content, created, lastOpened, scroll, cursor, attachmentUri)
+    NoteEntity(id, header, content, created, lastOpened, scroll, cursor, attachmentUri, color)
 
 fun TrashedNoteEntity.toModel() =
-    TrashedNote(id, header, content, created, deleted, attachmentUri)
+    TrashedNote(id, header, content, created, deleted, attachmentUri, color)
 
 fun TrashedNote.toEntity() =
-    TrashedNoteEntity(id, header, content, created, deleted, attachmentUri)
+    TrashedNoteEntity(id, header, content, created, deleted, attachmentUri, color)
 
 fun TrashedEventEntity.toModel() = TrashedEvent(id, title, description, date, address, deleted)
 fun TrashedEvent.toEntity() = TrashedEventEntity(id, title, description, date, address, deleted)

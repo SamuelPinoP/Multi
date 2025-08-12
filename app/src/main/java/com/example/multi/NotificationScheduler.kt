@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import java.util.Calendar
 
+private const val DAILY_PENDING_REQUEST_CODE = 1001
 /**
  * Schedules notifications for events. Handles one-time and weekly repeating reminders.
  * Returns true if at least one alarm was scheduled.
@@ -106,4 +107,35 @@ fun scheduleEventNotification(
         e.printStackTrace()
         false
     }
+}
+
+fun scheduleDailyPendingNotification(context: Context) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+        return
+    }
+    val intent = Intent(context, NotificationReceiver::class.java).apply {
+        putExtra("event_type", "daily_pending")
+    }
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        DAILY_PENDING_REQUEST_CODE,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    val calendar = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 11)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+        if (timeInMillis <= System.currentTimeMillis()) {
+            add(Calendar.DAY_OF_MONTH, 1)
+        }
+    }
+    alarmManager.setRepeating(
+        AlarmManager.RTC_WAKEUP,
+        calendar.timeInMillis,
+        AlarmManager.INTERVAL_DAY,
+        pendingIntent
+    )
 }

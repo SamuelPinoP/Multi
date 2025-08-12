@@ -50,6 +50,7 @@ class TrashbinActivity : SegmentActivity("Trash") {
                         intent.putExtra(EXTRA_NOTE_CONTENT, it.content)
                         intent.putExtra(EXTRA_NOTE_CREATED, it.created)
                         intent.putExtra(EXTRA_NOTE_DELETED, it.deleted)
+                        intent.putExtra(EXTRA_NOTE_COLOR, it.color)
                         intent.putExtra(EXTRA_NOTE_READ_ONLY, true)
                         context.startActivity(intent)
                     }
@@ -64,7 +65,8 @@ class TrashbinActivity : SegmentActivity("Trash") {
                                 content = note.content,
                                 created = note.created,
                                 lastOpened = System.currentTimeMillis(),
-                                attachmentUri = note.attachmentUri
+                                attachmentUri = note.attachmentUri,
+                                color = note.color
                             ).toEntity()
                         )
                         db.trashedNoteDao().delete(note.toEntity())
