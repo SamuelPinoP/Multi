@@ -3,6 +3,7 @@ package com.example.multi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,11 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -35,8 +37,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -48,10 +48,19 @@ import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsTxt
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import android.widget.EditText
+import android.util.TypedValue
+import android.text.Editable
+import android.text.TextWatcher
+import android.text.style.ForegroundColorSpan
+import android.text.Spannable
+import androidx.core.text.HtmlCompat
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.delay
 
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
@@ -105,25 +114,17 @@ class NoteEditorActivity : SegmentActivity("Note") {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val scrollState = rememberScrollState(initial = noteScroll)
             val headerBringIntoView = remember { BringIntoViewRequester() }
-            val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
-            val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
-            var textSize by textSizeState
-            var showSizeDialog by showSizeDialogState
-            
-            val density = LocalDensity.current
+            val textHtmlState = remember { mutableStateOf(currentText) }
+            val editTextState = remember { mutableStateOf<EditText?>(null) }
 
-            LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
-            LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
-
-            LaunchedEffect(headerState.value, textState.value) {
-                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
+            LaunchedEffect(headerState.value, textHtmlState.value) {
+                if (!readOnly && !saved && (headerState.value.isNotBlank() || textHtmlState.value.isNotBlank())) {
                     val dao = EventDatabase.getInstance(context).noteDao()
                     withContext(Dispatchers.IO) {
                         val formattedHeader = headerState.value.trim().capitalizeSentences()
-                        val formattedContent = textState.value.text.trim().capitalizeSentences()
+                        val formattedContent = textHtmlState.value.trim()
                         if (noteId == 0L) {
                             noteId = dao.insert(
                                 Note(
@@ -131,8 +132,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     content = formattedContent,
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
-                                    scroll = scrollState.value,
-                                    cursor = textState.value.selection.start,
+                                    scroll = noteScroll,
+                                    cursor = noteCursor,
                                     attachmentUri = null
                                 ).toEntity()
                             )
@@ -144,8 +145,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     content = formattedContent,
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
-                                    scroll = scrollState.value,
-                                    cursor = textState.value.selection.start,
+                                    scroll = noteScroll,
+                                    cursor = noteCursor,
                                     attachmentUri = null
                                 ).toEntity()
                             )
@@ -153,9 +154,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     }
                     saved = true
                     currentHeader = headerState.value
-                    currentText = textState.value.text
-                    noteScroll = scrollState.value
-                    noteCursor = textState.value.selection.start
+                    currentText = textHtmlState.value
                 }
             }
 
@@ -167,7 +166,6 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(scrollState)
                         .imePadding()
                 ) {
                     Text(
@@ -224,42 +222,86 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
                     androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (textState.value.text.isEmpty()) {
-                            Text(
-                                text = "Start writing...",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        BasicTextField(
-                            value = textState.value,
-                            onValueChange = {
-                                val formatted = it.text.capitalizeSentences()
-                                textState.value = it.copy(text = formatted)
-                                currentText = formatted
-                                noteCursor = it.selection.start
-                                saved = false
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .bringIntoViewRequester(textBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            textBringIntoView.bringIntoView()
-                                        }
+                    AndroidView(
+                        factory = { ctx ->
+                            EditText(ctx).apply {
+                                setText(HtmlCompat.fromHtml(textHtmlState.value, HtmlCompat.FROM_HTML_MODE_LEGACY))
+                                setTextSize(TypedValue.COMPLEX_UNIT_SP, textSize.toFloat())
+                                setTextColor(MaterialTheme.colorScheme.onSurface.toArgb())
+                                setHintTextColor(MaterialTheme.colorScheme.onSurfaceVariant.toArgb())
+                                hint = "Start writing..."
+                                isEnabled = !readOnly
+                                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                                addTextChangedListener(object : TextWatcher {
+                                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                                    override fun afterTextChanged(s: Editable?) {
+                                        s ?: return
+                                        textHtmlState.value = HtmlCompat.toHtml(s, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
+                                        currentText = textHtmlState.value
+                                        noteCursor = selectionStart
+                                        saved = false
                                     }
-                                },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            )
+                                })
+                                viewTreeObserver.addOnScrollChangedListener { noteScroll = scrollY }
+                                post {
+                                    setSelection(noteCursor.coerceIn(0, text.length))
+                                    scrollY = noteScroll
+                                }
+                            }.also { editTextState.value = it }
+                        },
+                        update = { et ->
+                            et.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSize.toFloat())
+                            et.isEnabled = !readOnly
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    )
+
+                    if (!readOnly) {
+                        val colors = listOf(
+                            Color.Black,
+                            Color.DarkGray,
+                            Color.Gray,
+                            Color.Red,
+                            Color.Green,
+                            Color.Blue,
+                            Color.Yellow,
+                            Color.Cyan,
+                            Color.Magenta,
+                            Color(0xFFFFA500),
+                            Color(0xFF800080),
+                            Color(0xFF008080)
                         )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            colors.forEach { color ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .background(color)
+                                        .clickable {
+                                            val et = editTextState.value ?: return@clickable
+                                            val start = et.selectionStart
+                                            val end = et.selectionEnd
+                                            if (start < end) {
+                                                val span = ForegroundColorSpan(color.toArgb())
+                                                val spannable = et.text
+                                                spannable.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                                                textHtmlState.value = HtmlCompat.toHtml(spannable, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
+                                                currentText = textHtmlState.value
+                                                saved = false
+                                            }
+                                        }
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -371,7 +413,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             lifecycleScope.launch(Dispatchers.IO) {
                 val dao = EventDatabase.getInstance(applicationContext).noteDao()
                 val formattedHeader = header.capitalizeSentences()
-                val formattedText = text.capitalizeSentences()
+                val formattedText = text.trim()
                 if (noteId == 0L) {
                     dao.insert(
                         Note(

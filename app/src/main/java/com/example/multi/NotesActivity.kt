@@ -53,6 +53,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.toEntity
+import androidx.core.text.HtmlCompat
 
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
@@ -221,8 +222,9 @@ class NotesActivity : SegmentActivity("Notes") {
                                     val previewLines = mutableListOf<String>()
                                     val headerLine = note.header.trim()
                                     if (headerLine.isNotEmpty()) previewLines.add(headerLine)
+                                    val plainContent = HtmlCompat.fromHtml(note.content, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
                                     previewLines.addAll(
-                                        note.content.lines()
+                                        plainContent.lines()
                                             .map { it.trim() }
                                             .filter { it.isNotEmpty() }
                                     )
