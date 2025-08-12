@@ -1,7 +1,5 @@
 /*
 
-- Allow changing font color!
-
 - Add a remainders page that will allow to set alarms and remainders in specific days in the 
 Calendar.
 
@@ -18,6 +16,10 @@ item.
 entering the app. As a Remainder, only for active users.
 -----------------------------------------------------------------------------
 
+1- The keyboard still covers some of the note. If I put the cursor in the bottom of the note the
+keyboard doesn't adjust to not cover it until I type something. It should adjust right after I put
+the cursor there.
+
 
 5- Add Attach button in the events activity to attach notes to an specific event. It could be a new
 note or an existing one or even multiple of them. I must select the event first and then the note.
@@ -25,11 +27,6 @@ note or an existing one or even multiple of them. I must select the event first 
 */
 
 /*
-1- The keyboard still covers some of the note. If I put the cursor in the bottom of the note the
-keyboard doesn't adjust to not cover it until I type something. It should adjust right after I put
-the cursor there.
-
-
 4- Create a system that receives an intelligent command such as: Create event on Saturday 12. It
 will be camping with my friends Josh and Mara. Then it will add camping trip as header. Description
 given and the date given.
@@ -57,6 +54,4 @@ their families because that is the kind of app I would use.
 Failed tasks:
 - Stopping the keyboard from covering part of the note. This is possible!
 - Allowing the insertion of images in the notes. This is also possible!
-- Adding remainders to the events and sending notifications on specific times. This is also possible!
-
 */
