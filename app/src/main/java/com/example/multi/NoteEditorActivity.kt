@@ -1,57 +1,61 @@
 package com.example.multi
 
+import android.text.Editable
+import android.text.TextWatcher
+import android.text.style.ForegroundColorSpan
+import android.widget.EditText
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.text.HtmlCompat
+import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
-import androidx.lifecycle.lifecycleScope
 import com.example.multi.util.capitalizeSentences
-import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsTxt
-
+import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.delay
 
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
@@ -105,25 +109,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
         Surface(modifier = Modifier.fillMaxSize()) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val scrollState = rememberScrollState(initial = noteScroll)
-            val headerBringIntoView = remember { BringIntoViewRequester() }
-            val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
-            val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
-            var textSize by textSizeState
-            var showSizeDialog by showSizeDialogState
-            
-            val density = LocalDensity.current
+            var editText by remember { mutableStateOf<EditText?>(null) }
 
-            LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
-            LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
-
-            LaunchedEffect(headerState.value, textState.value) {
-                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
+            LaunchedEffect(headerState.value, currentText) {
+                val plain = HtmlCompat.fromHtml(currentText, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+                if (!readOnly && !saved && (headerState.value.isNotBlank() || plain.isNotBlank())) {
                     val dao = EventDatabase.getInstance(context).noteDao()
                     withContext(Dispatchers.IO) {
                         val formattedHeader = headerState.value.trim().capitalizeSentences()
-                        val formattedContent = textState.value.text.trim().capitalizeSentences()
+                        val formattedContent = currentText.trim()
                         if (noteId == 0L) {
                             noteId = dao.insert(
                                 Note(
@@ -131,8 +126,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     content = formattedContent,
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
-                                    scroll = scrollState.value,
-                                    cursor = textState.value.selection.start,
+                                    scroll = noteScroll,
+                                    cursor = noteCursor,
                                     attachmentUri = null
                                 ).toEntity()
                             )
@@ -144,8 +139,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                     content = formattedContent,
                                     created = noteCreated,
                                     lastOpened = noteLastOpened,
-                                    scroll = scrollState.value,
-                                    cursor = textState.value.selection.start,
+                                    scroll = noteScroll,
+                                    cursor = noteCursor,
                                     attachmentUri = null
                                 ).toEntity()
                             )
@@ -153,147 +148,160 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     }
                     saved = true
                     currentHeader = headerState.value
-                    currentText = textState.value.text
-                    noteScroll = scrollState.value
-                    noteCursor = textState.value.selection.start
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .imePadding()
-                ) {
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                Text(
+                    text = "Created: ${noteCreated.toDateString()}",
+                    style = MaterialTheme.typography.labelSmall
+                )
+                if (readOnly && noteDeleted != 0L) {
+                    val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
                     Text(
-                        text = "Created: ${noteCreated.toDateString()}",
+                        text = "Days remaining: $daysLeft",
                         style = MaterialTheme.typography.labelSmall
                     )
-                    if (readOnly && noteDeleted != 0L) {
-                        val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                Box {
+                    if (headerState.value.isEmpty()) {
                         Text(
-                            text = "Days remaining: $daysLeft",
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    Box {
-                        if (headerState.value.isEmpty()) {
-                            Text(
-                                text = "Header",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        BasicTextField(
-                            value = headerState.value,
-                            onValueChange = {
-                                if (it.lines().size <= 3) {
-                                    val formatted = it.capitalizeSentences()
-                                    headerState.value = formatted
-                                    currentHeader = formatted
-                                    saved = false
-                                }
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .bringIntoViewRequester(headerBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            headerBringIntoView.bringIntoView()
-                                        }
-                                    }
-                                },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
-                            ),
-                            maxLines = 3
+                            text = "Header",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-
-                    androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (textState.value.text.isEmpty()) {
-                            Text(
-                                text = "Start writing...",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        BasicTextField(
-                            value = textState.value,
-                            onValueChange = {
-                                val formatted = it.text.capitalizeSentences()
-                                textState.value = it.copy(text = formatted)
-                                currentText = formatted
-                                noteCursor = it.selection.start
+                    BasicTextField(
+                        value = headerState.value,
+                        onValueChange = {
+                            if (it.lines().size <= 3) {
+                                val formatted = it.capitalizeSentences()
+                                headerState.value = formatted
+                                currentHeader = formatted
                                 saved = false
-                            },
-                            enabled = !readOnly,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .bringIntoViewRequester(textBringIntoView)
-                                .onFocusEvent {
-                                    if (it.isFocused) {
-                                        scope.launch {
-                                            textBringIntoView.bringIntoView()
+                            }
+                        },
+                        enabled = !readOnly,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusEvent { },
+                        textStyle = TextStyle(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = textSize.sp
+                        ),
+                        keyboardOptions = KeyboardOptions.Default.copy(
+                            capitalization = KeyboardCapitalization.Sentences
+                        ),
+                        maxLines = 3
+                    )
+                }
+
+                androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                if (!readOnly) {
+                    val palette = listOf(
+                        Color.Black,
+                        Color.Red,
+                        Color.Green,
+                        Color.Blue,
+                        Color.Yellow,
+                        Color.Magenta,
+                        Color.Cyan,
+                        Color(0xFFFFA500),
+                        Color(0xFF800080),
+                        Color.Gray
+                    )
+                    Row(
+                        modifier = Modifier
+                            .horizontalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        palette.forEach { color ->
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(color)
+                                    .clickable {
+                                        editText?.let { et ->
+                                            val start = et.selectionStart
+                                            val end = et.selectionEnd
+                                            if (start < end) {
+                                                val span = ForegroundColorSpan(color.toArgb())
+                                                et.text.setSpan(span, start, end, Editable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                                                currentText = HtmlCompat.toHtml(et.text, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
+                                                noteCursor = et.selectionStart
+                                                noteScroll = et.scrollY
+                                                saved = false
+                                            }
                                         }
                                     }
-                                },
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
-                            ),
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                capitalization = KeyboardCapitalization.Sentences
                             )
-                        )
+                        }
                     }
                 }
 
+                AndroidView(
+                    factory = { ctx ->
+                        EditText(ctx).apply {
+                            setText(HtmlCompat.fromHtml(currentText, HtmlCompat.FROM_HTML_MODE_LEGACY))
+                            textSize = textSize.toFloat()
+                            if (readOnly) isEnabled = false
+                            setSelection(noteCursor.coerceIn(0, text.length))
+                            post { scrollY = noteScroll }
+                            addTextChangedListener(object : TextWatcher {
+                                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                                override fun afterTextChanged(s: Editable?) {
+                                    if (s != null) {
+                                        currentText = HtmlCompat.toHtml(s, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
+                                        noteCursor = selectionStart
+                                        noteScroll = scrollY
+                                        saved = false
+                                    }
+                                }
+                            })
+                        }
+                    },
+                    update = { et ->
+                        editText = et
+                        if (et.textSize != textSize.toFloat()) {
+                            et.textSize = textSize.toFloat()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                )
 
-                if (!readOnly) {
-                    // Top bar actions handle share and delete. Only dialog is shown here.
-                    if (showSizeDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showSizeDialog = false },
-                            confirmButton = {
-                                TextButton(onClick = { showSizeDialog = false }) { Text("Close") }
-                            },
-                            title = { Text("Select Text Size") },
-                            text = {
-                                Column {
-                                    listOf(16, 20, 24, 28, 32).forEach { size ->
-                                        Button(
-                                            onClick = {
-                                                textSize = size
-                                                showSizeDialog = false
-                                            },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 4.dp)
-                                        ) {
-                                            Text("${size}sp")
-                                        }
+                if (!readOnly && showSizeDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showSizeDialog = false },
+                        confirmButton = {
+                            TextButton(onClick = { showSizeDialog = false }) { Text("Close") }
+                        },
+                        title = { Text("Select Text Size") },
+                        text = {
+                            Column {
+                                listOf(16, 20, 24, 28, 32).forEach { size ->
+                                    Button(
+                                        onClick = {
+                                            textSize = size
+                                            showSizeDialog = false
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                    ) {
+                                        Text("${size}sp")
                                     }
                                 }
                             }
-                        )
-                    }
+                        }
+                    )
                 }
-
             }
         }
     }
@@ -364,14 +372,14 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
     override fun onStop() {
         super.onStop()
-        val text = currentText.trim()
+        val textPlain = HtmlCompat.fromHtml(currentText, HtmlCompat.FROM_HTML_MODE_LEGACY).toString().trim()
         val header = currentHeader.trim()
-        if (!readOnly && !saved && (text.isNotEmpty() || header.isNotEmpty())) {
+        if (!readOnly && !saved && (textPlain.isNotEmpty() || header.isNotEmpty())) {
             saved = true
             lifecycleScope.launch(Dispatchers.IO) {
                 val dao = EventDatabase.getInstance(applicationContext).noteDao()
                 val formattedHeader = header.capitalizeSentences()
-                val formattedText = text.capitalizeSentences()
+                val formattedText = currentText.trim()
                 if (noteId == 0L) {
                     dao.insert(
                         Note(

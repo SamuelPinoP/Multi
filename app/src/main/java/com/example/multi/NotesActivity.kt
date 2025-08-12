@@ -53,6 +53,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.toEntity
+import androidx.core.text.HtmlCompat
 
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
@@ -206,27 +207,29 @@ class NotesActivity : SegmentActivity("Notes") {
                                     shape = CircleShape,
                                     color = MaterialTheme.colorScheme.primaryContainer,
                                     modifier = Modifier.size(40.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
-                                        M3Text(
-                                            text = initial,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
-                                }
+                                  ) {
+                                      Box(contentAlignment = Alignment.Center) {
+                                          val plain = HtmlCompat.fromHtml(note.content, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+                                          val initial = (note.header.ifBlank { plain }.trim().firstOrNull() ?: 'N').toString()
+                                          M3Text(
+                                              text = initial,
+                                              style = MaterialTheme.typography.titleMedium,
+                                              color = MaterialTheme.colorScheme.onPrimaryContainer
+                                          )
+                                      }
+                                  }
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    val previewLines = mutableListOf<String>()
-                                    val headerLine = note.header.trim()
-                                    if (headerLine.isNotEmpty()) previewLines.add(headerLine)
-                                    previewLines.addAll(
-                                        note.content.lines()
-                                            .map { it.trim() }
-                                            .filter { it.isNotEmpty() }
-                                    )
-                                    val previewText = previewLines.take(2).joinToString("\n")
+                                  Column(modifier = Modifier.weight(1f)) {
+                                      val previewLines = mutableListOf<String>()
+                                      val headerLine = note.header.trim()
+                                      if (headerLine.isNotEmpty()) previewLines.add(headerLine)
+                                      val plainContent = HtmlCompat.fromHtml(note.content, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+                                      previewLines.addAll(
+                                          plainContent.lines()
+                                              .map { it.trim() }
+                                              .filter { it.isNotEmpty() }
+                                      )
+                                      val previewText = previewLines.take(2).joinToString("\n")
                                     M3Text(
                                         text = previewText,
                                         style = MaterialTheme.typography.titleMedium,
