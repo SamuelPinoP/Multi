@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
@@ -52,6 +51,7 @@ import androidx.core.content.ContextCompat
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.util.showModernToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -117,43 +117,45 @@ fun CreateEventDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(
-                onClick = {
-                    if (title.isNotBlank() && notificationTime != null) {
-                        scope.launch {
-                            val (hour, minute) = notificationTime!!
-                            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-                                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                                context.startActivity(intent)
-                                Toast.makeText(context, "Please grant 'Alarms & reminders' permission to schedule exact notifications.", Toast.LENGTH_LONG).show()
-                            } else {
-                                val success = scheduleEventNotification(context, title, description, hour, minute, previewDate)
-                                if (success) {
-                                    val dao = EventDatabase.getInstance(context).eventDao()
-                                    val event = Event(
-                                        title = title,
-                                        description = description,
-                                        date = previewDate,
-                                        address = address
-                                    ).apply { setNotificationTime(hour, minute) }
-                                    val id = withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
-                                    onCreated(event.copy(id = id))
-                                    Toast.makeText(context, "Event created with notification scheduled!", Toast.LENGTH_SHORT).show()
-                                    onDismiss()
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = {
+                        if (title.isNotBlank() && notificationTime != null) {
+                            scope.launch {
+                                val (hour, minute) = notificationTime!!
+                                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                                    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                                    context.startActivity(intent)
+                                    context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
                                 } else {
-                                    Toast.makeText(context, "Failed to schedule notification", Toast.LENGTH_SHORT).show()
+                                    val success = scheduleEventNotification(context, title, description, hour, minute, previewDate)
+                                    if (success) {
+                                        val dao = EventDatabase.getInstance(context).eventDao()
+                                        val event = Event(
+                                            title = title,
+                                            description = description,
+                                            date = previewDate,
+                                            address = address
+                                        ).apply { setNotificationTime(hour, minute) }
+                                        val id = withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
+                                        onCreated(event.copy(id = id))
+                                        context.showModernToast("Event created with notification scheduled!")
+                                        onDismiss()
+                                    } else {
+                                        context.showModernToast("Failed to schedule notification")
+                                    }
                                 }
                             }
                         }
-                    }
-                },
-                enabled = title.isNotBlank() && notificationTime != null
-            ) { Text("Create Event with Notification") }
-        },
-        dismissButton = {
-            Row {
-                TextButton(
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = title.isNotBlank() && notificationTime != null
+                ) { Text("Create with Notification") }
+                OutlinedButton(
                     onClick = {
                         if (title.isNotBlank()) {
                             scope.launch {
@@ -166,14 +168,18 @@ fun CreateEventDialog(
                                 )
                                 val id = withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
                                 onCreated(event.copy(id = id))
-                                Toast.makeText(context, "Event created without notification!", Toast.LENGTH_SHORT).show()
+                                context.showModernToast("Event created without notification!")
                                 onDismiss()
                             }
                         }
                     },
+                    modifier = Modifier.fillMaxWidth(),
                     enabled = title.isNotBlank()
-                ) { Text("Create (No Notification)") }
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                ) { Text("Create without Notification") }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Cancel") }
             }
         },
         text = {
