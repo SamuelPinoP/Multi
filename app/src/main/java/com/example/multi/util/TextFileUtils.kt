@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import com.example.multi.Note
 import java.io.File
+import android.text.Html
 
 /** Utility to export a [Note] as a plain text file. */
 fun Note.writeToTxt(context: Context): File {
@@ -13,9 +14,10 @@ fun Note.writeToTxt(context: Context): File {
     file.writeText(buildString {
         val headerLine = header.ifBlank { "Note" }
         append(headerLine)
-        if (content.isNotBlank()) {
+        val plain = Html.fromHtml(content, Html.FROM_HTML_MODE_LEGACY).toString()
+        if (plain.isNotBlank()) {
             append('\n')
-            append(content)
+            append(plain)
         }
     })
     return file

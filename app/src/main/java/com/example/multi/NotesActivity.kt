@@ -53,6 +53,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.toEntity
+import android.text.Html
 
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
@@ -208,7 +209,8 @@ class NotesActivity : SegmentActivity("Notes") {
                                     modifier = Modifier.size(40.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
+                                        val plainContent = Html.fromHtml(note.content, Html.FROM_HTML_MODE_LEGACY).toString()
+                                        val initial = (note.header.ifBlank { plainContent }.trim().firstOrNull() ?: 'N').toString()
                                         M3Text(
                                             text = initial,
                                             style = MaterialTheme.typography.titleMedium,
@@ -221,8 +223,9 @@ class NotesActivity : SegmentActivity("Notes") {
                                     val previewLines = mutableListOf<String>()
                                     val headerLine = note.header.trim()
                                     if (headerLine.isNotEmpty()) previewLines.add(headerLine)
+                                    val plainContent = Html.fromHtml(note.content, Html.FROM_HTML_MODE_LEGACY).toString()
                                     previewLines.addAll(
-                                        note.content.lines()
+                                        plainContent.lines()
                                             .map { it.trim() }
                                             .filter { it.isNotEmpty() }
                                     )

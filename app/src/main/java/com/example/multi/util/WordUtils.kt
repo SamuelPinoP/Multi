@@ -7,6 +7,7 @@ import com.example.multi.Note
 import org.apache.poi.xwpf.usermodel.XWPFDocument
 import java.io.File
 import java.io.FileOutputStream
+import android.text.Html
 
 /** Utility to export a [Note] as a Word document. */
 fun Note.writeToDocx(context: Context): File {
@@ -20,7 +21,8 @@ fun Note.writeToDocx(context: Context): File {
     headerRun.setText(header.ifBlank { "Note" })
     val bodyPara = document.createParagraph()
     val bodyRun = bodyPara.createRun()
-    bodyRun.setText(content)
+    val plainContent = Html.fromHtml(content, Html.FROM_HTML_MODE_LEGACY).toString()
+    bodyRun.setText(plainContent)
     FileOutputStream(file).use { document.write(it) }
     document.close()
     return file

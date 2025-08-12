@@ -11,6 +11,7 @@ import androidx.core.content.FileProvider
 import com.example.multi.Note
 import java.io.File
 import java.io.FileOutputStream
+import android.text.Html
 
 /** Utility to export a [Note] as a PDF document. */
 fun Note.writeToPdf(context: Context): File {
@@ -35,8 +36,9 @@ fun Note.writeToPdf(context: Context): File {
     headerLayout.draw(canvas)
     canvas.restore()
 
+    val plainContent = Html.fromHtml(content, Html.FROM_HTML_MODE_LEGACY).toString()
     val bodyLayout = StaticLayout.Builder.obtain(
-        content, 0, content.length, bodyPaint, width
+        plainContent, 0, plainContent.length, bodyPaint, width
     ).setAlignment(Layout.Alignment.ALIGN_NORMAL).build()
     canvas.save()
     canvas.translate(40f, 40f + headerLayout.height + 20f)

@@ -21,6 +21,7 @@ import com.example.multi.util.toDateString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.text.Html
 
 /** Activity showing deleted notes. */
 class TrashbinActivity : SegmentActivity("Trash") {
@@ -87,7 +88,8 @@ class TrashbinActivity : SegmentActivity("Trash") {
                     modifier = Modifier.size(40.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
+                        val plainContent = Html.fromHtml(note.content, Html.FROM_HTML_MODE_LEGACY).toString()
+                        val initial = (note.header.ifBlank { plainContent }.trim().firstOrNull() ?: 'N').toString()
                         Text(
                             text = initial,
                             style = MaterialTheme.typography.titleMedium,
@@ -100,8 +102,9 @@ class TrashbinActivity : SegmentActivity("Trash") {
                     val previewLines = mutableListOf<String>()
                     val headerLine = note.header.trim()
                     if (headerLine.isNotEmpty()) previewLines.add(headerLine)
+                    val plainContent = Html.fromHtml(note.content, Html.FROM_HTML_MODE_LEGACY).toString()
                     previewLines.addAll(
-                        note.content.lines()
+                        plainContent.lines()
                             .map { it.trim() }
                             .filter { it.isNotEmpty() }
                     )
