@@ -2,6 +2,7 @@ package com.example.multi
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -38,10 +39,20 @@ class NotificationReceiver : BroadcastReceiver() {
                     completed < model.frequency
                 }
                 if (hasIncomplete) {
+                    val openIntent = Intent(context, WeeklyGoalsActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                    val pendingIntent = PendingIntent.getActivity(
+                        context,
+                        0,
+                        openIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
                     val notification = createGeneralNotification(
                         context,
                         "Daily Activities",
-                        "You have daily activities to do."
+                        "You have daily activities to do.",
+                        pendingIntent
                     )
                     val id = System.currentTimeMillis().toInt()
                     try {
@@ -59,7 +70,18 @@ class NotificationReceiver : BroadcastReceiver() {
 
         // Create the notification
         val notification = when (eventType) {
-            "event_reminder" -> createEventReminderNotification(context, title, description)
+            "event_reminder" -> {
+                val openIntent = Intent(context, EventsActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    0,
+                    openIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                createEventReminderNotification(context, title, description, pendingIntent)
+            }
             else -> createGeneralNotification(context, title, description)
         }
 
@@ -97,28 +119,42 @@ class NotificationReceiver : BroadcastReceiver() {
     /**
      * Creates a notification specifically for event reminders.
      */
-    private fun createEventReminderNotification(context: Context, title: String, description: String): NotificationCompat.Builder {
+    private fun createEventReminderNotification(
+        context: Context,
+        title: String,
+        description: String,
+        contentIntent: PendingIntent? = null
+    ): NotificationCompat.Builder {
         return NotificationCompat.Builder(context, EVENT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground) // You might want to use a calendar or event icon
             .setContentTitle("📅 $title")
             .setContentText(if (description.isNotBlank()) description else "Your event is coming up!")
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText(if (description.isNotBlank()) description else "Your event '$title' is scheduled for now."))
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(if (description.isNotBlank()) description else "Your event '$title' is scheduled for now.")
+            )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_EVENT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(contentIntent)
     }
 
     /**
      * Creates a general notification (fallback for other notification types).
      */
-    private fun createGeneralNotification(context: Context, title: String, description: String): NotificationCompat.Builder {
+    private fun createGeneralNotification(
+        context: Context,
+        title: String,
+        description: String,
+        contentIntent: PendingIntent? = null
+    ): NotificationCompat.Builder {
         return NotificationCompat.Builder(context, EVENT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(description)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            .setContentIntent(contentIntent)
     }
 }
