@@ -8,6 +8,12 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 const val EVENT_CHANNEL_ID = "event_channel"
 const val EVENT_CHANNEL_NAME = "Event Reminders"
@@ -21,10 +27,35 @@ class NotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         // Create notification channel if it doesn't exist (required for Android 8.0+)
         createNotificationChannel(context)
+        val eventType = intent.getStringExtra("event_type") ?: "general"
+        if (eventType == "daily_activity") {
+            CoroutineScope(Dispatchers.Default).launch {
+                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                val goals = withContext(Dispatchers.IO) { dao.getGoals() }
+                val hasIncomplete = goals.any { entity ->
+                    val model = entity.toModel()
+                    val completed = model.dayStates.count { it == 'C' }
+                    completed < model.frequency
+                }
+                if (hasIncomplete) {
+                    val notification = createGeneralNotification(
+                        context,
+                        "Daily Activities",
+                        "You have daily activities to do."
+                    )
+                    val id = System.currentTimeMillis().toInt()
+                    try {
+                        NotificationManagerCompat.from(context).notify(id, notification.build())
+                    } catch (e: SecurityException) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+            return
+        }
 
         val title = intent.getStringExtra("title") ?: "Event Reminder"
         val description = intent.getStringExtra("description") ?: "You have an upcoming event."
-        val eventType = intent.getStringExtra("event_type") ?: "general"
 
         // Create the notification
         val notification = when (eventType) {
