@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
                 db.trashedEventDao().deleteExpired(threshold)
             }
         }
+        scheduleDailyActivityReminder(this)
         enableEdgeToEdge()
         setContent {
             MultiTheme(darkTheme = ThemePreferences.isDarkTheme(this)) {
