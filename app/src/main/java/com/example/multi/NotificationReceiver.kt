@@ -2,6 +2,7 @@ package com.example.multi
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -41,8 +42,15 @@ class NotificationReceiver : BroadcastReceiver() {
                     val notification = createGeneralNotification(
                         context,
                         "Daily Activities",
-                        "You have daily activities to do."
+                        "You have daily activities to do.",
                     )
+                    val contentIntent = PendingIntent.getActivity(
+                        context,
+                        0,
+                        Intent(context, WeeklyGoalsActivity::class.java),
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    notification.setContentIntent(contentIntent)
                     val id = System.currentTimeMillis().toInt()
                     try {
                         NotificationManagerCompat.from(context).notify(id, notification.build())
@@ -62,6 +70,17 @@ class NotificationReceiver : BroadcastReceiver() {
             "event_reminder" -> createEventReminderNotification(context, title, description)
             else -> createGeneralNotification(context, title, description)
         }
+        val destination = when (eventType) {
+            "event_reminder" -> EventsActivity::class.java
+            else -> MainActivity::class.java
+        }
+        val contentIntent = PendingIntent.getActivity(
+            context,
+            0,
+            Intent(context, destination),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        notification.setContentIntent(contentIntent)
 
         // Generate a unique notification ID based on the current time
         val notificationId = System.currentTimeMillis().toInt()
@@ -102,8 +121,10 @@ class NotificationReceiver : BroadcastReceiver() {
             .setSmallIcon(R.drawable.ic_launcher_foreground) // You might want to use a calendar or event icon
             .setContentTitle("📅 $title")
             .setContentText(if (description.isNotBlank()) description else "Your event is coming up!")
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText(if (description.isNotBlank()) description else "Your event '$title' is scheduled for now."))
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(if (description.isNotBlank()) description else "Your event '$title' is scheduled for now.")
+            )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_EVENT)
@@ -122,3 +143,4 @@ class NotificationReceiver : BroadcastReceiver() {
             .setAutoCancel(true)
     }
 }
+
