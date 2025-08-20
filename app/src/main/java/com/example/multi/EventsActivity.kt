@@ -15,6 +15,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -140,11 +141,16 @@ private fun EventsScreen(events: MutableList<Event>) {
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                LottieAnimation(
-                    composition = composition,
-                    iterations = LottieConstants.IterateForever,
-                    modifier = Modifier.size(200.dp)
-                )
+                if (composition == null) {
+                    CircularProgressIndicator(modifier = Modifier.size(200.dp))
+                }
+                composition?.let {
+                    LottieAnimation(
+                        composition = it,
+                        iterations = LottieConstants.IterateForever,
+                        modifier = Modifier.size(200.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "No events yet",

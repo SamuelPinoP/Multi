@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -315,11 +316,16 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                LottieAnimation(
-                    composition = composition,
-                    iterations = LottieConstants.IterateForever,
-                    modifier = Modifier.size(200.dp)
-                )
+                if (composition == null) {
+                    CircularProgressIndicator(modifier = Modifier.size(200.dp))
+                }
+                composition?.let {
+                    LottieAnimation(
+                        composition = it,
+                        iterations = LottieConstants.IterateForever,
+                        modifier = Modifier.size(200.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "No goals yet",
