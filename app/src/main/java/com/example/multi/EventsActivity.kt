@@ -143,7 +143,9 @@ private fun EventsScreen(events: MutableList<Event>) {
                 LottieAnimation(
                     composition = composition,
                     iterations = LottieConstants.IterateForever,
-                    modifier = Modifier.size(200.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(

@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -318,7 +318,9 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 LottieAnimation(
                     composition = composition,
                     iterations = LottieConstants.IterateForever,
-                    modifier = Modifier.size(200.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
