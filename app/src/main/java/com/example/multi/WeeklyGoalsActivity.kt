@@ -58,6 +58,10 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.util.capitalizeSentences
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -164,147 +168,173 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.Center
+        if (goals.isEmpty()) {
+            val composition by rememberLottieComposition(
+                LottieCompositionSpec.RawRes(R.raw.activity)
+            )
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ElevatedButton(
-                    onClick = {
-                        context.startActivity(
-                            android.content.Intent(context, RecordActivity::class.java)
-                        )
-                    },
-                    modifier = Modifier
-                        .height(50.dp)
-                        .defaultMinSize(minWidth = 170.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 4.dp)
+                LottieAnimation(
+                    composition = composition,
+                    iterations = LottieConstants.IterateForever,
+                    modifier = Modifier.size(200.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "No activities yet",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = Color.Gray,
+                        fontSize = 18.sp
                     )
-                    Text("Record", fontSize = 18.sp)
-                }
+                )
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            val remaining = daysRemainingInWeek()
-            Text(
-                text = "$remaining days remaining",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Today's Goals",
-                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 96.dp)
+        } else {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                itemsIndexed(goals) { index, goal ->
-                    ElevatedCard(
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    ElevatedButton(
+                        onClick = {
+                            context.startActivity(
+                                android.content.Intent(context, RecordActivity::class.java)
+                            )
+                        },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { editingIndex = index }
+                            .height(50.dp)
+                            .defaultMinSize(minWidth = 170.dp)
                     ) {
-                        Column(modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)) {
-                            if (goal.remaining == 0) {
-                                Text(
-                                    text = "Completed!",
-                                    color = Color.Green,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        Text("Record", fontSize = 18.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                val remaining = daysRemainingInWeek()
+                Text(
+                    text = "$remaining days remaining",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Today's Goals",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 96.dp)
+                ) {
+                    itemsIndexed(goals) { index, goal ->
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { editingIndex = index }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
                             ) {
-                                Text(
-                                    text = goal.header,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (goal.remaining == 0) {
                                     Text(
-                                        text = "${goal.frequency - goal.remaining}/${goal.frequency}",
+                                        text = "Completed!",
+                                        color = Color.Green,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = goal.header,
                                         style = MaterialTheme.typography.bodyLarge
                                     )
-                                    val today = LocalDate.now().toString()
-                                    if (goal.lastCheckedDate != today && goal.remaining > 0) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = "Complete",
-                                            tint = Color.Green,
-                                            modifier = Modifier
-                                                .padding(start = 8.dp)
-                                                .clickable {
-                                                    if (goal.remaining > 0) {
-                                                        val chars = goal.dayStates.toCharArray()
-                                                        val dIndex = LocalDate.now().dayOfWeek.value % 7
-                                                        if (chars[dIndex] != 'C') {
-                                                            chars[dIndex] = 'C'
-                                                            val completed = chars.count { it == 'C' }
-                                                            val updated = goal.copy(
-                                                                dayStates = String(chars),
-                                                                remaining = (goal.frequency - completed).coerceAtLeast(0),
-                                                                lastCheckedDate = today
-                                                            )
-                                                            goals[index] = updated
-                                                            scope.launch {
-                                                                saveGoalCompletion(
-                                                                    context = context,
-                                                                    goalId = goal.id,
-                                                                    goalHeader = goal.header,
-                                                                    completionDate = LocalDate.now()
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "${goal.frequency - goal.remaining}/${goal.frequency}",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        val today = LocalDate.now().toString()
+                                        if (goal.lastCheckedDate != today && goal.remaining > 0) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = "Complete",
+                                                tint = Color.Green,
+                                                modifier = Modifier
+                                                    .padding(start = 8.dp)
+                                                    .clickable {
+                                                        if (goal.remaining > 0) {
+                                                            val chars = goal.dayStates.toCharArray()
+                                                            val dIndex = LocalDate.now().dayOfWeek.value % 7
+                                                            if (chars[dIndex] != 'C') {
+                                                                chars[dIndex] = 'C'
+                                                                val completed = chars.count { it == 'C' }
+                                                                val updated = goal.copy(
+                                                                    dayStates = String(chars),
+                                                                    remaining = (goal.frequency - completed).coerceAtLeast(0),
+                                                                    lastCheckedDate = today
                                                                 )
-                                                                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                                                goals[index] = updated
+                                                                scope.launch {
+                                                                    saveGoalCompletion(
+                                                                        context = context,
+                                                                        goalId = goal.id,
+                                                                        goalHeader = goal.header,
+                                                                        completionDate = LocalDate.now()
+                                                                    )
+                                                                    val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                                                    withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                                                }
                                                             }
                                                         }
                                                     }
-                                                }
-                                        )
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                            val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
-                            LinearProgressIndicator(
-                                progress = progress,
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            DayButtonsRow(states = goal.dayStates) { dayIndex ->
-                                selectedGoalIndex = index
-                                selectedDayIndex = dayIndex
+                                val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
+                                LinearProgressIndicator(
+                                    progress = progress,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                DayButtonsRow(states = goal.dayStates) { dayIndex ->
+                                    selectedGoalIndex = index
+                                    selectedDayIndex = dayIndex
+                                }
                             }
                         }
                     }
