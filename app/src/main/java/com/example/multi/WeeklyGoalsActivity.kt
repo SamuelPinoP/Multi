@@ -309,7 +309,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
         if (goals.isEmpty()) {
             val composition by rememberLottieComposition(
-                LottieCompositionSpec.RawRes(R.raw.activity)
+                LottieCompositionSpec.RawRes(R.raw.calendar)
             )
             Column(
                 modifier = Modifier.align(Alignment.Center),
@@ -318,7 +318,8 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 LottieAnimation(
                     composition = composition,
                     iterations = LottieConstants.IterateForever,
-                    modifier = Modifier.size(200.dp)
+                    modifier = Modifier.size(200.dp),
+                    clipToCompositionBounds = false
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(

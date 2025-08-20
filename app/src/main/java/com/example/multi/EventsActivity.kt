@@ -134,7 +134,7 @@ private fun EventsScreen(events: MutableList<Event>) {
 
         if (events.isEmpty()) {
             val composition by rememberLottieComposition(
-                LottieCompositionSpec.RawRes(R.raw.time)
+                LottieCompositionSpec.RawRes(R.raw.events)
             )
             Column(
                 modifier = Modifier.align(Alignment.Center),
@@ -143,7 +143,8 @@ private fun EventsScreen(events: MutableList<Event>) {
                 LottieAnimation(
                     composition = composition,
                     iterations = LottieConstants.IterateForever,
-                    modifier = Modifier.size(200.dp)
+                    modifier = Modifier.size(200.dp),
+                    clipToCompositionBounds = false
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
