@@ -10,7 +10,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Event
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -21,15 +20,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -128,38 +127,25 @@ private fun EventsScreen(events: MutableList<Event>) {
         }
 
         if (events.isEmpty()) {
-            val annotated = buildAnnotatedString {
-                append("No events, ")
-                pushStringAnnotation(tag = "ADD", annotation = "add")
-                withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
-                    append("add")
-                }
-                pop()
-                append(" some!")
-            }
+            val composition by rememberLottieComposition(
+                LottieCompositionSpec.RawRes(R.raw.notebook)
+            )
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    Icons.Default.Event,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(80.dp)
+                LottieAnimation(
+                    composition = composition,
+                    iterations = LottieConstants.IterateForever,
+                    modifier = Modifier.size(200.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                androidx.compose.foundation.text.ClickableText(
-                    text = annotated,
+                Text(
+                    text = "No events yet",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         color = Color.Gray,
                         fontSize = 18.sp
-                    ),
-                    onClick = { offset ->
-                        annotated.getStringAnnotations("ADD", offset, offset)
-                            .firstOrNull()?.let {
-                                showCreateDialog = true
-                            }
-                    }
+                    )
                 )
             }
         }
