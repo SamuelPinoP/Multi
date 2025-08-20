@@ -212,16 +212,6 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Today's Goals",
-                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -319,7 +309,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
         if (goals.isEmpty()) {
             val composition by rememberLottieComposition(
-                LottieCompositionSpec.RawRes(R.raw.activity)
+                LottieCompositionSpec.RawRes(R.raw.calendar)
             )
             Column(
                 modifier = Modifier.align(Alignment.Center),
@@ -332,7 +322,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "No activities yet",
+                    text = "No goals yet",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         color = Color.Gray,
                         fontSize = 18.sp
