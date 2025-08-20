@@ -1,7 +1,14 @@
 /*
 
+- Add Attach button in the events activity to attach notes to an specific event. It could be a new
+  note or an existing one or even multiple of them. I must select the event first and then the note.
+
+- Add animations everywhere to make the app look better.
+
 - Add a remainders page that will allow to set alarms and remainders in specific days in the 
-Calendar.
+Calendar. 
+
+- Maybe add alarms with whichever song I choose.
 
 - Architecture – Introducing ViewModel and repository layers for notes would better separate UI and 
 data logic.
@@ -12,17 +19,13 @@ is low. By clicking each of them we can display the notes with that priority.
 - Adding remainders and a todo tag in red to the note with red priority will make it somehow a todo 
 item.
 
-4- Add feature of having a notification about daily activities. The user can click progress without
+4- Add feature to the notification from daily activities. The user can click progress without
 entering the app. As a Remainder, only for active users.
 -----------------------------------------------------------------------------
 
 1- The keyboard still covers some of the note. If I put the cursor in the bottom of the note the
 keyboard doesn't adjust to not cover it until I type something. It should adjust right after I put
 the cursor there.
-
-
-5- Add Attach button in the events activity to attach notes to an specific event. It could be a new
-note or an existing one or even multiple of them. I must select the event first and then the note.
 
 */
 
