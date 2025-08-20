@@ -63,6 +63,7 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -311,13 +312,17 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
             val composition by rememberLottieComposition(
                 LottieCompositionSpec.RawRes(R.raw.activity)
             )
+            val progress by animateLottieCompositionAsState(
+                composition = composition,
+                iterations = LottieConstants.IterateForever
+            )
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 LottieAnimation(
                     composition = composition,
-                    iterations = LottieConstants.IterateForever,
+                    progress = { progress },
                     modifier = Modifier.size(200.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
