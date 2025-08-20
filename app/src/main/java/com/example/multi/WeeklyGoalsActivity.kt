@@ -58,6 +58,10 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.util.capitalizeSentences
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -309,6 +313,30 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         }
                     }
                 }
+            }
+        }
+
+        if (goals.isEmpty()) {
+            val composition by rememberLottieComposition(
+                LottieCompositionSpec.RawRes(R.raw.activity)
+            )
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                LottieAnimation(
+                    composition = composition,
+                    iterations = LottieConstants.IterateForever,
+                    modifier = Modifier.size(200.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "No activities yet",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = Color.Gray,
+                        fontSize = 18.sp
+                    )
+                )
             }
         }
 
