@@ -66,7 +66,7 @@ import kotlinx.coroutines.withContext
 /**
  * Activity that allows the user to create a new calendar event with notification scheduling.
  */
-class CreateEventActivity : ComponentActivity() {
+class CreateEventActivity : BaseActivity() {
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()

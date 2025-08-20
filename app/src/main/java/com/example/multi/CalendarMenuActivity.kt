@@ -3,7 +3,6 @@ package com.example.multi
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -43,7 +42,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class CalendarMenuActivity : ComponentActivity() {
+class CalendarMenuActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

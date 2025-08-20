@@ -1,7 +1,6 @@
 package com.example.multi
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
@@ -39,7 +38,7 @@ import com.example.multi.ThemePreferences
 
 open class SegmentActivity(
     private val segmentTitle: String
-) : ComponentActivity() {
+) : BaseActivity() {
     @Composable
     open fun SegmentContent() {
         Text(segmentTitle)
@@ -59,7 +58,7 @@ open class SegmentActivity(
             MultiTheme(darkTheme = darkThemeState.value) {
                 SegmentScreen(
                     title = segmentTitle,
-                    onBack = { finish() },
+                    onBack = { navigateBackOrFinish() },
                     onClose = { finishAffinity() },
                     actions = {
                         ThemeToggleAction(darkThemeState) { OverflowMenuItems(it) }
