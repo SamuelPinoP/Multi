@@ -2,6 +2,7 @@ package com.example.multi
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -318,7 +319,10 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 LottieAnimation(
                     composition = composition,
                     iterations = LottieConstants.IterateForever,
-                    modifier = Modifier.size(200.dp)
+                    clipToCompositionBounds = false,
+                    modifier = Modifier
+                        .size(200.dp)
+                        .background(Color.Transparent)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(

@@ -3,6 +3,7 @@ package com.example.multi
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CardDefaults
@@ -143,7 +144,9 @@ private fun EventsScreen(events: MutableList<Event>) {
                 LottieAnimation(
                     composition = composition,
                     iterations = LottieConstants.IterateForever,
-                    modifier = Modifier.size(200.dp)
+                    modifier = Modifier
+                        .size(200.dp)
+                        .background(Color.Transparent)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
