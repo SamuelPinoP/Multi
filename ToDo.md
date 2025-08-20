@@ -3,15 +3,10 @@
 - Add Attach button in the events activity to attach notes to an specific event. It could be a new
   note or an existing one or even multiple of them. I must select the event first and then the note.
 
-- Add animations everywhere to make the app look better.
-
 - Add a remainders page that will allow to set alarms and remainders in specific days in the 
 Calendar. 
 
 - Maybe add alarms with whichever song I choose.
-
-- Architecture – Introducing ViewModel and repository layers for notes would better separate UI and 
-data logic.
 
 -I need to add levels of priority to the notes. Priority green. It is high. Yellow is medium. Red
 is low. By clicking each of them we can display the notes with that priority.
@@ -19,14 +14,17 @@ is low. By clicking each of them we can display the notes with that priority.
 - Adding remainders and a todo tag in red to the note with red priority will make it somehow a todo 
 item.
 
-4- Add feature to the notification from daily activities. The user can click progress without
+4- Add feature to the notification from weekly activities. The user can click progress without
 entering the app. As a Remainder, only for active users.
 -----------------------------------------------------------------------------
 
 1- The keyboard still covers some of the note. If I put the cursor in the bottom of the note the
 keyboard doesn't adjust to not cover it until I type something. It should adjust right after I put
 the cursor there.
-
+-----------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
+//                          After publishing it do:
 */
 
 /*
@@ -51,6 +49,9 @@ management.
 any other marked famous date and relevant event is in the Calendar plus any additions. Boost the
 feature of creating custom Events. So I make sure people enjoy their lives and use their time with
 their families because that is the kind of app I would use.
+
+- Architecture – Introducing ViewModel and repository layers for notes would better separate UI and
+  data logic.
 
 ---------------------------------------------------------------------------------------------
 /* 
