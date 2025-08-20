@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
@@ -119,13 +120,17 @@ class NotesActivity : SegmentActivity("Notes") {
                 val composition by rememberLottieComposition(
                     LottieCompositionSpec.RawRes(R.raw.notebook)
                 )
+                val progress by animateLottieCompositionAsState(
+                    composition,
+                    iterations = LottieConstants.IterateForever
+                )
                 Column(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     LottieAnimation(
                         composition = composition,
-                        iterations = LottieConstants.IterateForever,
+                        progress = { progress },
                         modifier = Modifier.size(200.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))

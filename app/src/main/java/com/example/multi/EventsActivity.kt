@@ -34,6 +34,7 @@ import com.example.multi.data.toModel
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -136,13 +137,17 @@ private fun EventsScreen(events: MutableList<Event>) {
             val composition by rememberLottieComposition(
                 LottieCompositionSpec.RawRes(R.raw.time)
             )
+            val progress by animateLottieCompositionAsState(
+                composition,
+                iterations = LottieConstants.IterateForever
+            )
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 LottieAnimation(
                     composition = composition,
-                    iterations = LottieConstants.IterateForever,
+                    progress = { progress },
                     modifier = Modifier.size(200.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
