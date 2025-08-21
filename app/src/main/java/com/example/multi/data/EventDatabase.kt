@@ -136,6 +136,9 @@ interface NoteDao {
     @Query("UPDATE notes SET lastOpened = :time WHERE id = :id")
     suspend fun touch(id: Long, time: Long)
 
+    @Query("UPDATE notes SET attachmentUri = :uri WHERE id = :id")
+    suspend fun updateAttachment(id: Long, uri: String?)
+
     @Insert
     suspend fun insert(note: NoteEntity): Long
 

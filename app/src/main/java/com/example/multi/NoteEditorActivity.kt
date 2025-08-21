@@ -25,6 +25,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.FormatSize
+import androidx.compose.material.icons.filled.Delete
 
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
@@ -312,6 +317,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         val scope = rememberCoroutineScope()
 
         DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
             text = { Text("Share") },
             onClick = {
                 onDismiss()
@@ -327,6 +333,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             }
         )
         DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Default.FormatSize, contentDescription = null) },
             text = { Text("Text Size") },
             onClick = {
                 onDismiss()
@@ -334,6 +341,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             }
         )
         DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
             text = { Text("Delete") },
             onClick = {
                 onDismiss()

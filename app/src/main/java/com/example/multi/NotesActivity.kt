@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.shape.CircleShape
@@ -24,9 +25,14 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as M3Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +67,7 @@ import com.example.multi.data.toEntity
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
     private var importRequest: (() -> Unit)? = null
+    private val showAttachDialogState = mutableStateOf(false)
 
     override fun onResume() {
         super.onResume()
@@ -82,6 +89,7 @@ class NotesActivity : SegmentActivity("Notes") {
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+        val showAttachDialog by showAttachDialogState
         val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
             uri?.let {
                 context.contentResolver.takePersistableUriPermission(
@@ -370,12 +378,26 @@ class NotesActivity : SegmentActivity("Notes") {
                 }
             }
         }
+
+        if (showAttachDialog) {
+            SelectNoteDialog(
+                notes = notes.filter { it.attachmentUri?.startsWith("event:") != true },
+                onDismiss = { showAttachDialogState.value = false },
+                onSelect = { note ->
+                    showAttachDialogState.value = false
+                    val intent = Intent(context, EventsActivity::class.java)
+                    intent.putExtra(EXTRA_ATTACH_NOTE_ID, note.id)
+                    context.startActivity(intent)
+                }
+            )
+        }
     }
 
     @Composable
     override fun OverflowMenuItems(onDismiss: () -> Unit) {
         val context = LocalContext.current
         DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Default.FileOpen, contentDescription = null) },
             text = { M3Text("Import") },
             onClick = {
                 onDismiss()
@@ -383,6 +405,15 @@ class NotesActivity : SegmentActivity("Notes") {
             }
         )
         DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Default.AttachFile, contentDescription = null) },
+            text = { M3Text("Attach") },
+            onClick = {
+                onDismiss()
+                showAttachDialogState.value = true
+            }
+        )
+        DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
             text = { M3Text("Trash") },
             onClick = {
                 onDismiss()
@@ -390,4 +421,50 @@ class NotesActivity : SegmentActivity("Notes") {
             }
         )
     }
+}
+
+@Composable
+private fun SelectNoteDialog(
+    notes: List<Note>,
+    onDismiss: () -> Unit,
+    onSelect: (Note) -> Unit
+) {
+    var selectedIndex by remember { mutableStateOf(-1) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = { if (selectedIndex >= 0) onSelect(notes[selectedIndex]) },
+                enabled = selectedIndex >= 0
+            ) { M3Text("OK") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { M3Text("Cancel") } },
+        text = {
+            if (notes.isEmpty()) {
+                M3Text("No notes available")
+            } else {
+                LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                    itemsIndexed(notes) { index, note ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedIndex = index }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            RadioButton(
+                                selected = selectedIndex == index,
+                                onClick = { selectedIndex = index }
+                            )
+                            M3Text(
+                                note.header.ifBlank { note.content }.ifBlank { "Untitled" },
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        title = { M3Text("Select Note") }
+    )
 }

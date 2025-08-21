@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.NoteAdd
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -47,12 +49,14 @@ import androidx.lifecycle.lifecycleScope
 
 const val EXTRA_DATE = "extra_date"
 const val EXTRA_EVENT_ID = "extra_event_id"
+const val EXTRA_ATTACH_NOTE_ID = "extra_attach_note_id"
 
 /** Activity displaying the list of user events. */
 class EventsActivity : SegmentActivity("Events") {
     private val events = mutableStateListOf<Event>()
     private val eventNotes = mutableStateMapOf<Long, Note>()
     private val showAttachDialogState = mutableStateOf(false)
+    private val pendingAttachNoteIdState = mutableStateOf<Long?>(null)
 
     override fun onResume() {
         super.onResume()
@@ -68,6 +72,11 @@ class EventsActivity : SegmentActivity("Events") {
                     if (eventId != null) eventNotes[eventId] = note
                 }
             }
+            pendingAttachNoteIdState.value = intent.getLongExtra(EXTRA_ATTACH_NOTE_ID, -1L).takeIf { it >= 0 }
+            if (pendingAttachNoteIdState.value != null) {
+                showAttachDialogState.value = true
+                intent.removeExtra(EXTRA_ATTACH_NOTE_ID)
+            }
         }
     }
 
@@ -78,6 +87,7 @@ class EventsActivity : SegmentActivity("Events") {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val showAttachDialog by showAttachDialogState
+        val attachNoteId by pendingAttachNoteIdState
         val openEventId = remember { intent.getLongExtra(EXTRA_EVENT_ID, -1L).takeIf { it >= 0 } }
         LaunchedEffect(Unit) { intent.removeExtra(EXTRA_EVENT_ID) }
         EventsScreen(events, notes, openEventId)
@@ -85,27 +95,41 @@ class EventsActivity : SegmentActivity("Events") {
         if (showAttachDialog) {
             AttachNoteDialog(
                 events = attachable,
-                onDismiss = { showAttachDialogState.value = false },
+                onDismiss = {
+                    showAttachDialogState.value = false
+                    pendingAttachNoteIdState.value = null
+                },
                 onAttach = { event ->
                     showAttachDialogState.value = false
-                    scope.launch {
-                        val dao = EventDatabase.getInstance(context).noteDao()
-                        val now = System.currentTimeMillis()
-                        val note = Note(
-                            header = event.title,
-                            content = "",
-                            created = now,
-                            lastOpened = now,
-                            attachmentUri = "event:${event.id}"
-                        )
-                        val id = withContext(Dispatchers.IO) { dao.insert(note.toEntity()) }
-                        val intent = Intent(context, NoteEditorActivity::class.java)
-                        intent.putExtra(EXTRA_NOTE_ID, id)
-                        intent.putExtra(EXTRA_NOTE_HEADER, note.header)
-                        intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
-                        intent.putExtra(EXTRA_NOTE_CREATED, note.created)
-                        intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
-                        context.startActivity(intent)
+                    val noteId = attachNoteId
+                    if (noteId != null) {
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).noteDao()
+                            withContext(Dispatchers.IO) {
+                                dao.updateAttachment(noteId, "event:${event.id}")
+                            }
+                            pendingAttachNoteIdState.value = null
+                        }
+                    } else {
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).noteDao()
+                            val now = System.currentTimeMillis()
+                            val note = Note(
+                                header = event.title,
+                                content = "",
+                                created = now,
+                                lastOpened = now,
+                                attachmentUri = "event:${event.id}"
+                            )
+                            val id = withContext(Dispatchers.IO) { dao.insert(note.toEntity()) }
+                            val intent = Intent(context, NoteEditorActivity::class.java)
+                            intent.putExtra(EXTRA_NOTE_ID, id)
+                            intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                            intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                            intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                            intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
+                            context.startActivity(intent)
+                        }
                     }
                 }
             )
@@ -116,6 +140,7 @@ class EventsActivity : SegmentActivity("Events") {
     override fun OverflowMenuItems(onDismiss: () -> Unit) {
         val context = LocalContext.current
         DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Default.NoteAdd, contentDescription = null) },
             text = { Text("Attach Note") },
             onClick = {
                 onDismiss()
@@ -123,6 +148,7 @@ class EventsActivity : SegmentActivity("Events") {
             }
         )
         DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
             text = { Text("Trash") },
             onClick = {
                 onDismiss()
