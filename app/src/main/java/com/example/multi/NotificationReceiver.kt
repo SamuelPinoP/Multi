@@ -11,14 +11,18 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
+import com.example.multi.data.toEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 const val EVENT_CHANNEL_ID = "event_channel"
 const val EVENT_CHANNEL_NAME = "Event Reminders"
 const val EVENT_CHANNEL_DESCRIPTION = "Notifications for calendar events"
+const val ACTION_PROGRESS_GOAL = "action_progress_goal"
+const val EXTRA_GOAL_HEADER = "extra_goal_header"
 
 /**
  * BroadcastReceiver that displays a notification when triggered by AlarmManager.
@@ -28,17 +32,40 @@ class NotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         // Create notification channel if it doesn't exist (required for Android 8.0+)
         createNotificationChannel(context)
+        if (intent.action == ACTION_PROGRESS_GOAL) {
+            val goalId = intent.getLongExtra(EXTRA_GOAL_ID, -1L)
+            val header = intent.getStringExtra(EXTRA_GOAL_HEADER) ?: ""
+            CoroutineScope(Dispatchers.Default).launch {
+                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                val goals = withContext(Dispatchers.IO) { dao.getGoals() }
+                val entity = goals.firstOrNull { it.id == goalId }
+                entity?.let {
+                    val model = it.toModel()
+                    if (model.remaining > 0) {
+                        val updated = model.copy(remaining = model.remaining - 1)
+                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                        saveGoalCompletion(
+                            context = context,
+                            goalId = model.id,
+                            goalHeader = header.ifBlank { model.header },
+                            completionDate = LocalDate.now()
+                        )
+                    }
+                }
+            }
+            return
+        }
+
         val eventType = intent.getStringExtra("event_type") ?: "general"
         if (eventType == "daily_activity") {
             CoroutineScope(Dispatchers.Default).launch {
                 val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                 val goals = withContext(Dispatchers.IO) { dao.getGoals() }
-                val hasIncomplete = goals.any { entity ->
-                    val model = entity.toModel()
+                val target = goals.map { it.toModel() }.firstOrNull { model ->
                     val completed = model.dayStates.count { it == 'C' }
                     completed < model.frequency
                 }
-                if (hasIncomplete) {
+                if (target != null) {
                     val openIntent = Intent(context, WeeklyGoalsActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
@@ -48,11 +75,26 @@ class NotificationReceiver : BroadcastReceiver() {
                         openIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
+                    val progressIntent = Intent(context, NotificationReceiver::class.java).apply {
+                        action = ACTION_PROGRESS_GOAL
+                        putExtra(EXTRA_GOAL_ID, target.id)
+                        putExtra(EXTRA_GOAL_HEADER, target.header)
+                    }
+                    val progressPendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        target.id.toInt(),
+                        progressIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
                     val notification = createGeneralNotification(
                         context,
                         "Daily Activities",
                         "You have daily activities to do.",
                         pendingIntent
+                    ).addAction(
+                        R.drawable.ic_launcher_foreground,
+                        "Progress",
+                        progressPendingIntent
                     )
                     val id = System.currentTimeMillis().toInt()
                     try {
