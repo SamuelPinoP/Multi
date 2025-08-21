@@ -10,13 +10,11 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.multi.data.EventDatabase
-import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.LocalDate
 
 const val EVENT_CHANNEL_ID = "event_channel"
 const val EVENT_CHANNEL_NAME = "Event Reminders"
@@ -35,10 +33,12 @@ class NotificationReceiver : BroadcastReceiver() {
             CoroutineScope(Dispatchers.Default).launch {
                 val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                 val goals = withContext(Dispatchers.IO) { dao.getGoals() }
-                val firstIncomplete = goals.map { it.toModel() }.firstOrNull { model ->
-                    model.remaining > 0
+                val hasIncomplete = goals.any { entity ->
+                    val model = entity.toModel()
+                    val completed = model.dayStates.count { it == 'C' }
+                    completed < model.frequency
                 }
-                if (firstIncomplete != null) {
+                if (hasIncomplete) {
                     val openIntent = Intent(context, WeeklyGoalsActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
@@ -48,56 +48,17 @@ class NotificationReceiver : BroadcastReceiver() {
                         openIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
-                    val progressIntent = Intent(context, NotificationReceiver::class.java).apply {
-                        putExtra("event_type", "daily_activity_progress")
-                        putExtra("goal_id", firstIncomplete.id)
-                        putExtra("goal_header", firstIncomplete.header)
-                    }
-                    val progressPending = PendingIntent.getBroadcast(
-                        context,
-                        firstIncomplete.id.toInt(),
-                        progressIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
                     val notification = createGeneralNotification(
                         context,
                         "Daily Activities",
                         "You have daily activities to do.",
                         pendingIntent
-                    ).addAction(
-                        R.drawable.ic_launcher_foreground,
-                        context.getString(R.string.action_progress),
-                        progressPending
                     )
                     val id = System.currentTimeMillis().toInt()
                     try {
                         NotificationManagerCompat.from(context).notify(id, notification.build())
                     } catch (e: SecurityException) {
                         e.printStackTrace()
-                    }
-                }
-            }
-            return
-        } else if (eventType == "daily_activity_progress") {
-            val goalId = intent.getLongExtra("goal_id", -1L)
-            val goalHeader = intent.getStringExtra("goal_header") ?: ""
-            if (goalId > 0) {
-                CoroutineScope(Dispatchers.Default).launch {
-                    val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                    val goals = withContext(Dispatchers.IO) { dao.getGoals() }
-                    val entity = goals.find { it.id == goalId }
-                    if (entity != null) {
-                        val model = entity.toModel()
-                        if (model.remaining > 0) {
-                            val updated = model.copy(remaining = model.remaining - 1)
-                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                            saveGoalCompletion(
-                                context = context,
-                                goalId = goalId,
-                                goalHeader = goalHeader,
-                                completionDate = LocalDate.now()
-                            )
-                        }
                     }
                 }
             }
