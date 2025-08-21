@@ -56,9 +56,17 @@ import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.toEntity
 
+const val EXTRA_PICK_NOTE = "extra_pick_note"
+
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
     private var importRequest: (() -> Unit)? = null
+    private var pickMode: Boolean = false
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        pickMode = intent.getBooleanExtra(EXTRA_PICK_NOTE, false)
+        super.onCreate(savedInstanceState)
+    }
 
     override fun onResume() {
         super.onResume()
@@ -76,6 +84,7 @@ class NotesActivity : SegmentActivity("Notes") {
     override fun SegmentContent() {
         val context = LocalContext.current
         val notes = remember { this@NotesActivity.notes }
+        val pickMode = remember { this@NotesActivity.pickMode }
         var selectionMode by remember { mutableStateOf(false) }
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
@@ -109,9 +118,11 @@ class NotesActivity : SegmentActivity("Notes") {
         }
         importRequest = { importLauncher.launch(arrayOf("*/*")) }
 
-        BackHandler(enabled = selectionMode) {
-            selectedIds.clear()
-            selectionMode = false
+        if (!pickMode) {
+            BackHandler(enabled = selectionMode) {
+                selectedIds.clear()
+                selectionMode = false
+            }
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -153,7 +164,11 @@ class NotesActivity : SegmentActivity("Notes") {
                                 .fillMaxWidth()
                                 .combinedClickable(
                                     onClick = {
-                                        if (selectionMode) {
+                                        if (pickMode) {
+                                            val act = context as android.app.Activity
+                                            act.setResult(android.app.Activity.RESULT_OK, Intent().putExtra(EXTRA_NOTE_ID, note.id))
+                                            act.finish()
+                                        } else if (selectionMode) {
                                             if (selected) {
                                                 selectedIds.remove(note.id)
                                                 if (selectedIds.isEmpty()) selectionMode = false
@@ -185,12 +200,14 @@ class NotesActivity : SegmentActivity("Notes") {
                                         }
                                     },
                                     onLongClick = {
-                                        if (!selectionMode) selectionMode = true
-                                        if (selected) {
-                                            selectedIds.remove(note.id)
-                                            if (selectedIds.isEmpty()) selectionMode = false
-                                        } else {
-                                            selectedIds.add(note.id)
+                                        if (!pickMode) {
+                                            if (!selectionMode) selectionMode = true
+                                            if (selected) {
+                                                selectedIds.remove(note.id)
+                                                if (selectedIds.isEmpty()) selectionMode = false
+                                            } else {
+                                                selectedIds.add(note.id)
+                                            }
                                         }
                                     }
                                 )
@@ -199,7 +216,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                 modifier = Modifier.padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (selectionMode) {
+                                if (!pickMode && selectionMode) {
                                     Checkbox(
                                         checked = selected,
                                         onCheckedChange = null
@@ -249,7 +266,7 @@ class NotesActivity : SegmentActivity("Notes") {
                 }
             }
 
-            if (selectionMode) {
+            if (!pickMode && selectionMode) {
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -332,7 +349,7 @@ class NotesActivity : SegmentActivity("Notes") {
                         }
                     }
                 }
-            } else {
+            } else if (!pickMode) {
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -355,6 +372,7 @@ class NotesActivity : SegmentActivity("Notes") {
 
     @Composable
     override fun OverflowMenuItems(onDismiss: () -> Unit) {
+        if (pickMode) return
         val context = LocalContext.current
         DropdownMenuItem(
             text = { M3Text("Import") },

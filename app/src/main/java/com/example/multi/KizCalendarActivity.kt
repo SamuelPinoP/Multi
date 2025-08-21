@@ -330,7 +330,17 @@ private fun KizCalendarScreen() {
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = Event(
+                            event.id,
+                            title,
+                            desc,
+                            date,
+                            addr,
+                            event.notificationHour,
+                            event.notificationMinute,
+                            event.notificationEnabled,
+                            event.noteId
+                        )
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
