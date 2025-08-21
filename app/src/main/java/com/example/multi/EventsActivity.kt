@@ -61,7 +61,7 @@ class EventsActivity : SegmentActivity("Events") {
             events.clear(); events.addAll(eventsStored.map { it.toModel() })
             eventNotes.clear()
             notesStored.map { it.toModel() }.forEach { note ->
-                note.attachmentUri?.takeIf { it.startsWith("event:") }?.let {
+                note.attachmentUri?.takeIf { it.startsWith("event:") && note.content.isNotBlank() }?.let {
                     val eventId = it.removePrefix("event:").toLongOrNull()
                     if (eventId != null) eventNotes[eventId] = note
                 }
@@ -95,7 +95,13 @@ class EventsActivity : SegmentActivity("Events") {
                             attachmentUri = "event:${event.id}"
                         )
                         val id = withContext(Dispatchers.IO) { dao.insert(note.toEntity()) }
-                        eventNotes[event.id] = note.copy(id = id)
+                        val intent = Intent(context, NoteEditorActivity::class.java)
+                        intent.putExtra(EXTRA_NOTE_ID, id)
+                        intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                        intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                        intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                        intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
+                        context.startActivity(intent)
                     }
                 }
             )
@@ -190,6 +196,7 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                                         intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                         intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
                                         intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                        intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
                                         context.startActivity(intent)
                                     }
                             )

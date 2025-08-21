@@ -180,6 +180,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 intent.putExtra(EXTRA_NOTE_CREATED, note.created)
                                                 intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
                                                 intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
                                                 context.startActivity(intent)
                                             }
                                         }
