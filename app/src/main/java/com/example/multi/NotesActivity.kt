@@ -3,6 +3,7 @@ package com.example.multi
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.app.Activity
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -56,9 +57,17 @@ import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.toEntity
 
+const val EXTRA_SELECT_NOTE = "extra_select_note"
+
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
     private var importRequest: (() -> Unit)? = null
+    private var pickMode = false
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        pickMode = intent.getBooleanExtra(EXTRA_SELECT_NOTE, false)
+        super.onCreate(savedInstanceState)
+    }
 
     override fun onResume() {
         super.onResume()
@@ -76,6 +85,7 @@ class NotesActivity : SegmentActivity("Notes") {
     override fun SegmentContent() {
         val context = LocalContext.current
         val notes = remember { this@NotesActivity.notes }
+        val selecting = this@NotesActivity.pickMode
         var selectionMode by remember { mutableStateOf(false) }
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
@@ -109,7 +119,7 @@ class NotesActivity : SegmentActivity("Notes") {
         }
         importRequest = { importLauncher.launch(arrayOf("*/*")) }
 
-        BackHandler(enabled = selectionMode) {
+        BackHandler(enabled = selectionMode && !selecting) {
             selectedIds.clear()
             selectionMode = false
         }
@@ -135,66 +145,72 @@ class NotesActivity : SegmentActivity("Notes") {
                     )
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(notes) { note ->
-                        val selected = note.id in selectedIds
-                        ElevatedCard(
-                            elevation = CardDefaults.elevatedCardElevation(),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .combinedClickable(
-                                    onClick = {
-                                        if (selectionMode) {
-                                            if (selected) {
-                                                selectedIds.remove(note.id)
-                                                if (selectedIds.isEmpty()) selectionMode = false
-                                            } else {
-                                                selectedIds.add(note.id)
-                                            }
-                                        } else {
-                                            if (note.attachmentUri != null) {
-                                                val uri = Uri.parse(note.attachmentUri)
-                                                context.contentResolver.takePersistableUriPermission(
-                                                    uri,
-                                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                                )
-                                                val open = Intent(Intent.ACTION_VIEW).apply {
-                                                    data = uri
-                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(notes) { note ->
+                            val selected = note.id in selectedIds
+                            ElevatedCard(
+                                elevation = CardDefaults.elevatedCardElevation(),
+                                colors = CardDefaults.elevatedCardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .combinedClickable(
+                                        onClick = {
+                                            if (selecting) {
+                                                val activity = context as Activity
+                                                activity.setResult(Activity.RESULT_OK, Intent().putExtra(EXTRA_NOTE_ID, note.id))
+                                                activity.finish()
+                                            } else if (selectionMode) {
+                                                if (selected) {
+                                                    selectedIds.remove(note.id)
+                                                    if (selectedIds.isEmpty()) selectionMode = false
+                                                } else {
+                                                    selectedIds.add(note.id)
                                                 }
-                                                context.startActivity(open)
                                             } else {
-                                                val intent = Intent(context, NoteEditorActivity::class.java)
-                                                intent.putExtra(EXTRA_NOTE_ID, note.id)
-                                                intent.putExtra(EXTRA_NOTE_HEADER, note.header)
-                                                intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
-                                                intent.putExtra(EXTRA_NOTE_CREATED, note.created)
-                                                intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
-                                                intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
-                                                context.startActivity(intent)
+                                                if (note.attachmentUri != null) {
+                                                    val uri = Uri.parse(note.attachmentUri)
+                                                    context.contentResolver.takePersistableUriPermission(
+                                                        uri,
+                                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                                    )
+                                                    val open = Intent(Intent.ACTION_VIEW).apply {
+                                                        data = uri
+                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                    }
+                                                    context.startActivity(open)
+                                                } else {
+                                                    val intent = Intent(context, NoteEditorActivity::class.java)
+                                                    intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                                    intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                                    intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                                    intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                                    intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
+                                                    intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                                    context.startActivity(intent)
+                                                }
+                                            }
+                                        },
+                                        onLongClick = {
+                                            if (!selecting) {
+                                                if (!selectionMode) selectionMode = true
+                                                if (selected) {
+                                                    selectedIds.remove(note.id)
+                                                    if (selectedIds.isEmpty()) selectionMode = false
+                                                } else {
+                                                    selectedIds.add(note.id)
+                                                }
                                             }
                                         }
-                                    },
-                                    onLongClick = {
-                                        if (!selectionMode) selectionMode = true
-                                        if (selected) {
-                                            selectedIds.remove(note.id)
-                                            if (selectedIds.isEmpty()) selectionMode = false
-                                        } else {
-                                            selectedIds.add(note.id)
-                                        }
-                                    }
-                                )
-                        ) {
+                                    )
+                            ) {
                             Row(
                                 modifier = Modifier.padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -332,7 +348,7 @@ class NotesActivity : SegmentActivity("Notes") {
                         }
                     }
                 }
-            } else {
+            } else if (!selecting) {
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)

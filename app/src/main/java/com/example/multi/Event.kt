@@ -9,6 +9,7 @@ data class Event(
     var description: String,
     var date: String? = null,
     var address: String? = null,
+    var noteId: Long? = null,
     var notificationHour: Int? = null,  // Hour for notification (0-23)
     var notificationMinute: Int? = null, // Minute for notification (0-59)
     var notificationEnabled: Boolean = false // Whether notification is enabled for this event
