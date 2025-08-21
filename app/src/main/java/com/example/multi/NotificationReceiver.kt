@@ -10,7 +10,9 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.multi.data.EventDatabase
+import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -29,6 +31,27 @@ class NotificationReceiver : BroadcastReceiver() {
         // Create notification channel if it doesn't exist (required for Android 8.0+)
         createNotificationChannel(context)
         val eventType = intent.getStringExtra("event_type") ?: "general"
+        if (eventType == "weekly_progress") {
+            CoroutineScope(Dispatchers.Default).launch {
+                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                val goals = withContext(Dispatchers.IO) { dao.getGoals() }
+                val target = goals.map { it.toModel() }.firstOrNull { goal ->
+                    val completed = goal.dayStates.count { it == 'C' }
+                    completed < goal.frequency && goal.remaining > 0
+                }
+                target?.let { goal ->
+                    val updated = goal.copy(remaining = goal.remaining - 1)
+                    withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                    saveGoalCompletion(
+                        context = context,
+                        goalId = goal.id,
+                        goalHeader = goal.header,
+                        completionDate = LocalDate.now()
+                    )
+                }
+            }
+            return
+        }
         if (eventType == "daily_activity") {
             CoroutineScope(Dispatchers.Default).launch {
                 val dao = EventDatabase.getInstance(context).weeklyGoalDao()
@@ -48,11 +71,24 @@ class NotificationReceiver : BroadcastReceiver() {
                         openIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
+                    val progressIntent = Intent(context, NotificationReceiver::class.java).apply {
+                        putExtra("event_type", "weekly_progress")
+                    }
+                    val progressPending = PendingIntent.getBroadcast(
+                        context,
+                        1,
+                        progressIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
                     val notification = createGeneralNotification(
                         context,
                         "Daily Activities",
                         "You have daily activities to do.",
                         pendingIntent
+                    ).addAction(
+                        R.drawable.ic_launcher_foreground,
+                        "Progress",
+                        progressPending
                     )
                     val id = System.currentTimeMillis().toInt()
                     try {
