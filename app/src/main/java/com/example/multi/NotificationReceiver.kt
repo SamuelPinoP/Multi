@@ -11,10 +11,12 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
+import com.example.multi.data.toEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 const val EVENT_CHANNEL_ID = "event_channel"
 const val EVENT_CHANNEL_NAME = "Event Reminders"
@@ -29,16 +31,34 @@ class NotificationReceiver : BroadcastReceiver() {
         // Create notification channel if it doesn't exist (required for Android 8.0+)
         createNotificationChannel(context)
         val eventType = intent.getStringExtra("event_type") ?: "general"
+        if (eventType == "progress_goal") {
+            val goalId = intent.getLongExtra("goal_id", -1L)
+            val goalHeader = intent.getStringExtra("goal_header") ?: ""
+            val notificationId = intent.getIntExtra("notification_id", 0)
+            CoroutineScope(Dispatchers.Default).launch {
+                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                val goal = withContext(Dispatchers.IO) { dao.getGoals() }
+                    .firstOrNull { it.id == goalId }?.toModel()
+                if (goal != null && goal.remaining > 0) {
+                    val updated = goal.copy(remaining = goal.remaining - 1)
+                    withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                    saveGoalCompletion(
+                        context = context,
+                        goalId = goalId,
+                        goalHeader = goalHeader,
+                        completionDate = LocalDate.now()
+                    )
+                }
+            }
+            NotificationManagerCompat.from(context).cancel(notificationId)
+            return
+        }
         if (eventType == "daily_activity") {
             CoroutineScope(Dispatchers.Default).launch {
                 val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                 val goals = withContext(Dispatchers.IO) { dao.getGoals() }
-                val hasIncomplete = goals.any { entity ->
-                    val model = entity.toModel()
-                    val completed = model.dayStates.count { it == 'C' }
-                    completed < model.frequency
-                }
-                if (hasIncomplete) {
+                val firstIncomplete = goals.map { it.toModel() }.firstOrNull { it.remaining > 0 }
+                if (firstIncomplete != null) {
                     val openIntent = Intent(context, WeeklyGoalsActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
@@ -48,13 +68,29 @@ class NotificationReceiver : BroadcastReceiver() {
                         openIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
+                    val id = System.currentTimeMillis().toInt()
+                    val progressIntent = Intent(context, NotificationReceiver::class.java).apply {
+                        putExtra("event_type", "progress_goal")
+                        putExtra("goal_id", firstIncomplete.id)
+                        putExtra("goal_header", firstIncomplete.header)
+                        putExtra("notification_id", id)
+                    }
+                    val progressPendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        firstIncomplete.id.toInt(),
+                        progressIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
                     val notification = createGeneralNotification(
                         context,
                         "Daily Activities",
                         "You have daily activities to do.",
                         pendingIntent
+                    ).addAction(
+                        R.drawable.ic_launcher_foreground,
+                        "Progress",
+                        progressPendingIntent
                     )
-                    val id = System.currentTimeMillis().toInt()
                     try {
                         NotificationManagerCompat.from(context).notify(id, notification.build())
                     } catch (e: SecurityException) {
