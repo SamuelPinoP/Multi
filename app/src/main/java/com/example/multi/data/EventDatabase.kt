@@ -27,6 +27,7 @@ data class EventEntity(
     val description: String,
     val date: String?,
     val address: String?,
+    val noteId: Long? = null,
     val notificationHour: Int? = null,  // Hour for notification (0-23)
     val notificationMinute: Int? = null, // Minute for notification (0-59)
     val notificationEnabled: Boolean = false // Whether notification is enabled for this event
@@ -133,6 +134,9 @@ interface NoteDao {
     @Query("SELECT * FROM notes ORDER BY lastOpened DESC")
     suspend fun getNotes(): List<NoteEntity>
 
+    @Query("SELECT * FROM notes WHERE id = :id")
+    suspend fun getNote(id: Long): NoteEntity?
+
     @Query("UPDATE notes SET lastOpened = :time WHERE id = :id")
     suspend fun touch(id: Long, time: Long)
 
@@ -186,7 +190,7 @@ interface TrashedEventDao {
         TrashedEventEntity::class,
         DailyCompletionEntity::class
     ],
-    version = 15  // Incremented from 14 to 15 due to schema change
+    version = 16  // Incremented from 15 to 16 due to schema change
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -224,6 +228,7 @@ fun EventEntity.toModel() = Event(
     description = description,
     date = date,
     address = address,
+    noteId = noteId,
     notificationHour = notificationHour,
     notificationMinute = notificationMinute,
     notificationEnabled = notificationEnabled
@@ -235,6 +240,7 @@ fun Event.toEntity() = EventEntity(
     description = description,
     date = date,
     address = address,
+    noteId = noteId,
     notificationHour = notificationHour,
     notificationMinute = notificationMinute,
     notificationEnabled = notificationEnabled

@@ -10,11 +10,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.NoteAdd
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -31,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.Note
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -79,6 +84,7 @@ private fun EventsScreen(events: MutableList<Event>) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showAttachDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -127,6 +133,33 @@ private fun EventsScreen(events: MutableList<Event>) {
                                     }
                             )
                         }
+                        event.noteId?.let { noteId ->
+                            Text(
+                                text = "Note attached",
+                                color = Color.Green,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .clickable {
+                                        scope.launch {
+                                            val note = withContext(Dispatchers.IO) {
+                                                EventDatabase.getInstance(context).noteDao().getNote(noteId)
+                                            }
+                                            note?.let {
+                                                val intent = android.content.Intent(context, NoteEditorActivity::class.java).apply {
+                                                    putExtra(EXTRA_NOTE_ID, it.id)
+                                                    putExtra(EXTRA_NOTE_HEADER, it.header)
+                                                    putExtra(EXTRA_NOTE_CONTENT, it.content)
+                                                    putExtra(EXTRA_NOTE_CREATED, it.created)
+                                                    putExtra(EXTRA_NOTE_SCROLL, it.scroll)
+                                                    putExtra(EXTRA_NOTE_CURSOR, it.cursor)
+                                                }
+                                                context.startActivity(intent)
+                                            }
+                                        }
+                                    }
+                            )
+                        }
                     }
                 }
             }
@@ -163,6 +196,13 @@ private fun EventsScreen(events: MutableList<Event>) {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             ExtendedFloatingActionButton(
+                onClick = { showAttachDialog = true },
+                icon = { Icon(Icons.Default.NoteAdd, contentDescription = null) },
+                text = { Text("Attach Note") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+            ExtendedFloatingActionButton(
                 onClick = { showCreateDialog = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Event") },
@@ -192,7 +232,7 @@ private fun EventsScreen(events: MutableList<Event>) {
                     editingIndex = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = Event(event.id, title, desc, date, addr, event.noteId)
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         events[index] = updated
                     }
@@ -228,6 +268,70 @@ private fun EventsScreen(events: MutableList<Event>) {
             )
         }
 
+        if (showAttachDialog) {
+            AttachNoteDialog(
+                events = events,
+                onDismiss = { showAttachDialog = false },
+                onAttach = { selectedIndex ->
+                    val event = events[selectedIndex]
+                    scope.launch {
+                        val db = EventDatabase.getInstance(context)
+                        val note = Note(
+                            header = event.title,
+                            content = "",
+                            created = System.currentTimeMillis(),
+                            lastOpened = System.currentTimeMillis()
+                        )
+                        val noteId = withContext(Dispatchers.IO) { db.noteDao().insert(note.toEntity()) }
+                        val updated = event.copy(noteId = noteId)
+                        withContext(Dispatchers.IO) { db.eventDao().update(updated.toEntity()) }
+                        events[selectedIndex] = updated
+                    }
+                    showAttachDialog = false
+                }
+            )
+        }
+
     }
+}
+
+@Composable
+private fun AttachNoteDialog(
+    events: List<Event>,
+    onDismiss: () -> Unit,
+    onAttach: (Int) -> Unit
+) {
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = { selectedIndex?.let { onAttach(it) } },
+                enabled = selectedIndex != null
+            ) { Text("OK") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        text = {
+            Column {
+                events.forEachIndexed { index, event ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { selectedIndex = index }
+                    ) {
+                        RadioButton(
+                            selected = selectedIndex == index,
+                            onClick = { selectedIndex = index }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(event.title)
+                    }
+                }
+            }
+        },
+        title = { Text("Select Event") }
+    )
 }
 
