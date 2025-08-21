@@ -11,7 +11,8 @@ data class Event(
     var address: String? = null,
     var notificationHour: Int? = null,  // Hour for notification (0-23)
     var notificationMinute: Int? = null, // Minute for notification (0-59)
-    var notificationEnabled: Boolean = false // Whether notification is enabled for this event
+    var notificationEnabled: Boolean = false, // Whether notification is enabled for this event
+    var noteId: Long? = null // Optional attached note ID
 ) {
     /**
      * Returns a formatted string representation of the notification time.

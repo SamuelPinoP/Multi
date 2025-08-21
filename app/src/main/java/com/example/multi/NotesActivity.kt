@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -56,9 +57,12 @@ import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.toEntity
 
+const val EXTRA_SELECT_NOTE = "extra_select_note"
+
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
     private var importRequest: (() -> Unit)? = null
+    private val selectMode: Boolean by lazy { intent.getBooleanExtra(EXTRA_SELECT_NOTE, false) }
 
     override fun onResume() {
         super.onResume()
@@ -161,7 +165,13 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 selectedIds.add(note.id)
                                             }
                                         } else {
-                                            if (note.attachmentUri != null) {
+                                            if (selectMode) {
+                                                (context as Activity).setResult(
+                                                    Activity.RESULT_OK,
+                                                    Intent().putExtra(EXTRA_NOTE_ID, note.id)
+                                                )
+                                                (context as Activity).finish()
+                                            } else if (note.attachmentUri != null) {
                                                 val uri = Uri.parse(note.attachmentUri)
                                                 context.contentResolver.takePersistableUriPermission(
                                                     uri,
