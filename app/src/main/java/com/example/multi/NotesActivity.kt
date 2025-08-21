@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.airbnb.lottie.compose.LottieAnimation
@@ -243,6 +245,22 @@ class NotesActivity : SegmentActivity("Notes") {
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    if (note.attachmentUri?.startsWith("event:") == true) {
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        M3Text(
+                                            text = "Attached",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color(0xFF388E3C),
+                                            modifier = Modifier.clickable {
+                                                val eventId = note.attachmentUri!!.removePrefix("event:").toLongOrNull()
+                                                if (eventId != null) {
+                                                    val intent = Intent(context, EventsActivity::class.java)
+                                                    intent.putExtra(EXTRA_EVENT_ID, eventId)
+                                                    context.startActivity(intent)
+                                                }
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
