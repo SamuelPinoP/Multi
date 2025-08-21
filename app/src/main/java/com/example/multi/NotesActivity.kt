@@ -161,7 +161,7 @@ class NotesActivity : SegmentActivity("Notes") {
                                                 selectedIds.add(note.id)
                                             }
                                         } else {
-                                            if (note.attachmentUri != null) {
+                                            if (note.attachmentUri != null && !note.attachmentUri!!.startsWith("event:")) {
                                                 val uri = Uri.parse(note.attachmentUri)
                                                 context.contentResolver.takePersistableUriPermission(
                                                     uri,

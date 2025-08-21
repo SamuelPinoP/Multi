@@ -1,23 +1,24 @@
 package com.example.multi
 
-
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -45,25 +46,69 @@ const val EXTRA_DATE = "extra_date"
 /** Activity displaying the list of user events. */
 class EventsActivity : SegmentActivity("Events") {
     private val events = mutableStateListOf<Event>()
+    private val eventNotes = mutableStateMapOf<Long, Note>()
+    private val showAttachDialogState = mutableStateOf(false)
 
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch {
-            val dao = EventDatabase.getInstance(this@EventsActivity).eventDao()
-            val stored = withContext(Dispatchers.IO) { dao.getEvents() }
-            events.clear(); events.addAll(stored.map { it.toModel() })
+            val db = EventDatabase.getInstance(this@EventsActivity)
+            val eventsStored = withContext(Dispatchers.IO) { db.eventDao().getEvents() }
+            val notesStored = withContext(Dispatchers.IO) { db.noteDao().getNotes() }
+            events.clear(); events.addAll(eventsStored.map { it.toModel() })
+            eventNotes.clear()
+            notesStored.map { it.toModel() }.forEach { note ->
+                note.attachmentUri?.takeIf { it.startsWith("event:") }?.let {
+                    val eventId = it.removePrefix("event:").toLongOrNull()
+                    if (eventId != null) eventNotes[eventId] = note
+                }
+            }
         }
     }
 
     @Composable
     override fun SegmentContent() {
         val events = remember { this@EventsActivity.events }
-        EventsScreen(events)
+        val notes = remember { this@EventsActivity.eventNotes }
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        val showAttachDialog by showAttachDialogState
+        EventsScreen(events, notes)
+        val attachable = events.filter { !notes.containsKey(it.id) }
+        if (showAttachDialog) {
+            AttachNoteDialog(
+                events = attachable,
+                onDismiss = { showAttachDialogState.value = false },
+                onAttach = { event ->
+                    showAttachDialogState.value = false
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).noteDao()
+                        val now = System.currentTimeMillis()
+                        val note = Note(
+                            header = event.title,
+                            content = "",
+                            created = now,
+                            lastOpened = now,
+                            attachmentUri = "event:${event.id}"
+                        )
+                        val id = withContext(Dispatchers.IO) { dao.insert(note.toEntity()) }
+                        eventNotes[event.id] = note.copy(id = id)
+                    }
+                }
+            )
+        }
     }
 
     @Composable
     override fun OverflowMenuItems(onDismiss: () -> Unit) {
         val context = LocalContext.current
+        DropdownMenuItem(
+            text = { Text("Attach Note") },
+            onClick = {
+                onDismiss()
+                showAttachDialogState.value = true
+            }
+        )
         DropdownMenuItem(
             text = { Text("Trash") },
             onClick = {
@@ -75,7 +120,7 @@ class EventsActivity : SegmentActivity("Events") {
 }
 
 @Composable
-private fun EventsScreen(events: MutableList<Event>) {
+private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Note>) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -124,6 +169,25 @@ private fun EventsScreen(events: MutableList<Event>) {
                                         val uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(addr))
                                         val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
                                         context.startActivity(mapIntent)
+                                    }
+                            )
+                        }
+                        notes[event.id]?.let { note ->
+                            Text(
+                                text = "Note attached",
+                                color = Color(0xFF388E3C),
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .clickable {
+                                        val intent = Intent(context, NoteEditorActivity::class.java)
+                                        intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                        intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                        intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                        intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                        intent.putExtra(EXTRA_NOTE_SCROLL, note.scroll)
+                                        intent.putExtra(EXTRA_NOTE_CURSOR, note.cursor)
+                                        context.startActivity(intent)
                                     }
                             )
                         }
@@ -227,7 +291,52 @@ private fun EventsScreen(events: MutableList<Event>) {
                 }
             )
         }
-
     }
 }
 
+@Composable
+private fun AttachNoteDialog(
+    events: List<Event>,
+    onDismiss: () -> Unit,
+    onAttach: (Event) -> Unit
+) {
+    var selectedIndex by remember { mutableStateOf(-1) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = { if (selectedIndex >= 0) onAttach(events[selectedIndex]) },
+                enabled = selectedIndex >= 0
+            ) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        text = {
+            if (events.isEmpty()) {
+                Text("No events available")
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 300.dp)
+                ) {
+                    itemsIndexed(events) { index, event ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedIndex = index }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            RadioButton(
+                                selected = selectedIndex == index,
+                                onClick = { selectedIndex = index }
+                            )
+                            Text(event.title, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            }
+        },
+        title = { Text("Attach Note") }
+    )
+}
