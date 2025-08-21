@@ -10,11 +10,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import android.content.Intent
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -28,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.multi.Note
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
@@ -79,6 +84,7 @@ private fun EventsScreen(events: MutableList<Event>) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showAttachDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -124,6 +130,31 @@ private fun EventsScreen(events: MutableList<Event>) {
                                         val uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(addr))
                                         val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
                                         context.startActivity(mapIntent)
+                                    }
+                            )
+                        }
+                        event.noteId?.let { nid ->
+                            Text(
+                                text = "Note attached",
+                                color = Color(0xFF2E7D32),
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .clickable {
+                                        scope.launch {
+                                            val dao = EventDatabase.getInstance(context).noteDao()
+                                            val note = withContext(Dispatchers.IO) { dao.getById(nid)?.toModel() }
+                                            note?.let {
+                                                val intent = Intent(context, NoteEditorActivity::class.java)
+                                                intent.putExtra(EXTRA_NOTE_ID, it.id)
+                                                intent.putExtra(EXTRA_NOTE_HEADER, it.header)
+                                                intent.putExtra(EXTRA_NOTE_CONTENT, it.content)
+                                                intent.putExtra(EXTRA_NOTE_CREATED, it.created)
+                                                intent.putExtra(EXTRA_NOTE_SCROLL, it.scroll)
+                                                intent.putExtra(EXTRA_NOTE_CURSOR, it.cursor)
+                                                context.startActivity(intent)
+                                            }
+                                        }
                                     }
                             )
                         }
@@ -180,6 +211,13 @@ private fun EventsScreen(events: MutableList<Event>) {
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
+            ExtendedFloatingActionButton(
+                onClick = { showAttachDialog = true },
+                icon = { Icon(Icons.Default.Note, contentDescription = null) },
+                text = { Text("Attach Note") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
         }
 
         val index = editingIndex
@@ -192,7 +230,7 @@ private fun EventsScreen(events: MutableList<Event>) {
                     editingIndex = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = event.copy(title = title, description = desc, date = date, address = addr)
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         events[index] = updated
                     }
@@ -218,6 +256,39 @@ private fun EventsScreen(events: MutableList<Event>) {
             )
         }
 
+        if (showAttachDialog) {
+            AttachNoteDialog(
+                events = events,
+                onDismiss = { showAttachDialog = false },
+                onAttach = { selected ->
+                    showAttachDialog = false
+                    scope.launch {
+                        val db = EventDatabase.getInstance(context)
+                        var nid = selected.noteId
+                        if (nid == null) {
+                            val newNote = Note(header = selected.title, content = "", created = System.currentTimeMillis(), lastOpened = System.currentTimeMillis())
+                            nid = withContext(Dispatchers.IO) { db.noteDao().insert(newNote.toEntity()) }
+                            val updated = selected.copy(noteId = nid)
+                            withContext(Dispatchers.IO) { db.eventDao().update(updated.toEntity()) }
+                            val idx = events.indexOfFirst { it.id == selected.id }
+                            if (idx >= 0) events[idx] = updated
+                        }
+                        val note = withContext(Dispatchers.IO) { db.noteDao().getById(nid!!)?.toModel() }
+                        note?.let {
+                            val intent = Intent(context, NoteEditorActivity::class.java)
+                            intent.putExtra(EXTRA_NOTE_ID, it.id)
+                            intent.putExtra(EXTRA_NOTE_HEADER, it.header)
+                            intent.putExtra(EXTRA_NOTE_CONTENT, it.content)
+                            intent.putExtra(EXTRA_NOTE_CREATED, it.created)
+                            intent.putExtra(EXTRA_NOTE_SCROLL, it.scroll)
+                            intent.putExtra(EXTRA_NOTE_CURSOR, it.cursor)
+                            context.startActivity(intent)
+                        }
+                    }
+                }
+            )
+        }
+
         if (showCreateDialog) {
             CreateEventDialog(
                 onDismiss = { showCreateDialog = false },
@@ -231,3 +302,41 @@ private fun EventsScreen(events: MutableList<Event>) {
     }
 }
 
+@Composable
+private fun AttachNoteDialog(
+    events: List<Event>,
+    onAttach: (Event) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Event") },
+        text = {
+            LazyColumn {
+                itemsIndexed(events) { index, event ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedIndex = index }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = selectedIndex == index, onClick = { selectedIndex = index })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(event.title)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { selectedIndex?.let { onAttach(events[it]) } },
+                enabled = selectedIndex != null
+            ) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
