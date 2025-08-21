@@ -14,9 +14,11 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,36 +49,27 @@ fun SpeedDialFab(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                FloatingActionButton(
+                ExtendedFloatingActionButton(
                     onClick = { expanded = false; onDelete() },
+                    icon = { Icon(imageVector = Icons.Default.Delete, contentDescription = null) },
+                    text = { Text("Trash") },
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete"
-                    )
-                }
-                FloatingActionButton(
+                )
+                ExtendedFloatingActionButton(
                     onClick = { expanded = false; onTextSize() },
+                    icon = { Icon(imageVector = Icons.Default.FormatSize, contentDescription = null) },
+                    text = { Text("Text Size") },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FormatSize,
-                        contentDescription = "Text Size"
-                    )
-                }
-                FloatingActionButton(
+                )
+                ExtendedFloatingActionButton(
                     onClick = { expanded = false; onShare() },
+                    icon = { Icon(imageVector = Icons.Default.Share, contentDescription = null) },
+                    text = { Text("Share") },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "Share"
-                    )
-                }
+                )
             }
         }
 
