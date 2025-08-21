@@ -4,17 +4,22 @@ package com.example.multi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -75,10 +80,54 @@ class EventsActivity : SegmentActivity("Events") {
 }
 
 @Composable
+private fun AttachNoteDialog(
+    events: List<Event>,
+    onDismiss: () -> Unit,
+    onAttach: (Event) -> Unit
+) {
+    var selectedId by remember { mutableStateOf<Long?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    selectedId?.let { id ->
+                        events.find { it.id == id }?.let(onAttach)
+                    }
+                },
+                enabled = selectedId != null
+            ) { Text("OK") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        text = {
+            LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                items(events) { event ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedId = event.id }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedId == event.id,
+                            onClick = { selectedId = event.id }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(event.title)
+                    }
+                }
+            }
+        }
+    )
+}
+
+@Composable
 private fun EventsScreen(events: MutableList<Event>) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showAttachDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -124,6 +173,31 @@ private fun EventsScreen(events: MutableList<Event>) {
                                         val uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(addr))
                                         val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
                                         context.startActivity(mapIntent)
+                                    }
+                            )
+                        }
+                        if (event.noteId != null) {
+                            Text(
+                                text = "Note attached",
+                                color = Color.Green,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .clickable {
+                                        scope.launch {
+                                            val dao = EventDatabase.getInstance(context).noteDao()
+                                            val note = withContext(Dispatchers.IO) { dao.getNoteById(event.noteId!!) }
+                                            note?.let {
+                                                val intent = android.content.Intent(context, NoteEditorActivity::class.java)
+                                                intent.putExtra(EXTRA_NOTE_ID, it.id)
+                                                intent.putExtra(EXTRA_NOTE_HEADER, it.header)
+                                                intent.putExtra(EXTRA_NOTE_CONTENT, it.content)
+                                                intent.putExtra(EXTRA_NOTE_CREATED, it.created)
+                                                intent.putExtra(EXTRA_NOTE_SCROLL, it.scroll)
+                                                intent.putExtra(EXTRA_NOTE_CURSOR, it.cursor)
+                                                context.startActivity(intent)
+                                            }
+                                        }
                                     }
                             )
                         }
@@ -180,6 +254,13 @@ private fun EventsScreen(events: MutableList<Event>) {
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
+            ExtendedFloatingActionButton(
+                onClick = { showAttachDialog = true },
+                icon = { Icon(Icons.Default.Description, contentDescription = null) },
+                text = { Text("Attach Note") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
         }
 
         val index = editingIndex
@@ -192,7 +273,7 @@ private fun EventsScreen(events: MutableList<Event>) {
                     editingIndex = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = event.copy(title = title, description = desc, date = date, address = addr)
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         events[index] = updated
                     }
@@ -224,6 +305,34 @@ private fun EventsScreen(events: MutableList<Event>) {
                 onCreated = { newEvent ->
                     events.add(newEvent)
                     showCreateDialog = false
+                }
+            )
+        }
+
+        if (showAttachDialog) {
+            AttachNoteDialog(
+                events = events.filter { it.noteId == null },
+                onDismiss = { showAttachDialog = false },
+                onAttach = { event ->
+                    showAttachDialog = false
+                    scope.launch {
+                        val db = EventDatabase.getInstance(context)
+                        val noteDao = db.noteDao()
+                        val newNote = Note(header = event.title, content = "", created = System.currentTimeMillis(), lastOpened = System.currentTimeMillis())
+                        val noteId = withContext(Dispatchers.IO) { noteDao.insert(newNote.toEntity()) }
+                        val eventDao = db.eventDao()
+                        val updated = event.copy(noteId = noteId)
+                        withContext(Dispatchers.IO) { eventDao.update(updated.toEntity()) }
+                        val idx = events.indexOfFirst { it.id == event.id }
+                        if (idx >= 0) events[idx] = updated
+                        val intent = android.content.Intent(context, NoteEditorActivity::class.java).apply {
+                            putExtra(EXTRA_NOTE_ID, noteId)
+                            putExtra(EXTRA_NOTE_HEADER, newNote.header)
+                            putExtra(EXTRA_NOTE_CONTENT, newNote.content)
+                            putExtra(EXTRA_NOTE_CREATED, newNote.created)
+                        }
+                        context.startActivity(intent)
+                    }
                 }
             )
         }
