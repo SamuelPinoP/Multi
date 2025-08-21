@@ -19,6 +19,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -45,6 +46,7 @@ import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 
 const val EXTRA_DATE = "extra_date"
+const val EXTRA_EVENT_ID = "extra_event_id"
 
 /** Activity displaying the list of user events. */
 class EventsActivity : SegmentActivity("Events") {
@@ -76,7 +78,9 @@ class EventsActivity : SegmentActivity("Events") {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val showAttachDialog by showAttachDialogState
-        EventsScreen(events, notes)
+        val openEventId = remember { intent.getLongExtra(EXTRA_EVENT_ID, -1L).takeIf { it >= 0 } }
+        LaunchedEffect(Unit) { intent.removeExtra(EXTRA_EVENT_ID) }
+        EventsScreen(events, notes, openEventId)
         val attachable = events.filter { !notes.containsKey(it.id) }
         if (showAttachDialog) {
             AttachNoteDialog(
@@ -129,11 +133,20 @@ class EventsActivity : SegmentActivity("Events") {
 }
 
 @Composable
-private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Note>) {
+private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Note>, openEventId: Long?) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var pendingOpenEventId by remember { mutableStateOf(openEventId) }
+    LaunchedEffect(events.size, pendingOpenEventId) {
+        val id = pendingOpenEventId
+        if (id != null) {
+            val idx = events.indexOfFirst { it.id == id }
+            if (idx >= 0) editingIndex = idx
+            pendingOpenEventId = null
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
