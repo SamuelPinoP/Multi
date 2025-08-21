@@ -3,6 +3,8 @@ package com.example.multi
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.app.Activity
+import android.os.Bundle
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -56,9 +58,18 @@ import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.toEntity
 
+const val EXTRA_PICK_NOTE = "extra_pick_note"
+const val EXTRA_SELECTED_NOTE_ID = "extra_selected_note_id"
+
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
     private var importRequest: (() -> Unit)? = null
+    private var pickMode = false
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        pickMode = intent.getBooleanExtra(EXTRA_PICK_NOTE, false)
+        super.onCreate(savedInstanceState)
+    }
 
     override fun onResume() {
         super.onResume()
@@ -75,7 +86,9 @@ class NotesActivity : SegmentActivity("Notes") {
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
+        val activity = context as Activity
         val notes = remember { this@NotesActivity.notes }
+        val picking = this@NotesActivity.pickMode
         var selectionMode by remember { mutableStateOf(false) }
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
@@ -109,7 +122,7 @@ class NotesActivity : SegmentActivity("Notes") {
         }
         importRequest = { importLauncher.launch(arrayOf("*/*")) }
 
-        BackHandler(enabled = selectionMode) {
+        BackHandler(enabled = selectionMode && !picking) {
             selectedIds.clear()
             selectionMode = false
         }
@@ -153,7 +166,11 @@ class NotesActivity : SegmentActivity("Notes") {
                                 .fillMaxWidth()
                                 .combinedClickable(
                                     onClick = {
-                                        if (selectionMode) {
+                                        if (picking) {
+                                            val result = Intent().putExtra(EXTRA_SELECTED_NOTE_ID, note.id)
+                                            activity.setResult(Activity.RESULT_OK, result)
+                                            activity.finish()
+                                        } else if (selectionMode) {
                                             if (selected) {
                                                 selectedIds.remove(note.id)
                                                 if (selectedIds.isEmpty()) selectionMode = false
@@ -185,12 +202,14 @@ class NotesActivity : SegmentActivity("Notes") {
                                         }
                                     },
                                     onLongClick = {
-                                        if (!selectionMode) selectionMode = true
-                                        if (selected) {
-                                            selectedIds.remove(note.id)
-                                            if (selectedIds.isEmpty()) selectionMode = false
-                                        } else {
-                                            selectedIds.add(note.id)
+                                        if (!picking) {
+                                            if (!selectionMode) selectionMode = true
+                                            if (selected) {
+                                                selectedIds.remove(note.id)
+                                                if (selectedIds.isEmpty()) selectionMode = false
+                                            } else {
+                                                selectedIds.add(note.id)
+                                            }
                                         }
                                     }
                                 )
@@ -249,104 +268,106 @@ class NotesActivity : SegmentActivity("Notes") {
                 }
             }
 
-            if (selectionMode) {
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    ExtendedFloatingActionButton(
-                        onClick = {
-                            val targets = notes.filter { it.id in selectedIds }
-                            scope.launch {
-                                val db = EventDatabase.getInstance(context)
-                                withContext(Dispatchers.IO) {
-                                    val noteDao = db.noteDao()
-                                    val trashDao = db.trashedNoteDao()
-                                    targets.forEach { note ->
-                                        trashDao.insert(
-                                            TrashedNote(
-                                                header = note.header,
-                                                content = note.content,
-                                                created = note.created,
-                                                attachmentUri = note.attachmentUri
-                                            ).toEntity()
-                                        )
-                                        noteDao.delete(note.toEntity())
-                                    }
-                                }
-                                notes.removeAll { it.id in selectedIds }
-                                selectedIds.clear()
-                                selectionMode = false
-                            }
-                        },
-                        icon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                        text = { M3Text("Delete") },
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    )
-
-                    Box {
+            if (!picking) {
+                if (selectionMode) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
                         ExtendedFloatingActionButton(
-                            onClick = { shareMenuExpanded = true },
-                            icon = { Icon(Icons.Default.Share, contentDescription = null) },
-                            text = { M3Text("Share") },
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            onClick = {
+                                val targets = notes.filter { it.id in selectedIds }
+                                scope.launch {
+                                    val db = EventDatabase.getInstance(context)
+                                    withContext(Dispatchers.IO) {
+                                        val noteDao = db.noteDao()
+                                        val trashDao = db.trashedNoteDao()
+                                        targets.forEach { note ->
+                                            trashDao.insert(
+                                                TrashedNote(
+                                                    header = note.header,
+                                                    content = note.content,
+                                                    created = note.created,
+                                                    attachmentUri = note.attachmentUri
+                                                ).toEntity()
+                                            )
+                                            noteDao.delete(note.toEntity())
+                                        }
+                                    }
+                                    notes.removeAll { it.id in selectedIds }
+                                    selectedIds.clear()
+                                    selectionMode = false
+                                }
+                            },
+                            icon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                            text = { M3Text("Delete") },
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
                         )
-                        DropdownMenu(
-                            expanded = shareMenuExpanded,
-                            onDismissRequest = { shareMenuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { M3Text("Word") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val targets = notes.filter { it.id in selectedIds }
-                                    shareNotesAsDocx(targets, context)
-                                    selectedIds.clear()
-                                    selectionMode = false
-                                }
+
+                        Box {
+                            ExtendedFloatingActionButton(
+                                onClick = { shareMenuExpanded = true },
+                                icon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                text = { M3Text("Share") },
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                             )
-                            DropdownMenuItem(
-                                text = { M3Text("Text File") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val targets = notes.filter { it.id in selectedIds }
-                                    shareNotesAsTxt(targets, context)
-                                    selectedIds.clear()
-                                    selectionMode = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { M3Text("PDF") },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    val targets = notes.filter { it.id in selectedIds }
-                                    shareNotesAsPdf(targets, context)
-                                    selectedIds.clear()
-                                    selectionMode = false
-                                }
-                            )
+                            DropdownMenu(
+                                expanded = shareMenuExpanded,
+                                onDismissRequest = { shareMenuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { M3Text("Word") },
+                                    onClick = {
+                                        shareMenuExpanded = false
+                                        val targets = notes.filter { it.id in selectedIds }
+                                        shareNotesAsDocx(targets, context)
+                                        selectedIds.clear()
+                                        selectionMode = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { M3Text("Text File") },
+                                    onClick = {
+                                        shareMenuExpanded = false
+                                        val targets = notes.filter { it.id in selectedIds }
+                                        shareNotesAsTxt(targets, context)
+                                        selectedIds.clear()
+                                        selectionMode = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { M3Text("PDF") },
+                                    onClick = {
+                                        shareMenuExpanded = false
+                                        val targets = notes.filter { it.id in selectedIds }
+                                        shareNotesAsPdf(targets, context)
+                                        selectedIds.clear()
+                                        selectionMode = false
+                                    }
+                                )
+                            }
                         }
                     }
-                }
-            } else {
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(bottom = 80.dp, end = 32.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    FloatingActionButton(
-                        onClick = {
-                            context.startActivity(Intent(context, NoteEditorActivity::class.java))
-                        },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(bottom = 80.dp, end = 32.dp),
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
+                        FloatingActionButton(
+                            onClick = {
+                                context.startActivity(Intent(context, NoteEditorActivity::class.java))
+                            },
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                        }
                     }
                 }
             }
@@ -355,6 +376,7 @@ class NotesActivity : SegmentActivity("Notes") {
 
     @Composable
     override fun OverflowMenuItems(onDismiss: () -> Unit) {
+        if (pickMode) return
         val context = LocalContext.current
         DropdownMenuItem(
             text = { M3Text("Import") },

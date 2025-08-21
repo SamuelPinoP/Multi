@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -39,6 +40,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.app.Activity
+import android.content.Intent
+import android.widget.Toast
 
 const val EXTRA_DATE = "extra_date"
 
@@ -79,7 +85,25 @@ private fun EventsScreen(events: MutableList<Event>) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var attachMode by remember { mutableStateOf(false) }
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
+    val notePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val noteId = result.data?.getLongExtra(EXTRA_SELECTED_NOTE_ID, 0L) ?: 0L
+        val idx = selectedIndex
+        if (result.resultCode == Activity.RESULT_OK && idx != null && noteId != 0L) {
+            val current = events[idx]
+            val updated = current.copy(noteId = noteId)
+            scope.launch {
+                val dao = EventDatabase.getInstance(context).eventDao()
+                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                events[idx] = updated
+                Toast.makeText(context, "Note attached", Toast.LENGTH_SHORT).show()
+            }
+        }
+        attachMode = false
+        selectedIndex = null
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -93,7 +117,16 @@ private fun EventsScreen(events: MutableList<Event>) {
                     elevation = CardDefaults.elevatedCardElevation(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { editingIndex = index }
+                        .clickable {
+                            if (attachMode) {
+                                selectedIndex = index
+                                val intent = Intent(context, NotesActivity::class.java)
+                                intent.putExtra(EXTRA_PICK_NOTE, true)
+                                notePickerLauncher.launch(intent)
+                            } else {
+                                editingIndex = index
+                            }
+                        }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -124,6 +157,32 @@ private fun EventsScreen(events: MutableList<Event>) {
                                         val uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(addr))
                                         val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
                                         context.startActivity(mapIntent)
+                                    }
+                            )
+                        }
+                        event.noteId?.let { noteId ->
+                            Text(
+                                text = "Note attached",
+                                color = Color(0xFF388E3C),
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .clickable {
+                                        scope.launch {
+                                            val dao = EventDatabase.getInstance(context).noteDao()
+                                            val note = withContext(Dispatchers.IO) { dao.getNoteById(noteId) }
+                                            note?.let { n ->
+                                                val intent = Intent(context, NoteEditorActivity::class.java).apply {
+                                                    putExtra(EXTRA_NOTE_ID, n.id)
+                                                    putExtra(EXTRA_NOTE_HEADER, n.header)
+                                                    putExtra(EXTRA_NOTE_CONTENT, n.content)
+                                                    putExtra(EXTRA_NOTE_CREATED, n.created)
+                                                    putExtra(EXTRA_NOTE_SCROLL, n.scroll)
+                                                    putExtra(EXTRA_NOTE_CURSOR, n.cursor)
+                                                }
+                                                context.startActivity(intent)
+                                            }
+                                        }
                                     }
                             )
                         }
@@ -163,6 +222,16 @@ private fun EventsScreen(events: MutableList<Event>) {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             ExtendedFloatingActionButton(
+                onClick = {
+                    attachMode = true
+                    Toast.makeText(context, "Choose an event", Toast.LENGTH_SHORT).show()
+                },
+                icon = { Icon(Icons.Default.AttachFile, contentDescription = null) },
+                text = { Text("Attach Note") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+            ExtendedFloatingActionButton(
                 onClick = { showCreateDialog = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Event") },
@@ -192,7 +261,7 @@ private fun EventsScreen(events: MutableList<Event>) {
                     editingIndex = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = event.copy(title = title, description = desc, date = date, address = addr)
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         events[index] = updated
                     }
