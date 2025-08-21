@@ -30,6 +30,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -146,8 +148,10 @@ private fun ThemeToggleAction(
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             val nextText = if (darkThemeState.value) "Light Theme" else "Dark Theme"
+            val icon = if (darkThemeState.value) Icons.Default.LightMode else Icons.Default.DarkMode
             DropdownMenuItem(
                 text = { Text(nextText) },
+                leadingIcon = { Icon(icon, contentDescription = null) },
                 onClick = {
                     val newValue = !darkThemeState.value
                     darkThemeState.value = newValue

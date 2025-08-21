@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -47,12 +49,14 @@ import androidx.lifecycle.lifecycleScope
 
 const val EXTRA_DATE = "extra_date"
 const val EXTRA_EVENT_ID = "extra_event_id"
+const val EXTRA_ATTACH_NOTE_ID = "extra_attach_note_id"
 
 /** Activity displaying the list of user events. */
 class EventsActivity : SegmentActivity("Events") {
     private val events = mutableStateListOf<Event>()
     private val eventNotes = mutableStateMapOf<Long, Note>()
     private val showAttachDialogState = mutableStateOf(false)
+    private val attachNoteIdState = mutableStateOf<Long?>(null)
 
     override fun onResume() {
         super.onResume()
@@ -68,6 +72,12 @@ class EventsActivity : SegmentActivity("Events") {
                     if (eventId != null) eventNotes[eventId] = note
                 }
             }
+            val noteId = intent.getLongExtra(EXTRA_ATTACH_NOTE_ID, -1L).takeIf { it >= 0 }
+            if (noteId != null) {
+                attachNoteIdState.value = noteId
+                showAttachDialogState.value = true
+                intent.removeExtra(EXTRA_ATTACH_NOTE_ID)
+            }
         }
     }
 
@@ -78,6 +88,7 @@ class EventsActivity : SegmentActivity("Events") {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val showAttachDialog by showAttachDialogState
+        val attachNoteId by attachNoteIdState
         val openEventId = remember { intent.getLongExtra(EXTRA_EVENT_ID, -1L).takeIf { it >= 0 } }
         LaunchedEffect(Unit) { intent.removeExtra(EXTRA_EVENT_ID) }
         EventsScreen(events, notes, openEventId)
@@ -85,27 +96,45 @@ class EventsActivity : SegmentActivity("Events") {
         if (showAttachDialog) {
             AttachNoteDialog(
                 events = attachable,
-                onDismiss = { showAttachDialogState.value = false },
+                onDismiss = {
+                    showAttachDialogState.value = false
+                    attachNoteIdState.value = null
+                },
                 onAttach = { event ->
                     showAttachDialogState.value = false
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).noteDao()
-                        val now = System.currentTimeMillis()
-                        val note = Note(
-                            header = event.title,
-                            content = "",
-                            created = now,
-                            lastOpened = now,
-                            attachmentUri = "event:${event.id}"
-                        )
-                        val id = withContext(Dispatchers.IO) { dao.insert(note.toEntity()) }
-                        val intent = Intent(context, NoteEditorActivity::class.java)
-                        intent.putExtra(EXTRA_NOTE_ID, id)
-                        intent.putExtra(EXTRA_NOTE_HEADER, note.header)
-                        intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
-                        intent.putExtra(EXTRA_NOTE_CREATED, note.created)
-                        intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
-                        context.startActivity(intent)
+                        if (attachNoteId == null) {
+                            val now = System.currentTimeMillis()
+                            val note = Note(
+                                header = event.title,
+                                content = "",
+                                created = now,
+                                lastOpened = now,
+                                attachmentUri = "event:${event.id}"
+                            )
+                            val id = withContext(Dispatchers.IO) { dao.insert(note.toEntity()) }
+                            val intent = Intent(context, NoteEditorActivity::class.java)
+                            intent.putExtra(EXTRA_NOTE_ID, id)
+                            intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                            intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                            intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                            intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
+                            context.startActivity(intent)
+                        } else {
+                            withContext(Dispatchers.IO) { dao.updateAttachment(attachNoteId, "event:${event.id}") }
+                            val noteEntity = withContext(Dispatchers.IO) { dao.getNotes().firstOrNull { it.id == attachNoteId } }
+                            noteEntity?.toModel()?.let { note ->
+                                val intent = Intent(context, NoteEditorActivity::class.java)
+                                intent.putExtra(EXTRA_NOTE_ID, note.id)
+                                intent.putExtra(EXTRA_NOTE_HEADER, note.header)
+                                intent.putExtra(EXTRA_NOTE_CONTENT, note.content)
+                                intent.putExtra(EXTRA_NOTE_CREATED, note.created)
+                                intent.putExtra(EXTRA_NOTE_ATTACHMENT_URI, note.attachmentUri)
+                                context.startActivity(intent)
+                            }
+                            attachNoteIdState.value = null
+                        }
                     }
                 }
             )
@@ -117,6 +146,7 @@ class EventsActivity : SegmentActivity("Events") {
         val context = LocalContext.current
         DropdownMenuItem(
             text = { Text("Attach Note") },
+            leadingIcon = { Icon(Icons.Default.AttachFile, contentDescription = null) },
             onClick = {
                 onDismiss()
                 showAttachDialogState.value = true
@@ -124,6 +154,7 @@ class EventsActivity : SegmentActivity("Events") {
         )
         DropdownMenuItem(
             text = { Text("Trash") },
+            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
             onClick = {
                 onDismiss()
                 context.startActivity(android.content.Intent(context, EventTrashActivity::class.java))

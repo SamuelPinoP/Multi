@@ -48,6 +48,12 @@ import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsTxt
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.FormatSize
+import androidx.compose.material3.Icon
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -313,6 +319,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
         DropdownMenuItem(
             text = { Text("Share") },
+            leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
             onClick = {
                 onDismiss()
                 val note = Note(
@@ -328,6 +335,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         )
         DropdownMenuItem(
             text = { Text("Text Size") },
+            leadingIcon = { Icon(Icons.Default.FormatSize, contentDescription = null) },
             onClick = {
                 onDismiss()
                 showSizeDialog = true
@@ -335,6 +343,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
         )
         DropdownMenuItem(
             text = { Text("Delete") },
+            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
             onClick = {
                 onDismiss()
                 if (noteId != 0L) {
