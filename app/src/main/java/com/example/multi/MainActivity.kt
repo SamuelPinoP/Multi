@@ -4,12 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.material.Scaffold
 import androidx.compose.ui.Modifier
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.ThemePreferences
@@ -18,6 +13,9 @@ import com.example.multi.data.EventDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
 /**
  * Main entry point of the application.
@@ -41,13 +39,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MultiTheme(darkTheme = ThemePreferences.isDarkTheme(this)) {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    contentWindowInsets = WindowInsets.safeDrawing
-                ) { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding)) {
-                        MedallionScreen()
-                    }
+                val navController = rememberNavController()
+                NavHost(
+                    navController = navController,
+                    startDestination = "medallion",
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    composable("medallion") { MedallionScreen(navController) }
+                    composable("calendar") { CalendarMenuScreen() }
+                    composable("events") { EventsRoute(navController) }
+                    composable("weekly_goals") { WeeklyGoalsRoute(navController) }
+                    composable("notes") { NotesRoute(navController) }
                 }
             }
         }

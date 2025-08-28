@@ -1,6 +1,5 @@
 package com.example.multi
 
-import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -24,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -154,9 +153,7 @@ fun Medallion(
 /** Simple screen displaying the [Medallion] in the center. */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun MedallionScreen() {
-    val context = LocalContext.current
-
+fun MedallionScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -164,13 +161,13 @@ fun MedallionScreen() {
         contentAlignment = Alignment.Center
     ) {
         Medallion { segment ->
-            val cls = when (segment) {
-                MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                MedallionSegment.EVENTS -> EventsActivity::class.java
-                MedallionSegment.NOTES -> NotesActivity::class.java
+            val route = when (segment) {
+                MedallionSegment.CALENDAR -> "calendar"
+                MedallionSegment.WEEKLY_GOALS -> "weekly_goals"
+                MedallionSegment.EVENTS -> "events"
+                MedallionSegment.NOTES -> "notes"
             }
-            context.startActivity(Intent(context, cls))
+            navController.navigate(route)
         }
     }
 }

@@ -133,7 +133,7 @@ class EventsActivity : SegmentActivity("Events") {
 }
 
 @Composable
-private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Note>, openEventId: Long?) {
+fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Note>, openEventId: Long?) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
