@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.annotation.StringRes
@@ -61,7 +63,7 @@ private fun SegmentButton(
         onClick = onClick,
         colors = CardDefaults.elevatedCardColors(containerColor = containerColor, contentColor = contentColor),
         shape = RoundedCornerShape(12.dp),
-        modifier = cardModifier
+        modifier = cardModifier.semantics { contentDescription = label }
     ) {
         Column(
             modifier = Modifier
