@@ -2,6 +2,9 @@ package com.example.multi
 
 import android.content.Intent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -24,9 +27,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
+import androidx.annotation.StringRes
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, NOTES }
+
+private data class SegmentDefinition(
+    val segment: MedallionSegment,
+    @StringRes val labelRes: Int,
+    val icon: ImageVector,
+    val containerColor: Color
+)
 
 /**
  * Basic button used by [Medallion] segments.
@@ -79,6 +90,33 @@ fun Medallion(
     modifier: Modifier = Modifier,
     onSegmentClick: (MedallionSegment) -> Unit = {}
 ) {
+    val segments = listOf(
+        SegmentDefinition(
+            segment = MedallionSegment.CALENDAR,
+            labelRes = R.string.label_calendar,
+            icon = Icons.Default.DateRange,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ),
+        SegmentDefinition(
+            segment = MedallionSegment.EVENTS,
+            labelRes = R.string.label_events,
+            icon = Icons.Default.Event,
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        ),
+        SegmentDefinition(
+            segment = MedallionSegment.WEEKLY_GOALS,
+            labelRes = R.string.label_weekly_goals,
+            icon = Icons.Default.Flag,
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        SegmentDefinition(
+            segment = MedallionSegment.NOTES,
+            labelRes = R.string.label_notes,
+            icon = Icons.Default.Note,
+            containerColor = MaterialTheme.colorScheme.inversePrimary
+        )
+    )
+
     Column(
         modifier = modifier
             .fillMaxWidth(),
@@ -92,41 +130,21 @@ fun Medallion(
                 .padding(bottom = 8.dp),
             textAlign = TextAlign.Center
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            contentPadding = PaddingValues(0.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            SegmentButton(
-                label = stringResource(R.string.label_calendar),
-                icon = Icons.Default.DateRange,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                onClick = { onSegmentClick(MedallionSegment.CALENDAR) },
-                modifier = Modifier.weight(1f)
-            )
-            SegmentButton(
-                label = stringResource(R.string.label_events),
-                icon = Icons.Default.Event,
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                onClick = { onSegmentClick(MedallionSegment.EVENTS) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            SegmentButton(
-                label = stringResource(R.string.label_weekly_goals),
-                icon = Icons.Default.Flag,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                onClick = { onSegmentClick(MedallionSegment.WEEKLY_GOALS) },
-                modifier = Modifier.weight(1f)
-            )
-            SegmentButton(
-                label = stringResource(R.string.label_notes),
-                icon = Icons.Default.Note,
-                containerColor = MaterialTheme.colorScheme.inversePrimary,
-                onClick = { onSegmentClick(MedallionSegment.NOTES) },
-                modifier = Modifier.weight(1f)
-            )
+            items(segments) { segment ->
+                SegmentButton(
+                    label = stringResource(segment.labelRes),
+                    icon = segment.icon,
+                    containerColor = segment.containerColor,
+                    onClick = { onSegmentClick(segment.segment) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
