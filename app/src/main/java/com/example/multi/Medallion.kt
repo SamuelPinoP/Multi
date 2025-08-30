@@ -1,6 +1,7 @@
 package com.example.multi
 
 import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -20,6 +21,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberInfiniteTransition
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +39,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.annotation.StringRes
 
 /** Enum describing each clickable segment of the medallion. */
@@ -128,17 +141,37 @@ fun Medallion(
             .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        var pressed by remember { mutableStateOf(false) }
+        val scale by animateFloatAsState(
+            targetValue = if (pressed) 1.1f else 1f,
+            animationSpec = tween(durationMillis = 300),
+            label = "scale"
+        )
+        val transition = rememberInfiniteTransition(label = "gradient")
+        val shift by transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1000f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(5000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "shift"
+        )
+        val brush = Brush.linearGradient(
+            colors = listOf(
+                MaterialTheme.colorScheme.primary,
+                MaterialTheme.colorScheme.secondary,
+                MaterialTheme.colorScheme.tertiary,
+                MaterialTheme.colorScheme.primary
+            ),
+            start = Offset(shift, 0f),
+            end = Offset(shift + 400f, 0f)
+        )
         Text(
             text = "Multi",
             style = MaterialTheme.typography.headlineLarge.copy(
                 fontWeight = FontWeight.ExtraBold,
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.secondary,
-                        MaterialTheme.colorScheme.tertiary
-                    )
-                ),
+                brush = brush,
                 shadow = Shadow(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                     offset = Offset(2f, 2f),
@@ -147,6 +180,8 @@ fun Medallion(
             ),
             modifier = Modifier
                 .fillMaxWidth()
+                .graphicsLayer(scaleX = scale, scaleY = scale)
+                .clickable { pressed = !pressed }
                 .padding(bottom = 8.dp),
             textAlign = TextAlign.Center
         )
