@@ -1,11 +1,20 @@
 package com.example.multi
 
 import android.content.Intent
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.pointerInput
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -20,12 +29,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -87,6 +100,60 @@ private fun SegmentButton(
     }
 }
 
+@Composable
+private fun AnimatedMultiTitle(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "multiGradient")
+    val shift by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 6000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "gradientShift"
+    )
+    var pressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 1.1f else 1f,
+        animationSpec = tween(durationMillis = 300),
+        label = "scale"
+    )
+    val gradientColors = listOf(
+        MaterialTheme.colorScheme.primary,
+        MaterialTheme.colorScheme.secondary,
+        MaterialTheme.colorScheme.tertiary,
+        MaterialTheme.colorScheme.primary
+    )
+    Text(
+        text = "Multi",
+        style = MaterialTheme.typography.headlineLarge.copy(
+            fontWeight = FontWeight.ExtraBold,
+            brush = Brush.linearGradient(
+                colors = gradientColors,
+                start = Offset(shift, 0f),
+                end = Offset(shift + 200f, 200f)
+            ),
+            shadow = Shadow(
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                offset = Offset(2f, 2f),
+                blurRadius = 4f
+            )
+        ),
+        modifier = modifier
+            .graphicsLayer(scaleX = scale, scaleY = scale)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        pressed = true
+                        tryAwaitRelease()
+                        pressed = false
+                    }
+                )
+            },
+        textAlign = TextAlign.Center
+    )
+}
+
 /**
  * Displays four clickable squares representing calendar, events, weekly goals
  * and notes.
@@ -128,27 +195,10 @@ fun Medallion(
             .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Multi",
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontWeight = FontWeight.ExtraBold,
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.secondary,
-                        MaterialTheme.colorScheme.tertiary
-                    )
-                ),
-                shadow = Shadow(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                    offset = Offset(2f, 2f),
-                    blurRadius = 4f
-                )
-            ),
+        AnimatedMultiTitle(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            textAlign = TextAlign.Center
+                .padding(bottom = 8.dp)
         )
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
