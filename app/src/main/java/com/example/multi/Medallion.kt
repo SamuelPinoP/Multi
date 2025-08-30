@@ -111,16 +111,10 @@ fun Medallion(
 ) {
     val segments = listOf(
         SegmentDefinition(
-            segment = MedallionSegment.CALENDAR,
-            labelRes = R.string.label_calendar,
-            icon = Icons.Default.DateRange,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        ),
-        SegmentDefinition(
-            segment = MedallionSegment.EVENTS,
-            labelRes = R.string.label_events,
-            icon = Icons.Default.Event,
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+            segment = MedallionSegment.NOTES,
+            labelRes = R.string.label_notes,
+            icon = Icons.Default.Note,
+            containerColor = MaterialTheme.colorScheme.inversePrimary
         ),
         SegmentDefinition(
             segment = MedallionSegment.WEEKLY_GOALS,
@@ -129,10 +123,16 @@ fun Medallion(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
         SegmentDefinition(
-            segment = MedallionSegment.NOTES,
-            labelRes = R.string.label_notes,
-            icon = Icons.Default.Note,
-            containerColor = MaterialTheme.colorScheme.inversePrimary
+            segment = MedallionSegment.EVENTS,
+            labelRes = R.string.label_events,
+            icon = Icons.Default.Event,
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        ),
+        SegmentDefinition(
+            segment = MedallionSegment.CALENDAR,
+            labelRes = R.string.label_calendar,
+            icon = Icons.Default.DateRange,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     )
 
