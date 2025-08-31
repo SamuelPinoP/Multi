@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -67,6 +69,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import kotlinx.coroutines.delay
 
 const val EXTRA_GOAL_ID = "extra_goal_id"
 
@@ -120,6 +123,10 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedGoalIndex by remember { mutableStateOf<Int?>(null) }
     var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
+    val currentWeekNumber = currentWeek()
+    var weekCelebrated by remember { mutableStateOf(GoalPreferences.getCompletedWeek(context) == currentWeekNumber) }
+    var showCongratsDialog by remember { mutableStateOf(false) }
+    var showConfetti by remember { mutableStateOf(false) }
 
     LaunchedEffect(highlightGoalId) {
         val db = EventDatabase.getInstance(context)
@@ -270,7 +277,17 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                                                 lastCheckedDate = today
                                                             )
                                                             goals[index] = updated
-                                                            scope.launch {
+                            if (updated.remaining == 0) {
+                                showConfetti = true
+                                scope.launch { snackbarHostState.showSnackbar("Goal completed") }
+                                val allDone = goals.all { it.remaining == 0 }
+                                if (allDone && !weekCelebrated) {
+                                    showCongratsDialog = true
+                                    weekCelebrated = true
+                                    GoalPreferences.setCompletedWeek(context, currentWeekNumber)
+                                }
+                            }
+                            scope.launch {
                                                                 saveGoalCompletion(
                                                                     context = context,
                                                                     goalId = goal.id,
@@ -453,6 +470,16 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         lastCheckedDate = LocalDate.now().toString()
                     )
                     goals[gIndex] = updated
+                    if (updated.remaining == 0) {
+                        showConfetti = true
+                        scope.launch { snackbarHostState.showSnackbar("Goal completed") }
+                        val allDone = goals.all { it.remaining == 0 }
+                        if (allDone && !weekCelebrated) {
+                            showCongratsDialog = true
+                            weekCelebrated = true
+                            GoalPreferences.setCompletedWeek(context, currentWeekNumber)
+                        }
+                    }
                     scope.launch {
                         val today = LocalDate.now()
                         val startOfWeek = today.minusDays((today.dayOfWeek.value % 7).toLong())
@@ -478,6 +505,34 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 64.dp)
         )
+
+        ConfettiAnimation(showConfetti, modifier = Modifier.matchParentSize())
+
+        if (weekCelebrated) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .border(8.dp, Color.Black)
+            )
+        }
+
+        if (showCongratsDialog) {
+            AlertDialog(
+                onDismissRequest = { showCongratsDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showCongratsDialog = false }) { Text("OK") }
+                },
+                title = { Text("Congrats!") },
+                text = { Text("You have become better this week") }
+            )
+        }
+
+        LaunchedEffect(showConfetti) {
+            if (showConfetti) {
+                delay(3000)
+                showConfetti = false
+            }
+        }
     }
 }
 
