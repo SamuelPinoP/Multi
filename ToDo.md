@@ -1,13 +1,6 @@
 /*
 
-* I need to create some kind of celebration animation whenever the user completes all his weekly
-goals. Consider the embellishment of the UI in every screen.
-
-* Putting Calendar first gives the wrong idea:
-  Maybe putting the notes first would make it seem a notes application instead of a Calendar 
-application. Also create the note widget. Put Calendar at the end like an addition to the app or 
-content it has that the user has available. Calendar has three Calendars as I wanted to create it 
-but it is less understandable.
+* Also create the note widget. 
 
 * Icon:
   Multi and Tic Tac Toe need icons. I bet that is easy to do.
