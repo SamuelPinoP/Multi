@@ -2,6 +2,8 @@ package com.example.multi
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -120,13 +123,29 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedGoalIndex by remember { mutableStateOf<Int?>(null) }
     var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
+    val weekNumber = currentWeek()
+    var showConfetti by remember { mutableStateOf(false) }
+    var confettiMessage by remember { mutableStateOf<String?>(null) }
+    var showAllCompleteDialog by remember { mutableStateOf(false) }
+    var edgeCelebration by remember { mutableStateOf(WeeklyGoalPreferences.getCompletionWeek(context) == weekNumber) }
+
+    fun handleOverallCompletion() {
+        if (goals.isNotEmpty() && goals.all { it.remaining == 0 }) {
+            if (!edgeCelebration) {
+                showConfetti = true
+                confettiMessage = null
+                showAllCompleteDialog = true
+                edgeCelebration = true
+                WeeklyGoalPreferences.setCompletionWeek(context, weekNumber)
+            }
+        }
+    }
 
     LaunchedEffect(highlightGoalId) {
         val db = EventDatabase.getInstance(context)
         val dao = db.weeklyGoalDao()
         val recordDao = db.weeklyGoalRecordDao()
         val stored = withContext(Dispatchers.IO) { dao.getGoals() }
-        val currentWeek = currentWeek()
         val today = LocalDate.now()
         val startCurrent = today.minusDays((today.dayOfWeek.value % 7).toLong())
         val prevStart = startCurrent.minusDays(7)
@@ -136,7 +155,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
         goals.clear()
         stored.forEach { entity ->
             var model = entity.toModel()
-            if (model.weekNumber != currentWeek) {
+            if (model.weekNumber != weekNumber) {
                 val completed = model.dayStates.count { it == 'C' }
                 val record = WeeklyGoalRecord(
                     header = model.header,
@@ -149,7 +168,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
                     remaining = model.frequency,
-                    weekNumber = currentWeek,
+                    weekNumber = weekNumber,
                     lastCheckedDate = null,
                     dayStates = DEFAULT_DAY_STATES
                 )
@@ -165,10 +184,22 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 editingIndex = index
             }
         }
+        val storedWeek = WeeklyGoalPreferences.getCompletionWeek(context)
+        if (storedWeek != weekNumber) {
+            WeeklyGoalPreferences.setCompletionWeek(context, -1)
+            edgeCelebration = false
+        } else if (storedWeek == weekNumber) {
+            edgeCelebration = true
+        }
+        handleOverallCompletion()
     }
 
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(if (edgeCelebration) Modifier.border(12.dp, Color.Black) else Modifier)
+    ) {
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -270,6 +301,11 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                                                 lastCheckedDate = today
                                                             )
                                                             goals[index] = updated
+                                                            if (updated.remaining == 0) {
+                                                                showConfetti = true
+                                                                confettiMessage = "Goal Completed!"
+                                                            }
+                                                            handleOverallCompletion()
                                                             scope.launch {
                                                                 saveGoalCompletion(
                                                                     context = context,
@@ -397,6 +433,11 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         if (g.remaining > 0) {
                             val updated = g.copy(remaining = g.remaining - 1)
                             goals[index] = updated
+                            if (updated.remaining == 0) {
+                                showConfetti = true
+                                confettiMessage = "Goal Completed!"
+                            }
+                            handleOverallCompletion()
                             scope.launch {
                                 saveGoalCompletion(
                                     context = context,
@@ -429,6 +470,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         remaining = (g.frequency - completed).coerceAtLeast(0)
                     )
                     goals[gIndex] = updated
+                    handleOverallCompletion()
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
@@ -453,6 +495,11 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         lastCheckedDate = LocalDate.now().toString()
                     )
                     goals[gIndex] = updated
+                    if (updated.remaining == 0) {
+                        showConfetti = true
+                        confettiMessage = "Goal Completed!"
+                    }
+                    handleOverallCompletion()
                     scope.launch {
                         val today = LocalDate.now()
                         val startOfWeek = today.minusDays((today.dayOfWeek.value % 7).toLong())
@@ -478,6 +525,40 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 64.dp)
         )
+        if (showConfetti) {
+            ConfettiCelebration {
+                showConfetti = false
+                confettiMessage = null
+            }
+            confettiMessage?.let { msg ->
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = msg,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                RoundedCornerShape(12.dp)
+                            )
+                            .padding(24.dp)
+                    )
+                }
+            }
+        }
+        if (showAllCompleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showAllCompleteDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showAllCompleteDialog = false }) { Text("Awesome!") }
+                },
+                title = { Text("All Goals Completed!") },
+                text = { Text("Congrats you have become better this week") }
+            )
+        }
     }
 }
 
