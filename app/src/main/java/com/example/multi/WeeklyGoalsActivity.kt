@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -51,7 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
@@ -65,13 +63,9 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
-import nl.dionsegijn.konfetti.compose.KonfettiView
-import nl.dionsegijn.konfetti.core.Party
-import nl.dionsegijn.konfetti.core.emitter.Emitter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.TimeUnit
 import java.time.LocalDate
 
 const val EXTRA_GOAL_ID = "extra_goal_id"
@@ -116,47 +110,9 @@ private fun DayChoiceDialog(
     )
 }
 
-@Composable
-private fun CelebrationDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Keep Going")
-            }
-        },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Default.EmojiEvents,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(72.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "All weekly goals completed!",
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Congrats, you became better this week",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        },
-        shape = MaterialTheme.shapes.large
-    )
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-private fun WeeklyGoalsScreen(
-    highlightGoalId: Long? = null,
-    showCompletionPopup: Boolean = true
-) {
+private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     val context = LocalContext.current
     val goals = remember { mutableStateListOf<WeeklyGoal>() }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
@@ -164,15 +120,6 @@ private fun WeeklyGoalsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedGoalIndex by remember { mutableStateOf<Int?>(null) }
     var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
-    var showConfetti by remember { mutableStateOf(false) }
-    var showAllDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(showConfetti) {
-        if (showConfetti) {
-            kotlinx.coroutines.delay(3000)
-            showConfetti = false
-        }
-    }
 
     LaunchedEffect(highlightGoalId) {
         val db = EventDatabase.getInstance(context)
@@ -322,15 +269,7 @@ private fun WeeklyGoalsScreen(
                                                                 remaining = (goal.frequency - completed).coerceAtLeast(0),
                                                                 lastCheckedDate = today
                                                             )
-                                                            val wasIncomplete = goal.remaining > 0
                                                             goals[index] = updated
-                                                            if (wasIncomplete && updated.remaining == 0) {
-                                                                showConfetti = true
-                                                                scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
-                                                            }
-                                                            if (goals.all { it.remaining == 0 }) {
-                                                                showAllDialog = showCompletionPopup
-                                                            }
                                                             scope.launch {
                                                                 saveGoalCompletion(
                                                                     context = context,
@@ -458,13 +397,6 @@ private fun WeeklyGoalsScreen(
                         if (g.remaining > 0) {
                             val updated = g.copy(remaining = g.remaining - 1)
                             goals[index] = updated
-                            if (updated.remaining == 0) {
-                                showConfetti = true
-                                scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
-                            }
-                            if (goals.all { it.remaining == 0 }) {
-                                showAllDialog = showCompletionPopup
-                            }
                             scope.launch {
                                 saveGoalCompletion(
                                     context = context,
@@ -520,15 +452,7 @@ private fun WeeklyGoalsScreen(
                         remaining = (g.frequency - completed).coerceAtLeast(0),
                         lastCheckedDate = LocalDate.now().toString()
                     )
-                    val wasIncomplete = g.remaining > 0
                     goals[gIndex] = updated
-                    if (wasIncomplete && updated.remaining == 0) {
-                        showConfetti = true
-                        scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
-                    }
-                    if (goals.all { it.remaining == 0 }) {
-                        showAllDialog = showCompletionPopup
-                    }
                     scope.launch {
                         val today = LocalDate.now()
                         val startOfWeek = today.minusDays((today.dayOfWeek.value % 7).toLong())
@@ -546,29 +470,6 @@ private fun WeeklyGoalsScreen(
                     }
                 }
             )
-        }
-        if (showConfetti) {
-            KonfettiView(
-                modifier = Modifier.matchParentSize(),
-                parties = listOf(
-                    Party(
-                        speed = 0f..20f,
-                        maxSpeed = 30f,
-                        spread = 360,
-                        colors = listOf(
-                            Color.Yellow.toArgb(),
-                            Color.Magenta.toArgb(),
-                            Color.Cyan.toArgb(),
-                            Color.Green.toArgb()
-                        ),
-                        emitter = Emitter(duration = 1, TimeUnit.SECONDS).perSecond(100)
-                    )
-                )
-            )
-        }
-
-        if (showAllDialog) {
-            CelebrationDialog { showAllDialog = false }
         }
 
         SnackbarHost(
@@ -663,4 +564,3 @@ private fun WeeklyGoalDialog(
         }
     )
 }
-
