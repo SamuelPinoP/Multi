@@ -553,8 +553,8 @@ private fun WeeklyGoalsScreen(
                 modifier = Modifier.matchParentSize(),
                 parties = listOf(
                     Party(
-                        speed = 0f..20f,
-                        maxSpeed = 30f,
+                        speed = 0f,
+                        maxSpeed = 20f,
                         spread = 360,
                         colors = listOf(
                             Color.Yellow.toArgb(),
@@ -562,7 +562,7 @@ private fun WeeklyGoalsScreen(
                             Color.Cyan.toArgb(),
                             Color.Green.toArgb()
                         ),
-                      emitter = Emitter(1500, TimeUnit.MILLISECONDS).perSecond(100)
+                        emitter = Emitter(1500, TimeUnit.MILLISECONDS).perSecond(100)
                     )
                 )
             )
