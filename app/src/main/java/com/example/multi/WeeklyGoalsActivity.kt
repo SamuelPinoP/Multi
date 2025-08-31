@@ -1,55 +1,30 @@
 package com.example.multi
 
+import com.example.multi.util.GoalCelebrationPrefs
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -57,22 +32,30 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.multi.data.EventDatabase
-import com.example.multi.data.toEntity
-import com.example.multi.data.toModel
-import com.example.multi.util.capitalizeSentences
+import androidx.compose.ui.window.Dialog
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
-import nl.dionsegijn.konfetti.compose.KonfettiView
-import nl.dionsegijn.konfetti.core.Party
-import nl.dionsegijn.konfetti.core.emitter.Emitter
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toEntity
+import com.example.multi.data.toModel
+import com.example.multi.util.capitalizeSentences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.TimeUnit
 import java.time.LocalDate
+import java.util.concurrent.TimeUnit
+
+// Konfetti (Compose) ✨
+import nl.dionsegijn.konfetti.compose.KonfettiView
+import nl.dionsegijn.konfetti.core.Angle
+import nl.dionsegijn.konfetti.core.Party
+import nl.dionsegijn.konfetti.core.Position
+import nl.dionsegijn.konfetti.core.Rotation
+import nl.dionsegijn.konfetti.core.emitter.Emitter
+import nl.dionsegijn.konfetti.core.models.Shape
+import nl.dionsegijn.konfetti.core.models.Size
 
 const val EXTRA_GOAL_ID = "extra_goal_id"
 
@@ -116,47 +99,9 @@ private fun DayChoiceDialog(
     )
 }
 
-@Composable
-private fun CelebrationDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Keep Going")
-            }
-        },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Default.EmojiEvents,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(72.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "All weekly goals completed!",
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Congrats, you became better this week",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        },
-        shape = MaterialTheme.shapes.large
-    )
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-private fun WeeklyGoalsScreen(
-    highlightGoalId: Long? = null,
-    showCompletionPopup: Boolean = true
-) {
+private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     val context = LocalContext.current
     val goals = remember { mutableStateListOf<WeeklyGoal>() }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
@@ -166,15 +111,19 @@ private fun WeeklyGoalsScreen(
     var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
     var showConfetti by remember { mutableStateOf(false) }
     var showAllDialog by remember { mutableStateOf(false) }
+    var edgeCelebration by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) { edgeCelebration = GoalCelebrationPrefs.isActive(context) }
+
+    // Auto stop confetti after 3s
     LaunchedEffect(showConfetti) {
         if (showConfetti) {
-            kotlinx.coroutines.delay(4500)
-
+            kotlinx.coroutines.delay(3000)
             showConfetti = false
         }
     }
 
+    // Load + roll week + optionally highlight a goal
     LaunchedEffect(highlightGoalId) {
         val db = EventDatabase.getInstance(context)
         val dao = db.weeklyGoalDao()
@@ -187,6 +136,7 @@ private fun WeeklyGoalsScreen(
         val prevEnd = startCurrent.minusDays(1)
         val prevStartStr = prevStart.toString()
         val prevEndStr = prevEnd.toString()
+
         goals.clear()
         stored.forEach { entity ->
             var model = entity.toModel()
@@ -215,14 +165,15 @@ private fun WeeklyGoalsScreen(
         }
         highlightGoalId?.let { id ->
             val index = goals.indexOfFirst { it.id == id }
-            if (index >= 0) {
-                editingIndex = index
-            }
+            if (index >= 0) editingIndex = index
         }
     }
 
-
     Box(modifier = Modifier.fillMaxSize()) {
+        if (edgeCelebration) {
+            EdgeCelebrationOverlay(modifier = Modifier.matchParentSize())
+        }
+
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -244,16 +195,12 @@ private fun WeeklyGoalsScreen(
                         .height(50.dp)
                         .defaultMinSize(minWidth = 170.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
                     Text("Record", fontSize = 18.sp)
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(Modifier.height(10.dp))
 
             val remaining = daysRemainingInWeek()
             Text(
@@ -264,7 +211,7 @@ private fun WeeklyGoalsScreen(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -277,27 +224,26 @@ private fun WeeklyGoalsScreen(
                             .fillMaxWidth()
                             .clickable { editingIndex = index }
                     ) {
-                        Column(modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
                             if (goal.remaining == 0) {
                                 Text(
                                     text = "Completed!",
-                                    color = Color.Green,
+                                    color = Color(0xFF43A047),
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.fillMaxWidth(),
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(Modifier.height(4.dp))
                             }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = goal.header,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
+                                Text(goal.header, style = MaterialTheme.typography.bodyLarge)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = "${goal.frequency - goal.remaining}/${goal.frequency}",
@@ -308,7 +254,7 @@ private fun WeeklyGoalsScreen(
                                         Icon(
                                             Icons.Default.Check,
                                             contentDescription = "Complete",
-                                            tint = Color.Green,
+                                            tint = Color(0xFF43A047),
                                             modifier = Modifier
                                                 .padding(start = 8.dp)
                                                 .clickable {
@@ -330,7 +276,9 @@ private fun WeeklyGoalsScreen(
                                                                 scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
                                                             }
                                                             if (goals.all { it.remaining == 0 }) {
-                                                                showAllDialog = showCompletionPopup
+                                                                GoalCelebrationPrefs.activateForCurrentWeek(context)
+                                                                showAllDialog = true
+                                                                edgeCelebration = true
                                                             }
                                                             scope.launch {
                                                                 saveGoalCompletion(
@@ -358,7 +306,7 @@ private fun WeeklyGoalsScreen(
                                     .fillMaxWidth()
                                     .padding(top = 8.dp)
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(Modifier.height(8.dp))
                             DayButtonsRow(states = goal.dayStates) { dayIndex ->
                                 selectedGoalIndex = index
                                 selectedDayIndex = dayIndex
@@ -369,10 +317,9 @@ private fun WeeklyGoalsScreen(
             }
         }
 
+        // Empty state animation stays
         if (goals.isEmpty()) {
-            val composition by rememberLottieComposition(
-                LottieCompositionSpec.RawRes(R.raw.making)
-            )
+            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.making))
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -382,17 +329,15 @@ private fun WeeklyGoalsScreen(
                     iterations = LottieConstants.IterateForever,
                     modifier = Modifier.size(200.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
                     text = "No goals yet",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = Color.Gray,
-                        fontSize = 18.sp
-                    )
+                    style = MaterialTheme.typography.bodyLarge.copy(color = Color.Gray, fontSize = 18.sp)
                 )
             }
         }
 
+        // Bottom action bar
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -419,6 +364,7 @@ private fun WeeklyGoalsScreen(
             )
         }
 
+        // Goal editor dialog
         val index = editingIndex
         if (index != null) {
             val isNew = index < 0
@@ -464,7 +410,9 @@ private fun WeeklyGoalsScreen(
                                 scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
                             }
                             if (goals.all { it.remaining == 0 }) {
-                                showAllDialog = showCompletionPopup
+                                GoalCelebrationPrefs.activateForCurrentWeek(context)
+                                showAllDialog = true
+                                edgeCelebration = true
                             }
                             scope.launch {
                                 saveGoalCompletion(
@@ -482,6 +430,7 @@ private fun WeeklyGoalsScreen(
             )
         }
 
+        // Day status chooser
         val gIndex = selectedGoalIndex
         val dIndex = selectedDayIndex
         if (gIndex != null && dIndex != null) {
@@ -493,15 +442,11 @@ private fun WeeklyGoalsScreen(
                     val wasComplete = chars[dIndex] == 'C'
                     chars[dIndex] = 'M'
                     val completed = chars.count { it == 'C' }
-                    val updated = g.copy(
-                        dayStates = String(chars),
-                        remaining = (g.frequency - completed).coerceAtLeast(0)
-                    )
+                    val updated = g.copy(dayStates = String(chars), remaining = (g.frequency - completed).coerceAtLeast(0))
                     goals[gIndex] = updated
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-
                         if (wasComplete) {
                             val today = LocalDate.now()
                             val startOfWeek = today.minusDays((today.dayOfWeek.value % 7).toLong())
@@ -528,7 +473,9 @@ private fun WeeklyGoalsScreen(
                         scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
                     }
                     if (goals.all { it.remaining == 0 }) {
-                        showAllDialog = showCompletionPopup
+                        GoalCelebrationPrefs.activateForCurrentWeek(context)
+                        showAllDialog = true
+                        edgeCelebration = true
                     }
                     scope.launch {
                         val today = LocalDate.now()
@@ -548,28 +495,94 @@ private fun WeeklyGoalsScreen(
                 }
             )
         }
+
+        // ✨ Upgraded Confetti Overlay (multiple parties, themed colors, shapes, rotations)
         if (showConfetti) {
+            val confettiColors = listOf(
+                MaterialTheme.colorScheme.primary,
+                MaterialTheme.colorScheme.secondary,
+                MaterialTheme.colorScheme.tertiary,
+                Color(0xFFFFD54F), // amber accent
+                Color(0xFF80DEEA)  // cyan accent
+            ).map { it.toArgb() }
+
+            val shapes = listOf(Shape.Square, Shape.Circle)
+            val sizes = listOf(Size.SMALL, Size.MEDIUM, Size.LARGE)
+
+            val burstTop = Party(
+                angle = Angle.BOTTOM,                    // fall down from top
+                spread = 70,
+                speed = 0f,
+                maxSpeed = 22f,
+                damping = 0.9f,
+                rotation = Rotation.enabled(),
+                timeToLive = 3500L,
+                colors = confettiColors,
+                shapes = shapes,
+                size = sizes,
+                position = Position.Relative(0.5, 0.0),
+                emitter = Emitter(1200, TimeUnit.MILLISECONDS).perSecond(140)
+            )
+
+            val sideLeft = Party(
+                angle = Angle.RIGHT,                     // stream from left
+                spread = 45,
+                speed = 4f,
+                maxSpeed = 18f,
+                rotation = Rotation.enabled(),
+                timeToLive = 3000L,
+                colors = confettiColors,
+                shapes = shapes,
+                size = sizes,
+                position = Position.Relative(0.0, 0.4),
+                emitter = Emitter(1000, TimeUnit.MILLISECONDS).perSecond(90)
+            )
+
+            val sideRight = Party(
+                angle = Angle.LEFT,                      // stream from right
+                spread = 45,
+                speed = 4f,
+                maxSpeed = 18f,
+                rotation = Rotation.enabled(),
+                timeToLive = 3000L,
+                colors = confettiColors,
+                shapes = shapes,
+                size = sizes,
+                position = Position.Relative(1.0, 0.4),
+                emitter = Emitter(1000, TimeUnit.MILLISECONDS).perSecond(90)
+            )
+
+            val fountainBottom = Party(
+                angle = Angle.TOP,                       // fountain up from bottom
+                spread = 80,
+                speed = 0f,
+                maxSpeed = 20f,
+                rotation = Rotation.enabled(),
+                timeToLive = 3200L,
+                colors = confettiColors,
+                shapes = shapes,
+                size = sizes,
+                position = Position.Relative(0.5, 1.0),
+                emitter = Emitter(1400, TimeUnit.MILLISECONDS).perSecond(120)
+            )
+
             KonfettiView(
-                modifier = Modifier.matchParentSize(),
-                parties = listOf(
-                    Party(
-                        speed = 0f,
-                        maxSpeed = 20f,
-                        spread = 360,
-                        colors = listOf(
-                            Color.Yellow.toArgb(),
-                            Color.Magenta.toArgb(),
-                            Color.Cyan.toArgb(),
-                            Color.Green.toArgb()
-                        ),
-                        emitter = Emitter(1500, TimeUnit.MILLISECONDS).perSecond(100)
-                    )
-                )
+                modifier = Modifier
+                    .matchParentSize()
+                    .alpha(0.98f), // slight blend with UI below
+                parties = listOf(burstTop, sideLeft, sideRight, fountainBottom)
             )
         }
 
+        // 🎉 Upgraded "All Goals Complete" Dialog (glass card + gradient header + actions)
         if (showAllDialog) {
-            CelebrationDialog { showAllDialog = false }
+            WeeklyWinDialog(
+                onDismiss = { showAllDialog = false },
+                onOpenRecords = {
+                    showAllDialog = false
+                    context.startActivity(android.content.Intent(context, RecordActivity::class.java))
+                }
+            )
         }
 
         SnackbarHost(
@@ -630,7 +643,7 @@ private fun WeeklyGoalDialog(
                         capitalization = KeyboardCapitalization.Sentences
                     )
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(8.dp))
                 Text("Frequency", style = MaterialTheme.typography.bodySmall)
                 val scrollState = rememberScrollState()
                 Row(
@@ -655,9 +668,7 @@ private fun WeeklyGoalDialog(
                                 containerColor = if (selected) selectedColor else unselectedColor
                             ),
                             modifier = Modifier.padding(end = 8.dp)
-                        ) {
-                            Text(text)
-                        }
+                        ) { Text(text) }
                     }
                 }
             }
@@ -665,3 +676,112 @@ private fun WeeklyGoalDialog(
     )
 }
 
+@Composable
+private fun WeeklyWinDialog(
+    onDismiss: () -> Unit,
+    onOpenRecords: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        // Soft scrim
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            // Card with gradient header + glass body
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                ),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp),
+                shape = MaterialTheme.shapes.extraLarge
+            ) {
+                // Header gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.linearGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary
+                                )
+                            )
+                        )
+                        .padding(vertical = 18.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Week Complete! 🏆",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+
+                // Body
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "You crushed every goal this week.\nKeep the streak alive!",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(16.dp))
+
+                    // Subtle divider
+                    Box(
+                        Modifier
+                            .height(1.dp)
+                            .fillMaxWidth(0.7f)
+                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ElevatedButton(onClick = onOpenRecords) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.padding(end = 6.dp))
+                            Text("View Records")
+                        }
+                        TextButton(onClick = onDismiss) {
+                            Text("Awesome!")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EdgeCelebrationOverlay(modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val thickness = 32.dp.toPx()
+        drawRect(
+            brush = Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.12f), Color.Transparent)),
+            size = androidx.compose.ui.geometry.Size(size.width, thickness)
+        )
+        drawRect(
+            brush = Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.12f))),
+            topLeft = Offset(0f, size.height - thickness),
+            size = androidx.compose.ui.geometry.Size(size.width, thickness)
+        )
+        drawRect(
+            brush = Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.12f), Color.Transparent)),
+            size = androidx.compose.ui.geometry.Size(thickness, size.height)
+        )
+        drawRect(
+            brush = Brush.horizontalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.12f))),
+            topLeft = Offset(size.width - thickness, 0f),
+            size = androidx.compose.ui.geometry.Size(thickness, size.height)
+        )
+    }
+}
