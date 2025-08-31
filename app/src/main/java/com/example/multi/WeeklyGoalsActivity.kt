@@ -742,15 +742,26 @@ private fun WeeklyWinDialog(
                     )
 
                     Spacer(Modifier.height(16.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        ElevatedButton(onClick = onOpenRecords) {
-                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.padding(end = 6.dp))
+                        ElevatedButton(
+                            onClick = onOpenRecords,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.padding(end = 6.dp)
+                            )
                             Text("View Records")
                         }
-                        TextButton(onClick = onDismiss) {
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Text("Awesome!")
                         }
                     }
