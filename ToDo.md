@@ -1,5 +1,7 @@
 /*
 
+* The Record says No record yet. I want to put an animation here whenever it is empty from loties.
+
 * Also create the note widget. 
 
 * Icon:

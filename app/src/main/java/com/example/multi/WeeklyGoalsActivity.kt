@@ -22,7 +22,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -253,7 +252,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                     if (goal.lastCheckedDate != today && goal.remaining > 0) {
                                         Icon(
                                             Icons.Default.Check,
-                                            contentDescription = "Complete",
+                                            contentDescription = "Completed",
                                             tint = Color(0xFF43A047),
                                             modifier = Modifier
                                                 .padding(start = 8.dp)
@@ -273,7 +272,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                                             goals[index] = updated
                                                             if (wasIncomplete && updated.remaining == 0) {
                                                                 showConfetti = true
-                                                                scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
+                                                                scope.launch { snackbarHostState.showSnackbar("Goals completed!") }
                                                             }
                                                             if (goals.all { it.remaining == 0 }) {
                                                                 GoalCelebrationPrefs.activateForCurrentWeek(context)
@@ -713,7 +712,7 @@ private fun WeeklyWinDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Week Complete! 🏆",
+                        text = "Week Completed! 🏆",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
