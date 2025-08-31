@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -50,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
@@ -66,6 +68,7 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 
 const val EXTRA_GOAL_ID = "extra_goal_id"
@@ -110,6 +113,41 @@ private fun DayChoiceDialog(
     )
 }
 
+@Composable
+private fun ConfettiOverlay(message: String, onFinished: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.activity))
+        LottieAnimation(
+            composition = composition,
+            iterations = 1,
+            modifier = Modifier.fillMaxSize()
+        )
+        Text(
+            text = message,
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.align(Alignment.Center)
+        )
+        LaunchedEffect(composition) {
+            delay(3000)
+            onFinished()
+        }
+    }
+}
+
+@Composable
+private fun EdgeVignette() {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        drawRect(
+            brush = Brush.radialGradient(
+                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                center = center,
+                radius = size.maxDimension
+            )
+        )
+    }
+}
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
@@ -120,6 +158,17 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedGoalIndex by remember { mutableStateOf<Int?>(null) }
     var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
+    val weekStart = remember {
+        val today = LocalDate.now()
+        today.minusDays((today.dayOfWeek.value % 7).toLong()).toString()
+    }
+    var celebrationMessage by remember { mutableStateOf<String?>(null) }
+    var weekCongrats by remember { mutableStateOf(false) }
+    var edgeEffect by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        edgeEffect = GoalCelebrationPreferences.getEdgeWeek(context) == weekStart
+    }
 
     LaunchedEffect(highlightGoalId) {
         val db = EventDatabase.getInstance(context)
@@ -270,6 +319,13 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                                                 lastCheckedDate = today
                                                             )
                                                             goals[index] = updated
+                                                            if (updated.remaining == 0) {
+                                                                celebrationMessage = "Goal completed!"
+                                                                if (goals.all { it.remaining == 0 } && !edgeEffect) {
+                                                                    celebrationMessage = "All goals completed!"
+                                                                    weekCongrats = true
+                                                                }
+                                                            }
                                                             scope.launch {
                                                                 saveGoalCompletion(
                                                                     context = context,
@@ -397,6 +453,13 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         if (g.remaining > 0) {
                             val updated = g.copy(remaining = g.remaining - 1)
                             goals[index] = updated
+                            if (updated.remaining == 0) {
+                                celebrationMessage = "Goal completed!"
+                                if (goals.all { it.remaining == 0 } && !edgeEffect) {
+                                    celebrationMessage = "All goals completed!"
+                                    weekCongrats = true
+                                }
+                            }
                             scope.launch {
                                 saveGoalCompletion(
                                     context = context,
@@ -453,6 +516,13 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         lastCheckedDate = LocalDate.now().toString()
                     )
                     goals[gIndex] = updated
+                    if (g.remaining > 0 && updated.remaining == 0) {
+                        celebrationMessage = "Goal completed!"
+                        if (goals.all { it.remaining == 0 } && !edgeEffect) {
+                            celebrationMessage = "All goals completed!"
+                            weekCongrats = true
+                        }
+                    }
                     scope.launch {
                         val today = LocalDate.now()
                         val startOfWeek = today.minusDays((today.dayOfWeek.value % 7).toLong())
@@ -471,6 +541,28 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 }
             )
         }
+        celebrationMessage?.let { msg ->
+            ConfettiOverlay(message = msg) { celebrationMessage = null }
+        }
+
+        if (weekCongrats) {
+            AlertDialog(
+                onDismissRequest = {
+                    weekCongrats = false
+                    edgeEffect = true
+                    GoalCelebrationPreferences.setEdgeWeek(context, weekStart)
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        weekCongrats = false
+                        edgeEffect = true
+                        GoalCelebrationPreferences.setEdgeWeek(context, weekStart)
+                    }) { Text("OK") }
+                },
+                title = { Text("Goals Complete") },
+                text = { Text("Congrats you have become better this week") }
+            )
+        }
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -478,6 +570,10 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 64.dp)
         )
+
+        if (edgeEffect) {
+            EdgeVignette()
+        }
     }
 }
 
