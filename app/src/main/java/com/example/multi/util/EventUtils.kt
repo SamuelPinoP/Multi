@@ -38,7 +38,7 @@ fun Event.occursOn(date: LocalDate): Boolean {
         val lower = info.lowercase(Locale.getDefault())
         val everyOther = lower.contains("every other")
         if (everyOther) {
-            val weekOfYear = date.get(WeekFields.ISO.weekOfWeekBasedYear())
+            val weekOfYear = date.get(WeekFields.SUNDAY_START.weekOfWeekBasedYear())
             weekOfYear % 2 == 0 && date.dayOfWeek in recurring
         } else {
             date.dayOfWeek in recurring

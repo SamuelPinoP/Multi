@@ -20,7 +20,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /** Returns the zero-based offset used by the calendar grid for this day. */
-internal fun DayOfWeek.toCalendarOffset(): Int = (this.value + 6) % 7
+internal fun DayOfWeek.toCalendarOffset(): Int = this.value % 7
 
 /**
  * Simple visual calendar for the given [date]. Displays the month, year,
@@ -33,7 +33,15 @@ fun CalendarView(date: LocalDate = LocalDate.now()) {
     val yearMonth = YearMonth.from(date)
     val firstDayOfMonth = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
-    val daysOfWeek = DayOfWeek.entries.toTypedArray()
+    val daysOfWeek = arrayOf(
+        DayOfWeek.SUNDAY,
+        DayOfWeek.MONDAY,
+        DayOfWeek.TUESDAY,
+        DayOfWeek.WEDNESDAY,
+        DayOfWeek.THURSDAY,
+        DayOfWeek.FRIDAY,
+        DayOfWeek.SATURDAY
+    )
     val locale = Locale.getDefault()
 
     ElevatedCard(

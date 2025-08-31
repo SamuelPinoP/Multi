@@ -5,18 +5,18 @@ import androidx.annotation.RequiresApi
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.time.temporal.IsoFields
 import java.time.temporal.TemporalAdjusters
+import java.time.temporal.WeekFields
 
 /** Model representing a weekly recurring goal. */
 @RequiresApi(Build.VERSION_CODES.O)
-fun currentWeek(): Int = LocalDate.now().get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)
+fun currentWeek(): Int = LocalDate.now().get(WeekFields.SUNDAY_START.weekOfWeekBasedYear())
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun daysRemainingInWeek(): Int {
     val today = LocalDate.now()
-    val nextMonday = today.with(TemporalAdjusters.next(DayOfWeek.MONDAY))
-    return ChronoUnit.DAYS.between(today, nextMonday).toInt() - 1
+    val nextSunday = today.with(TemporalAdjusters.next(DayOfWeek.SUNDAY))
+    return ChronoUnit.DAYS.between(today, nextSunday).toInt() - 1
 }
 
 const val DEFAULT_DAY_STATES = "-------"
