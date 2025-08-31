@@ -169,7 +169,8 @@ private fun WeeklyGoalsScreen(
 
     LaunchedEffect(showConfetti) {
         if (showConfetti) {
-            kotlinx.coroutines.delay(3000)
+            kotlinx.coroutines.delay(4500)
+
             showConfetti = false
         }
     }
@@ -561,7 +562,7 @@ private fun WeeklyGoalsScreen(
                             Color.Cyan.toArgb(),
                             Color.Green.toArgb()
                         ),
-                        emitter = Emitter(duration = 1, TimeUnit.SECONDS).perSecond(100)
+                      emitter = Emitter(1500, TimeUnit.MILLISECONDS).perSecond(100)
                     )
                 )
             )
