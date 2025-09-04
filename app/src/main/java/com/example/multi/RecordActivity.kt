@@ -38,6 +38,9 @@ import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.ThemePreferences
 import com.example.multi.data.toEntity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -149,7 +152,23 @@ fun RecordScreen() {
                                 ) {
                                     Column {
                                         Text(rec.header, style = MaterialTheme.typography.bodyLarge)
-                                        Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.semantics {
+                                                contentDescription = "${rec.completed} of ${rec.frequency} completed" + if (rec.overageCount > 0) ", ${rec.overageCount} over target" else ""
+                                            }
+                                        ) {
+                                            Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                            if (rec.overageCount > 0) {
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                    text = "+${rec.overageCount}",
+                                                    color = MaterialTheme.colorScheme.tertiary,
+                                                    fontWeight = FontWeight.Medium,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                            }
+                                        }
                                     }
                                     Icon(
                                         imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,
