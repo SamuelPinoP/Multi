@@ -32,6 +32,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -147,7 +150,8 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                     frequency = model.frequency,
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
-                    dayStates = model.dayStates
+                    dayStates = model.dayStates,
+                    overageCount = calculateOverage(completed, model.frequency)
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -244,12 +248,31 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                             ) {
                                 Text(goal.header, style = MaterialTheme.typography.bodyLarge)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "${goal.frequency - goal.remaining}/${goal.frequency}",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
+                                    val completed = goal.dayStates.count { it == 'C' }
+                                    val overage = calculateOverage(completed, goal.frequency)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.semantics {
+                                            contentDescription = "$completed of ${goal.frequency} completed" +
+                                                if (overage > 0) ", $overage over target" else ""
+                                        }
+                                    ) {
+                                        Text(
+                                            text = "$completed/${goal.frequency}",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        if (overage > 0) {
+                                            Text(
+                                                text = "+$overage",
+                                                color = MaterialTheme.colorScheme.tertiary,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Medium,
+                                                modifier = Modifier.padding(start = 4.dp)
+                                            )
+                                        }
+                                    }
                                     val today = LocalDate.now().toString()
-                                    if (goal.lastCheckedDate != today && goal.remaining > 0) {
+                                    if (goal.lastCheckedDate != today) {
                                         Icon(
                                             Icons.Default.Check,
                                             contentDescription = "Completed",
@@ -257,38 +280,36 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                             modifier = Modifier
                                                 .padding(start = 8.dp)
                                                 .clickable {
-                                                    if (goal.remaining > 0) {
-                                                        val chars = goal.dayStates.toCharArray()
-                                                        val dIndex = LocalDate.now().dayOfWeek.value % 7
-                                                        if (chars[dIndex] != 'C') {
-                                                            chars[dIndex] = 'C'
-                                                            val completed = chars.count { it == 'C' }
-                                                            val updated = goal.copy(
-                                                                dayStates = String(chars),
-                                                                remaining = (goal.frequency - completed).coerceAtLeast(0),
-                                                                lastCheckedDate = today
+                                                    val chars = goal.dayStates.toCharArray()
+                                                    val dIndex = LocalDate.now().dayOfWeek.value % 7
+                                                    if (chars[dIndex] != 'C') {
+                                                        chars[dIndex] = 'C'
+                                                        val newCompleted = chars.count { it == 'C' }
+                                                        val updated = goal.copy(
+                                                            dayStates = String(chars),
+                                                            remaining = (goal.frequency - newCompleted).coerceAtLeast(0),
+                                                            lastCheckedDate = today
+                                                        )
+                                                        val wasIncomplete = goal.remaining > 0
+                                                        goals[index] = updated
+                                                        if (wasIncomplete && updated.remaining == 0) {
+                                                            showConfetti = true
+                                                            scope.launch { snackbarHostState.showSnackbar("Goals completed!") }
+                                                        }
+                                                        if (goals.all { it.remaining == 0 }) {
+                                                            GoalCelebrationPrefs.activateForCurrentWeek(context)
+                                                            showAllDialog = true
+                                                            edgeCelebration = true
+                                                        }
+                                                        scope.launch {
+                                                            saveGoalCompletion(
+                                                                context = context,
+                                                                goalId = goal.id,
+                                                                goalHeader = goal.header,
+                                                                completionDate = LocalDate.now()
                                                             )
-                                                            val wasIncomplete = goal.remaining > 0
-                                                            goals[index] = updated
-                                                            if (wasIncomplete && updated.remaining == 0) {
-                                                                showConfetti = true
-                                                                scope.launch { snackbarHostState.showSnackbar("Goals completed!") }
-                                                            }
-                                                            if (goals.all { it.remaining == 0 }) {
-                                                                GoalCelebrationPrefs.activateForCurrentWeek(context)
-                                                                showAllDialog = true
-                                                                edgeCelebration = true
-                                                            }
-                                                            scope.launch {
-                                                                saveGoalCompletion(
-                                                                    context = context,
-                                                                    goalId = goal.id,
-                                                                    goalHeader = goal.header,
-                                                                    completionDate = LocalDate.now()
-                                                                )
-                                                                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                                                            }
+                                                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                                                         }
                                                     }
                                                 }
@@ -296,7 +317,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                     }
                                 }
                             }
-                            val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
+                            val progress = (goal.dayStates.count { it == 'C' }.coerceAtMost(goal.frequency)).toFloat() / goal.frequency
                             LinearProgressIndicator(
                                 progress = progress,
                                 color = MaterialTheme.colorScheme.primary,
