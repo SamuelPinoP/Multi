@@ -33,6 +33,7 @@ import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
 import com.example.multi.EXTRA_GOAL_ID
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.calculateOverage
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.DayPosition
@@ -83,14 +84,16 @@ private fun WeeklyGoalsCalendarScreen() {
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
-                val completed = model.frequency - model.remaining
+                val completed = model.dayStates.count { it == 'C' }
+                val overage = calculateOverage(completed, model.frequency)
                 val record = WeeklyGoalRecord(
                     header = model.header,
                     completed = completed,
                     frequency = model.frequency,
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
-                    dayStates = model.dayStates
+                    dayStates = model.dayStates,
+                    overageCount = overage
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -114,6 +117,8 @@ private fun WeeklyGoalsCalendarScreen() {
                 model = model.copy(dayStates = String(chars))
                 withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
             }
+            val completed = model.dayStates.count { it == 'C' }
+            model = model.copy(remaining = (model.frequency - completed).coerceAtLeast(0))
             goals.add(model)
         }
 

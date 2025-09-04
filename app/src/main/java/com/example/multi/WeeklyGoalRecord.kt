@@ -8,5 +8,10 @@ data class WeeklyGoalRecord(
     var frequency: Int,
     var weekStart: String,
     var weekEnd: String,
-    var dayStates: String = DEFAULT_DAY_STATES
+    var dayStates: String = DEFAULT_DAY_STATES,
+    var overageCount: Int = 0
 )
+
+fun calculateOverage(completedCount: Int, targetCount: Int): Int {
+    return (completedCount - targetCount).coerceAtLeast(0).coerceAtMost(20)
+}

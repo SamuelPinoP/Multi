@@ -13,6 +13,8 @@ room = "2.6.1"
 poi = "5.2.5"
 kizCalendar = "2.5.0"
 lottie = "6.6.7"
+androidxTestCore = "1.5.0"
+robolectric = "4.11.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -38,6 +40,9 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 apache-poi = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poi" }
 kizitonwose-calendar-compose = { group = "com.kizitonwose.calendar", name = "compose", version.ref = "kizCalendar" }
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestCore" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

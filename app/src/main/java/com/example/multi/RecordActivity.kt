@@ -38,6 +38,7 @@ import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.ThemePreferences
 import com.example.multi.data.toEntity
+import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -149,7 +150,18 @@ fun RecordScreen() {
                                 ) {
                                     Column {
                                         Text(rec.header, style = MaterialTheme.typography.bodyLarge)
-                                        Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                            if (rec.overageCount > 0) {
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                    text = "+${rec.overageCount}",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = MaterialTheme.colorScheme.tertiary
+                                                )
+                                            }
+                                        }
                                     }
                                     Icon(
                                         imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,

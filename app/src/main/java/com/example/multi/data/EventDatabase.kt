@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Dao
@@ -51,7 +53,8 @@ data class WeeklyGoalRecordEntity(
     val frequency: Int,
     val weekStart: String,
     val weekEnd: String,
-    val dayStates: String
+    val dayStates: String,
+    val overageCount: Int = 0
 )
 
 @Entity(tableName = "notes")
@@ -154,6 +157,9 @@ interface TrashedNoteDao {
     @Query("DELETE FROM trashed_notes WHERE deleted < :threshold")
     suspend fun deleteExpired(threshold: Long)
 
+    @Query("DELETE FROM trashed_notes")
+    suspend fun deleteAll()
+
     @Insert
     suspend fun insert(note: TrashedNoteEntity): Long
 
@@ -186,7 +192,7 @@ interface TrashedEventDao {
         TrashedEventEntity::class,
         DailyCompletionEntity::class
     ],
-    version = 15  // Incremented from 14 to 15 due to schema change
+    version = 16  // Incremented from 15 to 16 due to schema change
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -208,10 +214,17 @@ abstract class EventDatabase : RoomDatabase() {
                     EventDatabase::class.java,
                     "events.db"
                 )
+                    .addMigrations(MIGRATION_15_16)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE weekly_goal_records ADD COLUMN overageCount INTEGER NOT NULL DEFAULT 0")
             }
         }
     }
@@ -247,10 +260,10 @@ fun WeeklyGoal.toEntity() =
     WeeklyGoalEntity(id, header, frequency, remaining, lastCheckedDate, weekNumber, dayStates)
 
 fun WeeklyGoalRecordEntity.toModel() =
-    WeeklyGoalRecord(id, header, completed, frequency, weekStart, weekEnd, dayStates)
+    WeeklyGoalRecord(id, header, completed, frequency, weekStart, weekEnd, dayStates, overageCount)
 
 fun WeeklyGoalRecord.toEntity() =
-    WeeklyGoalRecordEntity(id, header, completed, frequency, weekStart, weekEnd, dayStates)
+    WeeklyGoalRecordEntity(id, header, completed, frequency, weekStart, weekEnd, dayStates, overageCount)
 
 fun NoteEntity.toModel() =
     Note(id, header, content, created, lastOpened, scroll, cursor, attachmentUri)

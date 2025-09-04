@@ -27,6 +27,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,6 +43,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.calculateOverage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -141,13 +145,15 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
                 val completed = model.dayStates.count { it == 'C' }
+                val overage = calculateOverage(completed, model.frequency)
                 val record = WeeklyGoalRecord(
                     header = model.header,
                     completed = completed,
                     frequency = model.frequency,
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
-                    dayStates = model.dayStates
+                    dayStates = model.dayStates,
+                    overageCount = overage
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -243,13 +249,29 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(goal.header, style = MaterialTheme.typography.bodyLarge)
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                val completedCount = goal.dayStates.count { it == 'C' }
+                                val overage = calculateOverage(completedCount, goal.frequency)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.semantics {
+                                        contentDescription = "$completedCount of ${goal.frequency} completed" + if (overage > 0) ", $overage over target" else ""
+                                    }
+                                ) {
                                     Text(
-                                        text = "${goal.frequency - goal.remaining}/${goal.frequency}",
+                                        text = "$completedCount/${goal.frequency}",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
+                                    if (overage > 0) {
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            text = "+$overage",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.tertiary
+                                        )
+                                    }
                                     val today = LocalDate.now().toString()
-                                    if (goal.lastCheckedDate != today && goal.remaining > 0) {
+                                    if (goal.lastCheckedDate != today) {
                                         Icon(
                                             Icons.Default.Check,
                                             contentDescription = "Completed",
@@ -257,38 +279,36 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                             modifier = Modifier
                                                 .padding(start = 8.dp)
                                                 .clickable {
-                                                    if (goal.remaining > 0) {
-                                                        val chars = goal.dayStates.toCharArray()
-                                                        val dIndex = LocalDate.now().dayOfWeek.value % 7
-                                                        if (chars[dIndex] != 'C') {
-                                                            chars[dIndex] = 'C'
-                                                            val completed = chars.count { it == 'C' }
-                                                            val updated = goal.copy(
-                                                                dayStates = String(chars),
-                                                                remaining = (goal.frequency - completed).coerceAtLeast(0),
-                                                                lastCheckedDate = today
+                                                    val chars = goal.dayStates.toCharArray()
+                                                    val dIndex = LocalDate.now().dayOfWeek.value % 7
+                                                    if (chars[dIndex] != 'C') {
+                                                        chars[dIndex] = 'C'
+                                                        val completed = chars.count { it == 'C' }
+                                                        val updated = goal.copy(
+                                                            dayStates = String(chars),
+                                                            remaining = (goal.frequency - completed).coerceAtLeast(0),
+                                                            lastCheckedDate = today
+                                                        )
+                                                        val wasIncomplete = goal.remaining > 0
+                                                        goals[index] = updated
+                                                        if (wasIncomplete && updated.remaining == 0) {
+                                                            showConfetti = true
+                                                            scope.launch { snackbarHostState.showSnackbar("Goals completed!") }
+                                                        }
+                                                        if (goals.all { it.remaining == 0 }) {
+                                                            GoalCelebrationPrefs.activateForCurrentWeek(context)
+                                                            showAllDialog = true
+                                                            edgeCelebration = true
+                                                        }
+                                                        scope.launch {
+                                                            saveGoalCompletion(
+                                                                context = context,
+                                                                goalId = goal.id,
+                                                                goalHeader = goal.header,
+                                                                completionDate = LocalDate.now()
                                                             )
-                                                            val wasIncomplete = goal.remaining > 0
-                                                            goals[index] = updated
-                                                            if (wasIncomplete && updated.remaining == 0) {
-                                                                showConfetti = true
-                                                                scope.launch { snackbarHostState.showSnackbar("Goals completed!") }
-                                                            }
-                                                            if (goals.all { it.remaining == 0 }) {
-                                                                GoalCelebrationPrefs.activateForCurrentWeek(context)
-                                                                showAllDialog = true
-                                                                edgeCelebration = true
-                                                            }
-                                                            scope.launch {
-                                                                saveGoalCompletion(
-                                                                    context = context,
-                                                                    goalId = goal.id,
-                                                                    goalHeader = goal.header,
-                                                                    completionDate = LocalDate.now()
-                                                                )
-                                                                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                                                            }
+                                                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                                                         }
                                                     }
                                                 }
@@ -401,28 +421,27 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 onProgress = if (isNew) null else {
                     {
                         val g = goals[index]
-                        if (g.remaining > 0) {
-                            val updated = g.copy(remaining = g.remaining - 1)
-                            goals[index] = updated
-                            if (updated.remaining == 0) {
-                                showConfetti = true
-                                scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
-                            }
-                            if (goals.all { it.remaining == 0 }) {
-                                GoalCelebrationPrefs.activateForCurrentWeek(context)
-                                showAllDialog = true
-                                edgeCelebration = true
-                            }
-                            scope.launch {
-                                saveGoalCompletion(
-                                    context = context,
-                                    goalId = g.id,
-                                    goalHeader = g.header,
-                                    completionDate = LocalDate.now()
-                                )
-                                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                            }
+                        val updated = g.copy(remaining = (g.remaining - 1).coerceAtLeast(0))
+                        val wasIncomplete = g.remaining > 0
+                        goals[index] = updated
+                        if (wasIncomplete && updated.remaining == 0) {
+                            showConfetti = true
+                            scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
+                        }
+                        if (goals.all { it.remaining == 0 }) {
+                            GoalCelebrationPrefs.activateForCurrentWeek(context)
+                            showAllDialog = true
+                            edgeCelebration = true
+                        }
+                        scope.launch {
+                            saveGoalCompletion(
+                                context = context,
+                                goalId = g.id,
+                                goalHeader = g.header,
+                                completionDate = LocalDate.now()
+                            )
+                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         }
                     }
                 }
