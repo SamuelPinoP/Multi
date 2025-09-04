@@ -8,7 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -24,10 +23,11 @@ import kotlinx.coroutines.withContext
 
 /** Activity showing deleted notes. */
 class TrashbinActivity : SegmentActivity("Trash") {
+    private val notes = mutableStateListOf<TrashedNote>()
+
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
-        val notes = remember { mutableStateListOf<TrashedNote>() }
         val scope = rememberCoroutineScope()
 
         LaunchedEffect(Unit) {
@@ -119,6 +119,21 @@ class TrashbinActivity : SegmentActivity("Trash") {
                     )
                 }
             }
+        }
+    }
+
+    @Composable
+    override fun SegmentActions() {
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        if (notes.isNotEmpty()) {
+            TextButton(onClick = {
+                scope.launch {
+                    val dao = EventDatabase.getInstance(context).trashedNoteDao()
+                    withContext(Dispatchers.IO) { dao.clear() }
+                    notes.clear()
+                }
+            }) { Text("Clear") }
         }
     }
 }

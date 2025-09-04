@@ -154,6 +154,9 @@ interface TrashedNoteDao {
     @Query("DELETE FROM trashed_notes WHERE deleted < :threshold")
     suspend fun deleteExpired(threshold: Long)
 
+    @Query("DELETE FROM trashed_notes")
+    suspend fun clear()
+
     @Insert
     suspend fun insert(note: TrashedNoteEntity): Long
 
