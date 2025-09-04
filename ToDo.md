@@ -1,14 +1,60 @@
 /*
 
-* The Record says No record yet. I want to put an animation here whenever it is empty from loties.
+* Make sure the Note Widget has an Icon and a name Multi Notes could be the name. 
 
-* Also create the note widget. 
+* Allow to overdue the weekly Goals and show 4/3 and +1 in green next to it. The app will store the
+overdue too. 
+
+* The Four buttons in the UI homepage need to improve their looks a lot. Maybe use ChatGPT instead
+of Codex.
+
+* Consider adding a description for the Goals.
+ Adding a Note to the Goals that will be a description.
+
+* Consider audio where you hear a page turning.
+ Consider where to put it.
+
+* Mindset to learn:
+ Establish a Mindset: My mindset can be to endure with God in Holynes and Righteousness until he 
+answers. Asking my christian life to become a marriage with Jesus where everything I want is what he
+speaks to my mind. I need to submit myself to God completely. In this submission I must persist in 
+courage and strength.
+
+ The mindset will be above the Goals.  It will be the same mindset to all my Goals. The mindset will 
+be initially centered but it will give the option of being note centered.
+
+* Mindset and color of goals
+ Whenever I change the mindset of my goal I can choose which goals will develop that mindset.
+
+ I can also change the color of them that will create a border with that color. I need to ask chat 
+GPT to build it beautifully. I can drag and drop a Goal into a Mindset and it will change it's 
+color. One goal can belong in two different mindsets. Whenever I make progress in it it will 
+update in both.
+
+* Adding initial Goal suggestions.
+ Suggest to work out as a Goal to whoever opens the app. Suggest an spiritual and intelectual Goal 
+to the user.
+
+ If the user chooses spiritual then the app will suggest prayer, reading the scripture. If he clicks 
+intellectual then I will suggest reading or studying.
+
+ Ask which mindset shift does he want the Goals to unlock.
+
+ Possibly have separate mindsets for each goal. Completeness must be satisfying. It has to feel up 
+the meditor. I was thinking a water filling system.
+
+* I am thinking.
+ A battery should have 0/9 and be filled each time we complete a weekly task all the way to the top.
+Make it look beautiful.
+
+* The Record says No record yet. I want to put an animation here whenever it is empty from loties.
+ Also improve the separation from weeks so I see how they look better.
 
 * Icon:
-  Multi and Tic Tac Toe need icons. I bet that is easy to do.
+ Multi and Tic Tac Toe need icons. I bet that is easy to do.
 
 * Improving the design of the Calendar.
-  The data the Calendar stores in each day could look better or be more interactive and fun. It 
+ The data the Calendar stores in each day could look better or be more interactive and fun. It 
 definitely needs to be more beautiful than it is and have more modernity.
 
 * Instead of adding page numbers add word count.
