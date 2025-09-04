@@ -5,4 +5,8 @@
     <string name="label_notes">Notes</string>
     <string name="label_weekly_goals">Weekly Goals</string>
     <string name="open_last_note">Open last note</string>
+    <plurals name="words_count">
+        <item quantity="one">%d word</item>
+        <item quantity="other">%d words</item>
+    </plurals>
 </resources>

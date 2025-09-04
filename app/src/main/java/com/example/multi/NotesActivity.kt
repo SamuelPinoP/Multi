@@ -52,6 +52,8 @@ import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
 import com.example.multi.util.shareNotesAsTxt
 import com.example.multi.util.toDateString
+import com.example.multi.util.TextMetrics
+import com.example.multi.WordCountChip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -145,6 +147,7 @@ class NotesActivity : SegmentActivity("Notes") {
                 ) {
                     items(notes) { note ->
                         val selected = note.id in selectedIds
+                        val wordCount = remember(note.content) { TextMetrics.wordCount(note.content) }
                         ElevatedCard(
                             elevation = CardDefaults.elevatedCardElevation(),
                             colors = CardDefaults.elevatedCardColors(
@@ -198,15 +201,16 @@ class NotesActivity : SegmentActivity("Notes") {
                                     }
                                 )
                         ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                if (selectionMode) {
-                                    Checkbox(
-                                        checked = selected,
-                                        onCheckedChange = null
-                                    )
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (selectionMode) {
+                                        Checkbox(
+                                            checked = selected,
+                                            onCheckedChange = null
+                                        )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
                                 Surface(
@@ -262,6 +266,12 @@ class NotesActivity : SegmentActivity("Notes") {
                                         )
                                     }
                                 }
+                                WordCountChip(
+                                    count = wordCount,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(8.dp)
+                                )
                             }
                         }
                     }
