@@ -35,7 +35,7 @@ class NotificationReceiver : BroadcastReceiver() {
                 val goals = withContext(Dispatchers.IO) { dao.getGoals() }
                 val hasIncomplete = goals.any { entity ->
                     val model = entity.toModel()
-                    val completed = model.dayStates.count { it == 'C' }
+                    val completed = model.frequency - model.remaining
                     completed < model.frequency
                 }
                 if (hasIncomplete) {

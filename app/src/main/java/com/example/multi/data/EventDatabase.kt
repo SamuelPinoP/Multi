@@ -159,6 +159,9 @@ interface TrashedNoteDao {
 
     @Delete
     suspend fun delete(note: TrashedNoteEntity)
+
+    @Query("DELETE FROM trashed_notes")
+    suspend fun deleteAll()
 }
 
 @Dao

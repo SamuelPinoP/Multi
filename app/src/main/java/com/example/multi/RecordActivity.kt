@@ -33,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.Color
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
@@ -149,7 +150,18 @@ fun RecordScreen() {
                                 ) {
                                     Column {
                                         Text(rec.header, style = MaterialTheme.typography.bodyLarge)
-                                        Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                            val overdue = (rec.completed - rec.frequency).coerceAtLeast(0)
+                                            if (overdue > 0) {
+                                                Text(
+                                                    text = "+$overdue",
+                                                    color = Color(0xFF43A047),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    modifier = Modifier.padding(start = 4.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                     Icon(
                                         imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,
