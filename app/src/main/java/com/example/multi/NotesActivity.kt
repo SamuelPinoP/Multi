@@ -52,6 +52,8 @@ import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
 import com.example.multi.util.shareNotesAsTxt
 import com.example.multi.util.toDateString
+import com.example.multi.util.TextMetrics
+import com.example.multi.ui.WordCountChip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -198,70 +200,80 @@ class NotesActivity : SegmentActivity("Notes") {
                                     }
                                 )
                         ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            val wordCount = remember(note.content) { TextMetrics.wordCount(note.content) }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
                             ) {
-                                if (selectionMode) {
-                                    Checkbox(
-                                        checked = selected,
-                                        onCheckedChange = null
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                }
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    modifier = Modifier.size(40.dp)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
-                                        M3Text(
-                                            text = initial,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    if (selectionMode) {
+                                        Checkbox(
+                                            checked = selected,
+                                            onCheckedChange = null
                                         )
+                                        Spacer(modifier = Modifier.width(8.dp))
                                     }
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    val previewLines = mutableListOf<String>()
-                                    val headerLine = note.header.trim()
-                                    if (headerLine.isNotEmpty()) previewLines.add(headerLine)
-                                    previewLines.addAll(
-                                        note.content.lines()
-                                            .map { it.trim() }
-                                            .filter { it.isNotEmpty() }
-                                    )
-                                    val previewText = previewLines.take(2).joinToString("\n")
-                                    M3Text(
-                                        text = previewText,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        maxLines = 2
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    M3Text(
-                                        text = note.created.toDateString(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    if (note.attachmentUri?.startsWith("event:") == true) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
+                                            M3Text(
+                                                text = initial,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        val previewLines = mutableListOf<String>()
+                                        val headerLine = note.header.trim()
+                                        if (headerLine.isNotEmpty()) previewLines.add(headerLine)
+                                        previewLines.addAll(
+                                            note.content.lines()
+                                                .map { it.trim() }
+                                                .filter { it.isNotEmpty() }
+                                        )
+                                        val previewText = previewLines.take(2).joinToString("\n")
+                                        M3Text(
+                                            text = previewText,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            maxLines = 2
+                                        )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         M3Text(
-                                            text = "Attached",
+                                            text = note.created.toDateString(),
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = Color(0xFF388E3C),
-                                            modifier = Modifier.clickable {
-                                                val eventId = note.attachmentUri!!.removePrefix("event:").toLongOrNull()
-                                                if (eventId != null) {
-                                                    val intent = Intent(context, EventsActivity::class.java)
-                                                    intent.putExtra(EXTRA_EVENT_ID, eventId)
-                                                    context.startActivity(intent)
-                                                }
-                                            }
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
+                                        if (note.attachmentUri?.startsWith("event:") == true) {
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            M3Text(
+                                                text = "Attached",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color(0xFF388E3C),
+                                                modifier = Modifier.clickable {
+                                                    val eventId = note.attachmentUri!!.removePrefix("event:").toLongOrNull()
+                                                    if (eventId != null) {
+                                                        val intent = Intent(context, EventsActivity::class.java)
+                                                        intent.putExtra(EXTRA_EVENT_ID, eventId)
+                                                        context.startActivity(intent)
+                                                    }
+                                                }
+                                            )
+                                        }
                                     }
                                 }
+                                WordCountChip(
+                                    count = wordCount,
+                                    modifier = Modifier.align(Alignment.BottomEnd)
+                                )
                             }
                         }
                     }
