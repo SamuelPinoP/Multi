@@ -1,5 +1,21 @@
 /*
 
+1- Improve the design of the text that says Multi it is too simple add beauty and modernity.
+2- The event created pop up is displayed above the Add Event and Calendar buttons.
+3- Add a description that says: You can create an Event/ Weekly Goal the first time the user opens
+the app. Like a tutorial. After the user has clicked the tutorial then it disappears. Put it in the
+settings.
+4- Make two different widgets for the Calendar (says when is the next event Date above and days
+remaining under).
+
+* The trash needs a clear button that will clear all of the notes from it.
+
+* The information in the Record activity looks ugly. It needs to be more modern and interactive.
+
+* The Calendar Display needs to look better because it looks ugly and colorless.
+
+* Make it so that people can add links to the notes and the events. Also they can display the site.
+
 * Make sure the Note Widget has an Icon and a name Multi Notes could be the name. 
 
 * Allow to overdue the weekly Goals and show 4/3 and +1 in green next to it. The app will store the
@@ -43,7 +59,7 @@ intellectual then I will suggest reading or studying.
  Possibly have separate mindsets for each goal. Completeness must be satisfying. It has to feel up 
 the meditor. I was thinking a water filling system.
 
-* I am thinking.
+* I am adding UI interactiveness.
  A battery should have 0/9 and be filled each time we complete a weekly task all the way to the top.
 Make it look beautiful.
 
@@ -57,23 +73,28 @@ Make it look beautiful.
  The data the Calendar stores in each day could look better or be more interactive and fun. It 
 definitely needs to be more beautiful than it is and have more modernity.
 
-* Instead of adding page numbers add word count.
-  If I cannot add a page number right now let's add a word count that displays the number of words 
-in the note. So the user knows how long the note is by the amount of words.
-
-* Maybe the amount of letters too in the notes.
-
 * Update with safety backup
   When there is an update in the app the notes I created get deleted. It should not happen. Because 
 the user will have to create the notes again and will lose a lot of work and all the info. I need to
 be respectful of the user.
 
+* The pop up that displays when adding an event looks supper ugly and colorless so I need to create
+a better UI with more beauty maybe separate the notification from the rest also in a second screen
+together with the notification add an alarm. It should be cool. Give the option to have an alarm on 
+its own as a Widget too. It will allow the user to play any chosen song from the phone as an alarm 
+or they can use one of the default songs.
+
+
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 * Tic Tac Toe design and AI.
   Make the AI have two levels of difficulty. The Superium level is impossible to defeat. Virtually 
 nobody can. If you find an algorithm to win. If you find a way to win you are probably a genius. 
 Communicate that to the user.
 
-* Security and no data leaks.
+* Security and no data leaks when posting the app.
   I will not ask for your personal data. I will give you real private use of technology.
 
 * Post both apps.
@@ -82,19 +103,7 @@ Communicate that to the user.
 * Focus needs to update below the keyboard.
   It is possible and it will make a lot of difference.
 
-1- Improve the design of the text that says Multi it is too simple add beauty and modernity.
-2- The event created pop up is displayed above the Add Event and Calendar buttons.
-3- Add a description that says: You can create an Event/ Weekly Goal the first time the user opens
-the app. Like a tutorial. After the user has clicked the tutorial then it disappears. Put it in the
-settings.
-4- Make two different widgets for the Calendar (says when is the next event Date above and days
-remaining under), the Notes (when clicked it opens the last note the user opened in the app, it 
-includes the button of go to app where multi is opened).
-
-
-
-
-----------------------------------------------------------------------------------------------------
+  
 - Add Attach button in the events activity to attach notes to an specific event. It could be a new
 note or an existing one or even multiple of them. I must select the event first and then the note.
 
