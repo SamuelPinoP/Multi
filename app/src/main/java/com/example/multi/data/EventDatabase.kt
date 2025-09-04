@@ -133,6 +133,9 @@ interface NoteDao {
     @Query("SELECT * FROM notes ORDER BY lastOpened DESC")
     suspend fun getNotes(): List<NoteEntity>
 
+    @Query("SELECT * FROM notes ORDER BY lastOpened DESC LIMIT 1")
+    suspend fun getLastOpened(): NoteEntity?
+
     @Query("UPDATE notes SET lastOpened = :time WHERE id = :id")
     suspend fun touch(id: Long, time: Long)
 
