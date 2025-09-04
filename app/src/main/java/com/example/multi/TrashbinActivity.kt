@@ -5,11 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
@@ -24,10 +20,45 @@ import kotlinx.coroutines.withContext
 
 /** Activity showing deleted notes. */
 class TrashbinActivity : SegmentActivity("Trash") {
+    private val notes = mutableStateListOf<TrashedNote>()
+    private val snackbarHostState = SnackbarHostState()
+
+    @Composable
+    override fun SegmentActions() {
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        var showDialog by remember { mutableStateOf(false) }
+
+        TextButton(
+            onClick = { showDialog = true },
+            enabled = notes.isNotEmpty(),
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+        ) { Text("Clear trash") }
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Clear trash?") },
+                text = { Text("This will permanently delete ${notes.size} notes.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDialog = false
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).trashedNoteDao()
+                            withContext(Dispatchers.IO) { dao.deleteAll() }
+                            notes.clear()
+                            snackbarHostState.showSnackbar("Trash cleared.")
+                        }
+                    }) { Text("Delete") }
+                },
+                dismissButton = { TextButton(onClick = { showDialog = false }) { Text("Cancel") } }
+            )
+        }
+    }
+
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
-        val notes = remember { mutableStateListOf<TrashedNote>() }
         val scope = rememberCoroutineScope()
 
         LaunchedEffect(Unit) {
@@ -38,87 +69,96 @@ class TrashbinActivity : SegmentActivity("Trash") {
             notes.clear(); notes.addAll(stored.map { it.toModel() })
         }
 
-        TrashList(
-            items = notes,
-            deletedTime = { it.deleted },
-            cardModifier = {
-                Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        val intent = Intent(context, NoteEditorActivity::class.java)
-                        intent.putExtra(EXTRA_NOTE_HEADER, it.header)
-                        intent.putExtra(EXTRA_NOTE_CONTENT, it.content)
-                        intent.putExtra(EXTRA_NOTE_CREATED, it.created)
-                        intent.putExtra(EXTRA_NOTE_DELETED, it.deleted)
-                        intent.putExtra(EXTRA_NOTE_READ_ONLY, true)
-                        context.startActivity(intent)
+        Box(modifier = Modifier.fillMaxSize()) {
+            TrashList(
+                items = notes,
+                deletedTime = { it.deleted },
+                cardModifier = {
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val intent = Intent(context, NoteEditorActivity::class.java)
+                            intent.putExtra(EXTRA_NOTE_HEADER, it.header)
+                            intent.putExtra(EXTRA_NOTE_CONTENT, it.content)
+                            intent.putExtra(EXTRA_NOTE_CREATED, it.created)
+                            intent.putExtra(EXTRA_NOTE_DELETED, it.deleted)
+                            intent.putExtra(EXTRA_NOTE_READ_ONLY, true)
+                            context.startActivity(intent)
+                        }
+                },
+                onRestore = { note ->
+                    scope.launch {
+                        val db = EventDatabase.getInstance(context)
+                        withContext(Dispatchers.IO) {
+                            db.noteDao().insert(
+                                Note(
+                                    header = note.header,
+                                    content = note.content,
+                                    created = note.created,
+                                    lastOpened = System.currentTimeMillis(),
+                                    attachmentUri = note.attachmentUri
+                                ).toEntity()
+                            )
+                            db.trashedNoteDao().delete(note.toEntity())
+                        }
+                        notes.remove(note)
                     }
-            },
-            onRestore = { note ->
-                scope.launch {
-                    val db = EventDatabase.getInstance(context)
-                    withContext(Dispatchers.IO) {
-                        db.noteDao().insert(
-                            Note(
-                                header = note.header,
-                                content = note.content,
-                                created = note.created,
-                                lastOpened = System.currentTimeMillis(),
-                                attachmentUri = note.attachmentUri
-                            ).toEntity()
+                },
+                onDelete = { note ->
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).trashedNoteDao()
+                        withContext(Dispatchers.IO) { dao.delete(note.toEntity()) }
+                        notes.remove(note)
+                    }
+                }
+            ) { note ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
+                            Text(
+                                text = initial,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        val previewLines = mutableListOf<String>()
+                        val headerLine = note.header.trim()
+                        if (headerLine.isNotEmpty()) previewLines.add(headerLine)
+                        previewLines.addAll(
+                            note.content.lines()
+                                .map { it.trim() }
+                                .filter { it.isNotEmpty() }
                         )
-                        db.trashedNoteDao().delete(note.toEntity())
-                    }
-                    notes.remove(note)
-                }
-            },
-            onDelete = { note ->
-                scope.launch {
-                    val dao = EventDatabase.getInstance(context).trashedNoteDao()
-                    withContext(Dispatchers.IO) { dao.delete(note.toEntity()) }
-                    notes.remove(note)
-                }
-            }
-        ) { note ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        val initial = (note.header.ifBlank { note.content }.trim().firstOrNull() ?: 'N').toString()
+                        val previewText = previewLines.take(2).joinToString("\n")
                         Text(
-                            text = initial,
+                            previewText,
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            maxLines = 2
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            "Created: ${note.created.toDateString()}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    val previewLines = mutableListOf<String>()
-                    val headerLine = note.header.trim()
-                    if (headerLine.isNotEmpty()) previewLines.add(headerLine)
-                    previewLines.addAll(
-                        note.content.lines()
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() }
-                    )
-                    val previewText = previewLines.take(2).joinToString("\n")
-                    Text(
-                        previewText,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 2
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        "Created: ${note.created.toDateString()}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            )
         }
     }
 }

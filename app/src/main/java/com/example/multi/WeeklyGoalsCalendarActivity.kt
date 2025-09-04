@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.util.calculateOverage
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
 import com.example.multi.EXTRA_GOAL_ID
@@ -83,14 +84,16 @@ private fun WeeklyGoalsCalendarScreen() {
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
-                val completed = model.frequency - model.remaining
+                val completed = model.dayStates.count { it == 'C' }
+                val over = calculateOverage(completed, model.frequency)
                 val record = WeeklyGoalRecord(
                     header = model.header,
                     completed = completed,
                     frequency = model.frequency,
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
-                    dayStates = model.dayStates
+                    dayStates = model.dayStates,
+                    overageCount = over
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
