@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,15 +50,18 @@ class TrashbinActivity : SegmentActivity("Trash") {
             notes.clear(); notes.addAll(stored.map { it.toModel() })
         }
 
-        // —— Pretty colors for destructive actions (kept here for theming flexibility)
-        val dangerGradient = Brush.horizontalGradient(
-            listOf(
-                Color(0xFFFF3D47),  // neon red
-                Color(0xFFCC1E5A)   // magenta-crimson
+        // Read theme color OUTSIDE remember; use it as a key.
+        val primaryTint = MaterialTheme.colorScheme.primary
+        val brandGradient = remember(primaryTint) {
+            Brush.horizontalGradient(
+                listOf(
+                    lerp(primaryTint, Color.White, 0.12f),
+                    lerp(primaryTint, Color.Black, 0.18f)
+                )
             )
-        )
-        val dangerBorder = Brush.horizontalGradient(
-            listOf(Color(0x66FFFFFF), Color(0x33FFFFFF))
+        }
+        val brandBorder = Brush.horizontalGradient(
+            listOf(Color.White.copy(alpha = 0.35f), Color.White.copy(alpha = 0.18f))
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -66,12 +70,12 @@ class TrashbinActivity : SegmentActivity("Trash") {
                     .fillMaxSize()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                // Gorgeous "Clear trash" button (pill, glow, icon)
+                // Clear Trash button now matches TopAppBar color family
                 GradientDangerButton(
                     text = "Clear trash",
                     enabled = notes.isNotEmpty(),
-                    gradient = dangerGradient,
-                    borderBrush = dangerBorder,
+                    gradient = brandGradient,
+                    borderBrush = brandBorder,
                     onClick = { showConfirm = true },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -172,7 +176,6 @@ class TrashbinActivity : SegmentActivity("Trash") {
                     .padding(bottom = 64.dp)
             )
 
-            // Custom glassy confirmation dialog
             PrettyConfirmDialog(
                 visible = showConfirm,
                 count = notes.size,
@@ -191,7 +194,7 @@ class TrashbinActivity : SegmentActivity("Trash") {
     }
 }
 
-/* ---------- Fancy UI bits ---------- */
+/* ---------- UI bits ---------- */
 
 @Composable
 private fun GradientDangerButton(
@@ -203,7 +206,6 @@ private fun GradientDangerButton(
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(16.dp)
-    // Use a transparent Button with our own gradient background + glow
     Button(
         onClick = onClick,
         enabled = enabled,
@@ -212,13 +214,27 @@ private fun GradientDangerButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent,
             disabledContainerColor = Color.Transparent,
-            contentColor = Color.White,
-            disabledContentColor = Color.White.copy(alpha = 0.5f)
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
         ),
         modifier = modifier
-            .shadow(if (enabled) 12.dp else 0.dp, shape, ambientColor = Color.Black.copy(0.35f))
-            .background(if (enabled) gradient else Brush.linearGradient(listOf(Color(0xFF616161), Color(0xFF4A4A4A))), shape)
-            .border(1.dp, if (enabled) borderBrush else Brush.linearGradient(listOf(Color(0x33FFFFFF), Color(0x11FFFFFF))), shape)
+            .shadow(
+                if (enabled) 12.dp else 0.dp,
+                shape = shape,
+                clip = false,
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+            )
+            .background(
+                if (enabled) gradient
+                else Brush.linearGradient(listOf(Color(0xFF616161), Color(0xFF4A4A4A))),
+                shape
+            )
+            .border(
+                1.dp,
+                if (enabled) borderBrush
+                else Brush.linearGradient(listOf(Color(0x33FFFFFF), Color(0x11FFFFFF))),
+                shape
+            )
             .clip(shape)
     ) {
         Icon(
@@ -248,8 +264,9 @@ private fun PrettyConfirmDialog(
         val border = Brush.linearGradient(
             listOf(Color(0x33FFFFFF), Color(0x11FFFFFF))
         )
+        val p = MaterialTheme.colorScheme.primary
         val headerGrad = Brush.horizontalGradient(
-            listOf(MaterialTheme.colorScheme.error, Color(0xFFCC1E5A))
+            listOf(lerp(p, Color.White, 0.12f), lerp(p, Color.Black, 0.18f))
         )
 
         Surface(
@@ -262,7 +279,6 @@ private fun PrettyConfirmDialog(
                 .border(1.dp, border, shape)
         ) {
             Column(Modifier.padding(20.dp)) {
-                // Header badge
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -298,7 +314,6 @@ private fun PrettyConfirmDialog(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Actions
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -314,7 +329,7 @@ private fun PrettyConfirmDialog(
                         onClick = onConfirm,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
+                            containerColor = MaterialTheme.colorScheme.error, // destructive stays red
                             contentColor = MaterialTheme.colorScheme.onError
                         ),
                         modifier = Modifier.weight(1f)
