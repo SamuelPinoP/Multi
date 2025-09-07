@@ -63,6 +63,7 @@ dependencies {
     implementation("com.airbnb.android:lottie-compose:6.6.7")
     implementation("nl.dionsegijn:konfetti-compose:2.0.2")
     testImplementation(libs.junit)
+    testImplementation("androidx.test:core:1.5.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

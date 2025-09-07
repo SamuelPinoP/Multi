@@ -29,9 +29,12 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -40,6 +43,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.calculateOverage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -147,7 +151,8 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                     frequency = model.frequency,
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
-                    dayStates = model.dayStates
+                    dayStates = model.dayStates,
+                    overageCount = calculateOverage(completed, model.frequency)
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -243,11 +248,32 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(goal.header, style = MaterialTheme.typography.bodyLarge)
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                val completed = goal.dayStates.count { it == 'C' }
+                                val overage = calculateOverage(completed, goal.frequency)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.semantics {
+                                        contentDescription =
+                                            if (overage > 0) {
+                                                "$completed of ${goal.frequency} completed, $overage over target"
+                                            } else {
+                                                "$completed of ${goal.frequency} completed"
+                                            }
+                                    }
+                                ) {
                                     Text(
-                                        text = "${goal.frequency - goal.remaining}/${goal.frequency}",
+                                        text = "$completed/${goal.frequency}",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
+                                    if (overage > 0) {
+                                        Text(
+                                            text = "+$overage",
+                                            color = MaterialTheme.colorScheme.tertiary,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier.padding(start = 4.dp)
+                                        )
+                                    }
                                     val today = LocalDate.now().toString()
                                     if (goal.lastCheckedDate != today && goal.remaining > 0) {
                                         Icon(
@@ -296,7 +322,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                     }
                                 }
                             }
-                            val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
+                            val progress = if (goal.frequency == 0) 1f else completed.toFloat() / goal.frequency
                             LinearProgressIndicator(
                                 progress = progress,
                                 color = MaterialTheme.colorScheme.primary,

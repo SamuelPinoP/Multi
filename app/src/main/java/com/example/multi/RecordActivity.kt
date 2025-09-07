@@ -24,6 +24,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -149,7 +152,27 @@ fun RecordScreen() {
                                 ) {
                                     Column {
                                         Text(rec.header, style = MaterialTheme.typography.bodyLarge)
-                                        Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.semantics {
+                                                contentDescription =
+                                                    if (rec.overageCount > 0) {
+                                                        "${rec.completed} of ${rec.frequency} completed, ${rec.overageCount} over target"
+                                                    } else {
+                                                        "${rec.completed} of ${rec.frequency} completed"
+                                                    }
+                                            }
+                                        ) {
+                                            Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                            if (rec.overageCount > 0) {
+                                                Text(
+                                                    text = "+${rec.overageCount}",
+                                                    color = MaterialTheme.colorScheme.tertiary,
+                                                    fontWeight = FontWeight.Medium,
+                                                    modifier = Modifier.padding(start = 4.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                     Icon(
                                         imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,

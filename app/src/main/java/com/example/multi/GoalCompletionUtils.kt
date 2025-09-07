@@ -6,6 +6,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
+fun calculateOverage(completed: Int, target: Int): Int =
+    (completed - target).coerceAtLeast(0).coerceAtMost(20)
+
 suspend fun saveGoalCompletion(
     context: Context,
     goalId: Long,
