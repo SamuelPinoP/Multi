@@ -32,6 +32,7 @@ import com.example.multi.data.toModel
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
 import com.example.multi.EXTRA_GOAL_ID
+import com.example.multi.overageCount
 import com.example.multi.util.capitalizeSentences
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
@@ -83,14 +84,15 @@ private fun WeeklyGoalsCalendarScreen() {
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
-                val completed = model.frequency - model.remaining
+                val completed = model.dayStates.count { it == 'C' }
                 val record = WeeklyGoalRecord(
                     header = model.header,
                     completed = completed,
                     frequency = model.frequency,
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
-                    dayStates = model.dayStates
+                    dayStates = model.dayStates,
+                    overageCount = overageCount(completed, model.frequency)
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
