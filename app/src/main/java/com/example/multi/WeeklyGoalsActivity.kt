@@ -29,6 +29,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -103,6 +106,7 @@ private fun DayChoiceDialog(
 private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     val context = LocalContext.current
     val goals = remember { mutableStateListOf<WeeklyGoal>() }
+    val completionCounts = remember { mutableStateMapOf<Long, Int>() }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -127,6 +131,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
         val db = EventDatabase.getInstance(context)
         val dao = db.weeklyGoalDao()
         val recordDao = db.weeklyGoalRecordDao()
+        val completionDao = db.dailyCompletionDao()
         val stored = withContext(Dispatchers.IO) { dao.getGoals() }
         val currentWeek = currentWeek()
         val today = LocalDate.now()
@@ -140,14 +145,18 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
-                val completed = model.dayStates.count { it == 'C' }
+                val prevCompleted = withContext(Dispatchers.IO) {
+                    completionDao.getCompletionCountForWeek(entity.id, prevStartStr, prevEndStr)
+                }
+                val over = (prevCompleted - model.frequency).coerceAtLeast(0).coerceAtMost(20)
                 val record = WeeklyGoalRecord(
                     header = model.header,
-                    completed = completed,
+                    completed = prevCompleted,
                     frequency = model.frequency,
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
-                    dayStates = model.dayStates
+                    dayStates = model.dayStates,
+                    overageCount = over
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -158,9 +167,14 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 )
                 withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
             }
-            val completed = model.dayStates.count { it == 'C' }
-            model = model.copy(remaining = (model.frequency - completed).coerceAtLeast(0))
+            val weekStartStr = startCurrent.toString()
+            val weekEndStr = startCurrent.plusDays(6).toString()
+            val completedThisWeek = withContext(Dispatchers.IO) {
+                completionDao.getCompletionCountForWeek(entity.id, weekStartStr, weekEndStr)
+            }
+            model = model.copy(remaining = (model.frequency - completedThisWeek).coerceAtLeast(0))
             goals.add(model)
+            completionCounts[model.id] = completedThisWeek
         }
         highlightGoalId?.let { id ->
             val index = goals.indexOfFirst { it.id == id }
@@ -244,12 +258,29 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                             ) {
                                 Text(goal.header, style = MaterialTheme.typography.bodyLarge)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    val completed = completionCounts[goal.id] ?: 0
+                                    val over = (completed - goal.frequency).coerceAtLeast(0).coerceAtMost(20)
                                     Text(
-                                        text = "${goal.frequency - goal.remaining}/${goal.frequency}",
-                                        style = MaterialTheme.typography.bodyLarge
+                                        text = "$completed/${goal.frequency}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.semantics {
+                                            contentDescription = if (over > 0) {
+                                                "$completed of ${goal.frequency} completed, $over over target."
+                                            } else {
+                                                "$completed of ${goal.frequency} completed."
+                                            }
+                                        }
                                     )
+                                    if (over > 0) {
+                                        Text(
+                                            text = "+$over",
+                                            color = MaterialTheme.colorScheme.tertiary,
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier.padding(start = 4.dp)
+                                        )
+                                    }
                                     val today = LocalDate.now().toString()
-                                    if (goal.lastCheckedDate != today && goal.remaining > 0) {
+                                    if (goal.lastCheckedDate != today && completed < goal.frequency + 20) {
                                         Icon(
                                             Icons.Default.Check,
                                             contentDescription = "Completed",
@@ -257,38 +288,40 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                             modifier = Modifier
                                                 .padding(start = 8.dp)
                                                 .clickable {
-                                                    if (goal.remaining > 0) {
+                                                    val current = completionCounts[goal.id] ?: 0
+                                                    if (current < goal.frequency + 20) {
                                                         val chars = goal.dayStates.toCharArray()
                                                         val dIndex = LocalDate.now().dayOfWeek.value % 7
                                                         if (chars[dIndex] != 'C') {
                                                             chars[dIndex] = 'C'
-                                                            val completed = chars.count { it == 'C' }
-                                                            val updated = goal.copy(
-                                                                dayStates = String(chars),
-                                                                remaining = (goal.frequency - completed).coerceAtLeast(0),
-                                                                lastCheckedDate = today
+                                                        }
+                                                        val newCount = current + 1
+                                                        val updated = goal.copy(
+                                                            dayStates = String(chars),
+                                                            remaining = (goal.frequency - newCount).coerceAtLeast(0),
+                                                            lastCheckedDate = today
+                                                        )
+                                                        val wasIncomplete = current < goal.frequency
+                                                        goals[index] = updated
+                                                        completionCounts[goal.id] = newCount
+                                                        if (wasIncomplete && newCount == goal.frequency) {
+                                                            showConfetti = true
+                                                            scope.launch { snackbarHostState.showSnackbar("Goals completed!") }
+                                                        }
+                                                        if (goals.all { (completionCounts[it.id] ?: 0) >= it.frequency }) {
+                                                            GoalCelebrationPrefs.activateForCurrentWeek(context)
+                                                            showAllDialog = true
+                                                            edgeCelebration = true
+                                                        }
+                                                        scope.launch {
+                                                            saveGoalCompletion(
+                                                                context = context,
+                                                                goalId = goal.id,
+                                                                goalHeader = goal.header,
+                                                                completionDate = LocalDate.now()
                                                             )
-                                                            val wasIncomplete = goal.remaining > 0
-                                                            goals[index] = updated
-                                                            if (wasIncomplete && updated.remaining == 0) {
-                                                                showConfetti = true
-                                                                scope.launch { snackbarHostState.showSnackbar("Goals completed!") }
-                                                            }
-                                                            if (goals.all { it.remaining == 0 }) {
-                                                                GoalCelebrationPrefs.activateForCurrentWeek(context)
-                                                                showAllDialog = true
-                                                                edgeCelebration = true
-                                                            }
-                                                            scope.launch {
-                                                                saveGoalCompletion(
-                                                                    context = context,
-                                                                    goalId = goal.id,
-                                                                    goalHeader = goal.header,
-                                                                    completionDate = LocalDate.now()
-                                                                )
-                                                                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
-                                                            }
+                                                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                                                         }
                                                     }
                                                 }
@@ -296,7 +329,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                     }
                                 }
                             }
-                            val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
+                            val progress = ((completionCounts[goal.id] ?: 0).toFloat() / goal.frequency).coerceAtMost(1f)
                             LinearProgressIndicator(
                                 progress = progress,
                                 color = MaterialTheme.colorScheme.primary,
@@ -401,14 +434,17 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 onProgress = if (isNew) null else {
                     {
                         val g = goals[index]
-                        if (g.remaining > 0) {
-                            val updated = g.copy(remaining = g.remaining - 1)
+                        val current = completionCounts[g.id] ?: 0
+                        if (current < g.frequency + 20) {
+                            val newCount = current + 1
+                            val updated = g.copy(remaining = (g.frequency - newCount).coerceAtLeast(0), lastCheckedDate = LocalDate.now().toString())
                             goals[index] = updated
-                            if (updated.remaining == 0) {
+                            completionCounts[g.id] = newCount
+                            if (current < g.frequency && newCount == g.frequency) {
                                 showConfetti = true
                                 scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
                             }
-                            if (goals.all { it.remaining == 0 }) {
+                            if (goals.all { (completionCounts[it.id] ?: 0) >= it.frequency }) {
                                 GoalCelebrationPrefs.activateForCurrentWeek(context)
                                 showAllDialog = true
                                 edgeCelebration = true
@@ -443,6 +479,9 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                     val completed = chars.count { it == 'C' }
                     val updated = g.copy(dayStates = String(chars), remaining = (g.frequency - completed).coerceAtLeast(0))
                     goals[gIndex] = updated
+                    if (wasComplete) {
+                        completionCounts[g.id] = ((completionCounts[g.id] ?: 1) - 1).coerceAtLeast(0)
+                    }
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
@@ -465,13 +504,16 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         remaining = (g.frequency - completed).coerceAtLeast(0),
                         lastCheckedDate = LocalDate.now().toString()
                     )
-                    val wasIncomplete = g.remaining > 0
+                    val current = completionCounts[g.id] ?: 0
+                    val newCount = if (alreadyComplete) current else current + 1
+                    completionCounts[g.id] = newCount
+                    val wasIncomplete = current < g.frequency && !alreadyComplete
                     goals[gIndex] = updated
-                    if (wasIncomplete && updated.remaining == 0) {
+                    if (wasIncomplete && newCount == g.frequency) {
                         showConfetti = true
                         scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
                     }
-                    if (goals.all { it.remaining == 0 }) {
+                    if (goals.all { (completionCounts[it.id] ?: 0) >= it.frequency }) {
                         GoalCelebrationPrefs.activateForCurrentWeek(context)
                         showAllDialog = true
                         edgeCelebration = true

@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -24,11 +25,14 @@ import kotlinx.coroutines.withContext
 
 /** Activity showing deleted notes. */
 class TrashbinActivity : SegmentActivity("Trash") {
+    private val notes = mutableStateListOf<TrashedNote>()
+    private val showDialog = mutableStateOf(false)
+
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
-        val notes = remember { mutableStateListOf<TrashedNote>() }
         val scope = rememberCoroutineScope()
+        val snackbarHostState = remember { SnackbarHostState() }
 
         LaunchedEffect(Unit) {
             val dao = EventDatabase.getInstance(context).trashedNoteDao()
@@ -38,6 +42,7 @@ class TrashbinActivity : SegmentActivity("Trash") {
             notes.clear(); notes.addAll(stored.map { it.toModel() })
         }
 
+        Box(modifier = Modifier.fillMaxSize()) {
         TrashList(
             items = notes,
             deletedTime = { it.deleted },
@@ -120,5 +125,45 @@ class TrashbinActivity : SegmentActivity("Trash") {
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+
+        if (showDialog.value) {
+            AlertDialog(
+                onDismissRequest = { showDialog.value = false },
+                title = { Text("Clear trash?") },
+                text = { Text("This will permanently delete ${notes.size} notes.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDialog.value = false
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).trashedNoteDao()
+                            withContext(Dispatchers.IO) { dao.deleteAll() }
+                            notes.clear()
+                            snackbarHostState.showSnackbar("Trash cleared.")
+                        }
+                    }) { Text("Delete") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDialog.value = false }) { Text("Cancel") }
+                }
+            )
+        }
+        }
+    }
+
+    @Composable
+    override fun OverflowMenuItems(onDismiss: () -> Unit) {
+        DropdownMenuItem(
+            text = { Text("Clear trash", color = MaterialTheme.colorScheme.error) },
+            onClick = {
+                showDialog.value = true
+                onDismiss()
+            },
+            enabled = notes.isNotEmpty()
+        )
     }
 }

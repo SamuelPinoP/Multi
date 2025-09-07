@@ -83,14 +83,18 @@ private fun WeeklyGoalsCalendarScreen() {
         stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
-                val completed = model.frequency - model.remaining
+                val prevCompleted = withContext(Dispatchers.IO) {
+                    completionDao.getCompletionCountForWeek(entity.id, prevStartStr, prevEndStr)
+                }
+                val over = (prevCompleted - model.frequency).coerceAtLeast(0).coerceAtMost(20)
                 val record = WeeklyGoalRecord(
                     header = model.header,
-                    completed = completed,
+                    completed = prevCompleted,
                     frequency = model.frequency,
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
-                    dayStates = model.dayStates
+                    dayStates = model.dayStates,
+                    overageCount = over
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -114,6 +118,12 @@ private fun WeeklyGoalsCalendarScreen() {
                 model = model.copy(dayStates = String(chars))
                 withContext(Dispatchers.IO) { dao.update(model.toEntity()) }
             }
+            val weekStartStr = startCurrent.toString()
+            val weekEndStr = startCurrent.plusDays(6).toString()
+            val completedThisWeek = withContext(Dispatchers.IO) {
+                completionDao.getCompletionCountForWeek(entity.id, weekStartStr, weekEndStr)
+            }
+            model = model.copy(remaining = (model.frequency - completedThisWeek).coerceAtLeast(0))
             goals.add(model)
         }
 

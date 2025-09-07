@@ -15,4 +15,7 @@ interface DailyCompletionDao {
 
     @Query("SELECT * FROM daily_completions WHERE completionDate BETWEEN :startDate AND :endDate")
     suspend fun getCompletionsInRange(startDate: String, endDate: String): List<DailyCompletionEntity>
+
+    @Query("SELECT COUNT(*) FROM daily_completions WHERE goalId = :goalId AND weekStart = :weekStart AND weekEnd = :weekEnd")
+    suspend fun getCompletionCountForWeek(goalId: Long, weekStart: String, weekEnd: String): Int
 }
