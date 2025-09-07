@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Card
@@ -149,7 +150,18 @@ fun RecordScreen() {
                                 ) {
                                     Column {
                                         Text(rec.header, style = MaterialTheme.typography.bodyLarge)
-                                        Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                        Row {
+                                            Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
+                                            if (rec.overageCount > 0) {
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                    text = "+${rec.overageCount}",
+                                                    color = MaterialTheme.colorScheme.tertiary,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        }
                                     }
                                     Icon(
                                         imageVector = if (done) Icons.Filled.Check else Icons.Filled.Close,

@@ -8,5 +8,6 @@ data class WeeklyGoalRecord(
     var frequency: Int,
     var weekStart: String,
     var weekEnd: String,
-    var dayStates: String = DEFAULT_DAY_STATES
+    var dayStates: String = DEFAULT_DAY_STATES,
+    var overageCount: Int = 0
 )

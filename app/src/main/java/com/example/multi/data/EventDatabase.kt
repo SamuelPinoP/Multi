@@ -11,6 +11,8 @@ import androidx.room.Query
 import androidx.room.Insert
 import androidx.room.Update
 import androidx.room.Delete
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.multi.DailyCompletionDao
 import com.example.multi.DailyCompletionEntity
 import com.example.multi.Event
@@ -51,7 +53,8 @@ data class WeeklyGoalRecordEntity(
     val frequency: Int,
     val weekStart: String,
     val weekEnd: String,
-    val dayStates: String
+    val dayStates: String,
+    val overageCount: Int = 0
 )
 
 @Entity(tableName = "notes")
@@ -154,6 +157,9 @@ interface TrashedNoteDao {
     @Query("DELETE FROM trashed_notes WHERE deleted < :threshold")
     suspend fun deleteExpired(threshold: Long)
 
+    @Query("DELETE FROM trashed_notes")
+    suspend fun deleteAll()
+
     @Insert
     suspend fun insert(note: TrashedNoteEntity): Long
 
@@ -186,7 +192,7 @@ interface TrashedEventDao {
         TrashedEventEntity::class,
         DailyCompletionEntity::class
     ],
-    version = 15  // Incremented from 14 to 15 due to schema change
+    version = 16  // Incremented for overageCount and trash clearing
 )
 abstract class EventDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -201,6 +207,12 @@ abstract class EventDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: EventDatabase? = null
 
+        private val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE weekly_goal_records ADD COLUMN overageCount INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): EventDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -208,6 +220,7 @@ abstract class EventDatabase : RoomDatabase() {
                     EventDatabase::class.java,
                     "events.db"
                 )
+                    .addMigrations(MIGRATION_15_16)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
@@ -247,10 +260,10 @@ fun WeeklyGoal.toEntity() =
     WeeklyGoalEntity(id, header, frequency, remaining, lastCheckedDate, weekNumber, dayStates)
 
 fun WeeklyGoalRecordEntity.toModel() =
-    WeeklyGoalRecord(id, header, completed, frequency, weekStart, weekEnd, dayStates)
+    WeeklyGoalRecord(id, header, completed, frequency, weekStart, weekEnd, dayStates, overageCount)
 
 fun WeeklyGoalRecord.toEntity() =
-    WeeklyGoalRecordEntity(id, header, completed, frequency, weekStart, weekEnd, dayStates)
+    WeeklyGoalRecordEntity(id, header, completed, frequency, weekStart, weekEnd, dayStates, overageCount)
 
 fun NoteEntity.toModel() =
     Note(id, header, content, created, lastOpened, scroll, cursor, attachmentUri)
