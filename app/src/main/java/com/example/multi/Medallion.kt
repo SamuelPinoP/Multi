@@ -275,14 +275,6 @@ fun Medallion(
         )
     }
 
-    // Faster rotation on tap
-    fun reorder() {
-        if (order.isEmpty()) return
-        order = listOf(order.last()) + order.dropLast(1)
-        // For random shuffle instead of rotation:
-        // order = order.shuffled()
-    }
-
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
