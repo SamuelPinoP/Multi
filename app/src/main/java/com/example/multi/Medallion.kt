@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Note
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
@@ -84,6 +85,15 @@ private fun MultiWordmark(
         ),
         label = "sparkX"
     )
+    val starRotation by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 8000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "starRotation"
+    )
 
     val c = MaterialTheme.colorScheme
     val fillBrush = Brush.linearGradient(
@@ -108,21 +118,43 @@ private fun MultiWordmark(
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Main wordmark
-        Text(
-            text = title,
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.displaySmall.copy(
-                brush = fillBrush,
-                fontWeight = FontWeight.ExtraBold,
-                shadow = Shadow(
-                    color = c.primary.copy(alpha = 0.35f),
-                    offset = Offset(2f, 3f),
-                    blurRadius = 10f
+        // Main wordmark with decorative stars
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                Icons.Filled.Star,
+                contentDescription = null,
+                tint = c.secondary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .offset(y = (-4).dp)
+                    .graphicsLayer { rotationZ = starRotation }
+            )
+            Text(
+                text = title,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.displaySmall.copy(
+                    brush = fillBrush,
+                    fontWeight = FontWeight.ExtraBold,
+                    shadow = Shadow(
+                        color = c.primary.copy(alpha = 0.35f),
+                        offset = Offset(2f, 3f),
+                        blurRadius = 10f
+                    )
                 )
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
+            )
+            Icon(
+                Icons.Filled.Star,
+                contentDescription = null,
+                tint = c.tertiary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .offset(y = (-4).dp)
+                    .graphicsLayer { rotationZ = -starRotation }
+            )
+        }
 
         // Elegant underline with animated sparkle
         Spacer(Modifier.height(8.dp))
