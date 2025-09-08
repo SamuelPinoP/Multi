@@ -25,15 +25,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.MultiTheme
@@ -122,21 +124,30 @@ fun RecordScreen() {
                         val end = LocalDate.parse(range.second)
                         val month = start.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
                         val weekOfMonth = (start.dayOfMonth - 1) / 7 + 1
-                        Text(
-                            text = "$month - Week $weekOfMonth - ${start.format(dateFormatter)} - ${end.format(dateFormatter)}",
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        ) {
+                            Text(
+                                text = "$month - Week $weekOfMonth - ${start.format(dateFormatter)} - ${end.format(dateFormatter)}",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
                     }
                     items(list) { rec ->
                         val done = rec.completed >= rec.frequency
-                        Card(
+                        val progress = (rec.completed.toFloat() / rec.frequency).coerceIn(0f, 1f)
+                        ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -149,7 +160,7 @@ fun RecordScreen() {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column {
-                                        Text(rec.header, style = MaterialTheme.typography.bodyLarge)
+                                        Text(rec.header, style = MaterialTheme.typography.titleMedium)
                                         Row {
                                             Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
                                             if (rec.overageCount > 0) {
@@ -169,6 +180,15 @@ fun RecordScreen() {
                                         tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                                     )
                                 }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                LinearProgressIndicator(
+                                    progress = progress,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp),
+                                    trackColor = MaterialTheme.colorScheme.surface,
+                                    color = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 DayButtonsRow(states = rec.dayStates) { }
                                 Row(
