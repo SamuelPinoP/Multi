@@ -25,13 +25,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.example.multi.data.EventDatabase
@@ -122,21 +123,30 @@ fun RecordScreen() {
                         val end = LocalDate.parse(range.second)
                         val month = start.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
                         val weekOfMonth = (start.dayOfMonth - 1) / 7 + 1
-                        Text(
-                            text = "$month - Week $weekOfMonth - ${start.format(dateFormatter)} - ${end.format(dateFormatter)}",
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "$month - Week $weekOfMonth - ${start.format(dateFormatter)} - ${end.format(dateFormatter)}",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                        }
                     }
                     items(list) { rec ->
                         val done = rec.completed >= rec.frequency
-                        Card(
+                        ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Column(
                                 modifier = Modifier

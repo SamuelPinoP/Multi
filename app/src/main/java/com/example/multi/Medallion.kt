@@ -443,19 +443,28 @@ fun MedallionScreen() {
         color = MaterialTheme.colorScheme.surface
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Medallion { segment ->
-                val cls = when (segment) {
-                    MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                    MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                    MedallionSegment.EVENTS -> EventsActivity::class.java
-                    MedallionSegment.NOTES -> NotesActivity::class.java
+            // Give the home screen a polished card-like container so the
+            // interactive segments feel grouped together.
+            Surface(
+                shape = RoundedCornerShape(32.dp),
+                tonalElevation = 8.dp,
+                shadowElevation = 8.dp,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
+                Medallion {
+                    val cls = when (it) {
+                        MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
+                        MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+                        MedallionSegment.EVENTS -> EventsActivity::class.java
+                        MedallionSegment.NOTES -> NotesActivity::class.java
+                    }
+                    context.startActivity(Intent(context, cls))
                 }
-                context.startActivity(Intent(context, cls))
             }
         }
     }

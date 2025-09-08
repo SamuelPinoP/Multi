@@ -19,6 +19,14 @@ fun Context.showModernToast(message: String) {
         setPadding(horizontal, vertical, horizontal, vertical)
     }
     toast.view = textView
-    toast.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, (64 * resources.displayMetrics.density).toInt())
+    // Push the toast far enough above the bottom of the screen so it does not
+    // overlap buttons anchored there (e.g. "Add Event" or "Calendar").  Using
+    // a larger offset makes the message feel attached to the bottom without
+    // obscuring any UI elements.
+    toast.setGravity(
+        Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL,
+        0,
+        (112 * resources.displayMetrics.density).toInt()
+    )
     toast.show()
 }
