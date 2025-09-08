@@ -399,6 +399,12 @@ fun Medallion(
                 onClick = { order = order.shuffled() }
             )
 
+            Text(
+                text = "Your productivity hub",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             // Grid
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),

@@ -19,6 +19,12 @@ fun Context.showModernToast(message: String) {
         setPadding(horizontal, vertical, horizontal, vertical)
     }
     toast.view = textView
-    toast.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, (64 * resources.displayMetrics.density).toInt())
+    // Position the toast closer to the system navigation bar so it doesn't
+    // overlap important UI elements like floating action buttons.
+    toast.setGravity(
+        Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL,
+        0,
+        (16 * resources.displayMetrics.density).toInt()
+    )
     toast.show()
 }
