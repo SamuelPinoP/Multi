@@ -442,20 +442,23 @@ fun MedallionScreen() {
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.surface
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Medallion { segment ->
-                val cls = when (segment) {
-                    MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                    MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                    MedallionSegment.EVENTS -> EventsActivity::class.java
-                    MedallionSegment.NOTES -> NotesActivity::class.java
+        Box(modifier = Modifier.fillMaxSize()) {
+            AnimatedBackdrop(modifier = Modifier.matchParentSize())
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Medallion { segment ->
+                    val cls = when (segment) {
+                        MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
+                        MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+                        MedallionSegment.EVENTS -> EventsActivity::class.java
+                        MedallionSegment.NOTES -> NotesActivity::class.java
+                    }
+                    context.startActivity(Intent(context, cls))
                 }
-                context.startActivity(Intent(context, cls))
             }
         }
     }

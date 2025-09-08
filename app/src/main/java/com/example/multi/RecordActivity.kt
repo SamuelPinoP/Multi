@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -136,7 +137,8 @@ fun RecordScreen() {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -149,7 +151,11 @@ fun RecordScreen() {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column {
-                                        Text(rec.header, style = MaterialTheme.typography.bodyLarge)
+                                        Text(
+                                            rec.header,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
                                         Row {
                                             Text("${rec.completed}/${rec.frequency}", style = MaterialTheme.typography.bodyMedium)
                                             if (rec.overageCount > 0) {
@@ -169,6 +175,14 @@ fun RecordScreen() {
                                         tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                                     )
                                 }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                LinearProgressIndicator(
+                                    progress = rec.completed.toFloat() / rec.frequency,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 DayButtonsRow(states = rec.dayStates) { }
                                 Row(

@@ -19,6 +19,10 @@ fun Context.showModernToast(message: String) {
         setPadding(horizontal, vertical, horizontal, vertical)
     }
     toast.view = textView
-    toast.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, (64 * resources.displayMetrics.density).toInt())
+    toast.setGravity(
+        Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL,
+        0,
+        (120 * resources.displayMetrics.density).toInt()
+    )
     toast.show()
 }
