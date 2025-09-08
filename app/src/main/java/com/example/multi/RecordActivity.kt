@@ -89,7 +89,7 @@ fun RecordScreen() {
                 title = {
                     Text(
                         text = "Record",
-                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp),
                     )
                 },
                 navigationIcon = {}
@@ -103,7 +103,12 @@ fun RecordScreen() {
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No records yet")
+                Text(
+                    "No records yet",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
             }
         } else {
             val grouped = records.groupBy { it.weekStart to it.weekEnd }
@@ -128,15 +133,19 @@ fun RecordScreen() {
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp),
                             textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                     items(list) { rec ->
                         val done = rec.completed >= rec.frequency
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .shadow(1.dp, RoundedCornerShape(12.dp)),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -171,6 +180,7 @@ fun RecordScreen() {
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 DayButtonsRow(states = rec.dayStates) { }
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End

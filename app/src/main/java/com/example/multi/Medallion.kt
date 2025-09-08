@@ -267,7 +267,7 @@ private fun SegmentCard(
         label = "cardScale"
     )
     val contentColor = contentColorFor(containerColor)
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(20.dp)
 
     val cardModifier = (if (square) modifier.aspectRatio(1f) else modifier)
         .graphicsLayer {
@@ -317,15 +317,15 @@ private fun SegmentCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(14.dp),
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp))
-            Spacer(Modifier.height(6.dp))
+            Icon(icon, contentDescription = null, modifier = Modifier.size(32.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 label,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 textAlign = TextAlign.Center
             )
         }
