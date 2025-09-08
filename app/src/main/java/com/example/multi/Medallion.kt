@@ -10,6 +10,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -37,11 +38,20 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+
+/** Tweak these to control overall speed. */
+private object Motion {
+    const val WordmarkShiftMs = 2400   // gradient sweep (↓ is faster)
+    const val SparkleMs = 1100         // underline sparkle
+    const val TapScaleMs = 120         // tap "breathe" time
+    const val ItemMoveMs = 150         // grid item swap animation
+}
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, NOTES }
@@ -60,17 +70,21 @@ private fun MultiWordmark(
     title: String = "Multi",
     onClick: (() -> Unit)? = null
 ) {
-    // Tap-to-breathe scale
+    // Faster tap-to-breathe scale
     var pressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (pressed) 1.06f else 1f, label = "wordmarkScale")
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 1.06f else 1f,
+        animationSpec = tween(durationMillis = Motion.TapScaleMs, easing = LinearEasing),
+        label = "wordmarkScale"
+    )
 
-    // Animated gradient + sparkle
+    // Faster animated gradient + sparkle
     val infinite = rememberInfiniteTransition(label = "wordmarkAnim")
     val shift by infinite.animateFloat(
         initialValue = 0f,
         targetValue = 540f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4200, easing = LinearEasing),
+            animation = tween(durationMillis = Motion.WordmarkShiftMs, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "shift"
@@ -79,7 +93,7 @@ private fun MultiWordmark(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = LinearEasing),
+            animation = tween(Motion.SparkleMs, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "sparkX"
@@ -124,7 +138,7 @@ private fun MultiWordmark(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Elegant underline with animated sparkle
+        // Underline with faster sparkle
         Spacer(Modifier.height(8.dp))
         Box(
             modifier = Modifier
@@ -155,7 +169,7 @@ private fun MultiWordmark(
                     ),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius, radius)
                 )
-                // Moving sparkle dot
+                // Moving sparkle dot (faster)
                 val x = sparkX * size.width
                 drawCircle(
                     color = Color.White.copy(alpha = 0.82f),
@@ -212,63 +226,98 @@ private fun SegmentButton(
     }
 }
 
-/**
- * Displays the animated "Multi" wordmark and four clickable squares
- * representing calendar, events, weekly goals and notes.
- */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Medallion(
     modifier: Modifier = Modifier,
     onSegmentClick: (MedallionSegment) -> Unit = {}
 ) {
-    val segments = listOf(
-        SegmentDefinition(
-            segment = MedallionSegment.NOTES,
-            labelRes = R.string.label_notes,
-            icon = Icons.Default.Note,
-            containerColor = MaterialTheme.colorScheme.inversePrimary
-        ),
-        SegmentDefinition(
-            segment = MedallionSegment.WEEKLY_GOALS,
-            labelRes = R.string.label_weekly_goals,
-            icon = Icons.Default.Flag,
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
-        SegmentDefinition(
-            segment = MedallionSegment.EVENTS,
-            labelRes = R.string.label_events,
-            icon = Icons.Default.Event,
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-        ),
-        SegmentDefinition(
-            segment = MedallionSegment.CALENDAR,
-            labelRes = R.string.label_calendar,
-            icon = Icons.Default.DateRange,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
+    // Build definitions immediately (safe on first composition)
+    val c = MaterialTheme.colorScheme
+    val definitions = remember(c) {
+        mapOf(
+            MedallionSegment.NOTES to SegmentDefinition(
+                segment = MedallionSegment.NOTES,
+                labelRes = R.string.label_notes,
+                icon = Icons.Default.Note,
+                containerColor = c.inversePrimary
+            ),
+            MedallionSegment.WEEKLY_GOALS to SegmentDefinition(
+                segment = MedallionSegment.WEEKLY_GOALS,
+                labelRes = R.string.label_weekly_goals,
+                icon = Icons.Default.Flag,
+                containerColor = c.primaryContainer
+            ),
+            MedallionSegment.EVENTS to SegmentDefinition(
+                segment = MedallionSegment.EVENTS,
+                labelRes = R.string.label_events,
+                icon = Icons.Default.Event,
+                containerColor = c.tertiaryContainer
+            ),
+            MedallionSegment.CALENDAR to SegmentDefinition(
+                segment = MedallionSegment.CALENDAR,
+                labelRes = R.string.label_calendar,
+                icon = Icons.Default.DateRange,
+                containerColor = c.secondaryContainer
+            )
         )
-    )
+    }
+
+    // Keep just the ORDER as state; items will read definitions by key.
+    var order by remember {
+        mutableStateOf(
+            listOf(
+                MedallionSegment.NOTES,
+                MedallionSegment.WEEKLY_GOALS,
+                MedallionSegment.EVENTS,
+                MedallionSegment.CALENDAR
+            )
+        )
+    }
+
+    // Faster rotation on tap
+    fun reorder() {
+        if (order.isEmpty()) return
+        order = listOf(order.last()) + order.dropLast(1)
+        // For random shuffle instead of rotation:
+        // order = order.shuffled()
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // New animated wordmark
-        MultiWordmark(modifier = Modifier.padding(bottom = 8.dp))
+        // Clickable animated wordmark triggers reorder
+        MultiWordmark(
+            modifier = Modifier.padding(bottom = 8.dp),
+            onClick = { reorder() }
+        )
 
-        // App sections grid
+        // Grid with faster item motion
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             contentPadding = PaddingValues(0.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(segments) { segment ->
+            items(
+                items = order,
+                key = { it } // stable key = enum itself
+            ) { segment ->
+                val def = definitions.getValue(segment)
                 SegmentButton(
-                    label = LocalContext.current.getString(segment.labelRes),
-                    icon = segment.icon,
-                    containerColor = segment.containerColor,
-                    onClick = { onSegmentClick(segment.segment) },
-                    modifier = Modifier.fillMaxWidth()
+                    label = stringResource(def.labelRes),
+                    icon = def.icon,
+                    containerColor = def.containerColor,
+                    onClick = { onSegmentClick(def.segment) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateItemPlacement(
+                            animationSpec = tween(
+                                durationMillis = Motion.ItemMoveMs,
+                                easing = LinearEasing
+                            )
+                        )
                 )
             }
         }
@@ -297,4 +346,3 @@ fun MedallionScreen() {
         }
     }
 }
-
