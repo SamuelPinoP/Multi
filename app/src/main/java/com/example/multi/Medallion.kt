@@ -48,7 +48,7 @@ import androidx.compose.ui.unit.dp
 /** Tweak these to control overall speed. */
 private object Motion {
     const val WordmarkShiftMs = 2400   // gradient sweep (↓ is faster)
-    const val SparkleMs = 1100         // underline sparkle
+    const val SparkleMs = 3000         // underline sparkle
     const val TapScaleMs = 120         // tap "breathe" time
     const val ItemMoveMs = 150         // grid item swap animation
 }
@@ -290,7 +290,7 @@ fun Medallion(
         // Clickable animated wordmark triggers reorder
         MultiWordmark(
             modifier = Modifier.padding(bottom = 8.dp),
-            onClick = { reorder() }
+            onClick = { order = order.shuffled() }
         )
 
         // Grid with faster item motion
