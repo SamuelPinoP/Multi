@@ -37,11 +37,14 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /** Enum describing each clickable segment of the medallion. */
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, NOTES }
@@ -91,6 +94,7 @@ private fun MultiWordmark(
         start = Offset(shift, 0f),
         end = Offset(shift + 360f, 220f)
     )
+    val tagline = stringResource(R.string.tagline_multi)
 
     Column(
         modifier = modifier
@@ -98,6 +102,18 @@ private fun MultiWordmark(
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
+            }
+            .drawBehind {
+                val glowBrush = Brush.radialGradient(
+                    colors = listOf(c.primary.copy(alpha = 0.25f), Color.Transparent),
+                    center = Offset(size.width / 2f, size.height / 2f),
+                    radius = size.maxDimension
+                )
+                drawCircle(
+                    brush = glowBrush,
+                    radius = size.maxDimension / 2f,
+                    center = Offset(size.width / 2f, size.height / 2f)
+                )
             }
             .semantics { contentDescription = "Multi logo" }
             .then(
@@ -112,7 +128,7 @@ private fun MultiWordmark(
         Text(
             text = title,
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.displaySmall.copy(
+            style = MaterialTheme.typography.displayLarge.copy(
                 brush = fillBrush,
                 fontWeight = FontWeight.ExtraBold,
                 shadow = Shadow(
@@ -120,6 +136,16 @@ private fun MultiWordmark(
                     offset = Offset(2f, 3f),
                     blurRadius = 10f
                 )
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = tagline,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleMedium.copy(
+                color = c.onBackground.copy(alpha = 0.7f),
+                letterSpacing = 0.5.sp
             ),
             modifier = Modifier.fillMaxWidth()
         )
