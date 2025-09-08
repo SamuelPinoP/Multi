@@ -30,6 +30,7 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -60,11 +61,11 @@ private fun MultiWordmark(
     title: String = "Multi",
     onClick: (() -> Unit)? = null
 ) {
-    // Tap-to-breathe scale
+    // Tap-to-breathe scale and rotation
     var pressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (pressed) 1.06f else 1f, label = "wordmarkScale")
+    val pressedScale by animateFloatAsState(if (pressed) 1.06f else 1f, label = "wordmarkScale")
 
-    // Animated gradient + sparkle
+    // Animated gradient, glow and motion
     val infinite = rememberInfiniteTransition(label = "wordmarkAnim")
     val shift by infinite.animateFloat(
         initialValue = 0f,
@@ -84,6 +85,24 @@ private fun MultiWordmark(
         ),
         label = "sparkX"
     )
+    val breathe by infinite.animateFloat(
+        initialValue = 0.97f,
+        targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2800),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "breathe"
+    )
+    val rotation by infinite.animateFloat(
+        initialValue = -1.5f,
+        targetValue = 1.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(6000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "rotation"
+    )
 
     val c = MaterialTheme.colorScheme
     val fillBrush = Brush.linearGradient(
@@ -96,8 +115,10 @@ private fun MultiWordmark(
         modifier = modifier
             .fillMaxWidth()
             .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
+                val s = pressedScale * breathe
+                scaleX = s
+                scaleY = s
+                rotationZ = rotation
             }
             .semantics { contentDescription = "Multi logo" }
             .then(
@@ -108,21 +129,32 @@ private fun MultiWordmark(
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Main wordmark
-        Text(
-            text = title,
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.displaySmall.copy(
-                brush = fillBrush,
-                fontWeight = FontWeight.ExtraBold,
-                shadow = Shadow(
-                    color = c.primary.copy(alpha = 0.35f),
-                    offset = Offset(2f, 3f),
-                    blurRadius = 10f
-                )
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
+        // Glowing wordmark
+        Box(Modifier.fillMaxWidth()) {
+            Text(
+                text = title,
+                textAlign = TextAlign.Center,
+                color = c.primary.copy(alpha = 0.35f),
+                style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .blur(12.dp)
+            )
+            Text(
+                text = title,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.displaySmall.copy(
+                    brush = fillBrush,
+                    fontWeight = FontWeight.ExtraBold,
+                    shadow = Shadow(
+                        color = c.primary.copy(alpha = 0.35f),
+                        offset = Offset(2f, 3f),
+                        blurRadius = 10f
+                    )
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         // Elegant underline with animated sparkle
         Spacer(Modifier.height(8.dp))

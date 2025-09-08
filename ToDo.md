@@ -1,6 +1,6 @@
 /*
 
-1- Improve the design of the text that says Multi it is too simple add beauty and modernity.
+1- Improve the design of the text that says Multi it is too simple add beauty and modernity. (DONE)
 2- The event created pop up is displayed above the Add Event and Calendar buttons.
 3- Add a description that says: You can create an Event/ Weekly Goal the first time the user opens
 the app. Like a tutorial. After the user has clicked the tutorial then it disappears. Put it in the
