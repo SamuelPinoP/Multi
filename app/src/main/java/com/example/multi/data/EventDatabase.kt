@@ -175,6 +175,9 @@ interface TrashedEventDao {
     @Query("DELETE FROM trashed_events WHERE deleted < :threshold")
     suspend fun deleteExpired(threshold: Long)
 
+    @Query("DELETE FROM trashed_events")
+    suspend fun deleteAll()
+
     @Insert
     suspend fun insert(event: TrashedEventEntity): Long
 
