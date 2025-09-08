@@ -5,6 +5,7 @@
     <string name="label_notes">Notes</string>
     <string name="label_weekly_goals">Weekly Goals</string>
     <string name="open_last_note">Open last note</string>
+    <string name="home_tagline">Organize your life, one day at a time</string>
     <plurals name="words_count">
         <item quantity="one">%d word</item>
         <item quantity="other">%d words</item>
