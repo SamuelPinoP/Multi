@@ -2,6 +2,9 @@ package com.example.multi
 
 import android.content.Intent
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -41,6 +44,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.unit.dp
 
 /** Enum describing each clickable segment of the medallion. */
@@ -108,7 +112,7 @@ private fun MultiWordmark(
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Main wordmark
+        // Main wordmark with radial glow
         Text(
             text = title,
             textAlign = TextAlign.Center,
@@ -121,7 +125,17 @@ private fun MultiWordmark(
                     blurRadius = 10f
                 )
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(c.primary.copy(alpha = 0.35f), Color.Transparent),
+                            center = center,
+                            radius = size.height * 1.6f
+                        )
+                    )
+                }
         )
 
         // Elegant underline with animated sparkle
@@ -163,6 +177,24 @@ private fun MultiWordmark(
                     center = Offset(x, size.height / 2f)
                 )
             }
+        }
+
+        // Subtle tagline fade-in
+        var taglineVisible by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) { taglineVisible = true }
+        AnimatedVisibility(
+            visible = taglineVisible,
+            enter = fadeIn(tween(600)),
+            exit = fadeOut()
+        ) {
+            Text(
+                text = "Stay organized, effortlessly",
+                style = MaterialTheme.typography.labelLarge.copy(
+                    color = c.onBackground.copy(alpha = 0.7f)
+                ),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
