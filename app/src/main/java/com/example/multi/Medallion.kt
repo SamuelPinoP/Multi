@@ -11,7 +11,10 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -26,15 +29,23 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -45,12 +56,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-/** Tweak these to control overall speed. */
+/** Motion tuning */
 private object Motion {
-    const val WordmarkShiftMs = 2400   // gradient sweep (↓ is faster)
-    const val SparkleMs = 3000         // underline sparkle
-    const val TapScaleMs = 120         // tap "breathe" time
-    const val ItemMoveMs = 150         // grid item swap animation
+    const val WordmarkShiftMs = 2400   // gradient sweep
+    const val SparkleMs = 3000         // underline sparkle (slower ball)
+    const val TapScaleMs = 120         // wordmark tap effect
+    const val ItemMoveMs = 150         // grid swap animation
+    const val CardPressMs = 120        // card press scale
 }
 
 /** Enum describing each clickable segment of the medallion. */
@@ -63,14 +75,67 @@ private data class SegmentDefinition(
     val containerColor: Color
 )
 
-/** Modern animated wordmark for "Multi". */
+/** Ambient animated background with soft moving blobs */
+@Composable
+private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
+    val c = MaterialTheme.colorScheme
+    val infinite = rememberInfiniteTransition(label = "bg")
+    val shiftA by infinite.animateFloat(
+        0f, 1f,
+        animationSpec = infiniteRepeatable(
+            tween(9000, easing = LinearEasing), RepeatMode.Reverse
+        ),
+        label = "bgA"
+    )
+    val shiftB by infinite.animateFloat(
+        1f, 0f,
+        animationSpec = infiniteRepeatable(
+            tween(11000, easing = LinearEasing), RepeatMode.Reverse
+        ),
+        label = "bgB"
+    )
+    Canvas(modifier.fillMaxSize()) {
+        drawRect(color = c.surface) // base
+
+        val w = size.width
+        val h = size.height
+
+        // Large soft radial blobs
+        fun blob(centerX: Float, centerY: Float, color: Color, radius: Float) {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(color.copy(alpha = 0.25f), Color.Transparent),
+                    center = Offset(centerX, centerY),
+                    radius = radius
+                ),
+                radius = radius,
+                center = Offset(centerX, centerY),
+                blendMode = BlendMode.SrcOver
+            )
+        }
+
+        blob(w * (0.25f + 0.1f * shiftA), h * 0.2f, c.primary, w * 0.6f)
+        blob(w * (0.85f - 0.1f * shiftB), h * 0.75f, c.tertiary, w * 0.7f)
+        blob(w * 0.5f, h * (0.5f + 0.05f * (shiftA - shiftB)), c.secondary, w * 0.55f)
+
+        // Subtle top glow line
+        drawLine(
+            brush = Brush.horizontalGradient(listOf(c.primary.copy(0.2f), Color.Transparent)),
+            start = Offset(0f, 0f),
+            end = Offset(w, 0f),
+            strokeWidth = 2.dp.toPx(),
+            cap = StrokeCap.Round
+        )
+    }
+}
+
+/** Wordmark with animated gradient + slower sparkle bar */
 @Composable
 private fun MultiWordmark(
     modifier: Modifier = Modifier,
     title: String = "Multi",
     onClick: (() -> Unit)? = null
 ) {
-    // Faster tap-to-breathe scale
     var pressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (pressed) 1.06f else 1f,
@@ -78,7 +143,6 @@ private fun MultiWordmark(
         label = "wordmarkScale"
     )
 
-    // Faster animated gradient + sparkle
     val infinite = rememberInfiniteTransition(label = "wordmarkAnim")
     val shift by infinite.animateFloat(
         initialValue = 0f,
@@ -122,7 +186,6 @@ private fun MultiWordmark(
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Main wordmark
         Text(
             text = title,
             textAlign = TextAlign.Center,
@@ -138,16 +201,24 @@ private fun MultiWordmark(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Underline with faster sparkle
+        // Tagline for a store-ready feel (optional)
+        Text(
+            text = "Notes • Goals • Events • Calendar",
+            style = MaterialTheme.typography.labelLarge.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+            modifier = Modifier.padding(top = 2.dp)
+        )
+
         Spacer(Modifier.height(8.dp))
         Box(
             modifier = Modifier
                 .height(10.dp)
-                .width(140.dp)
+                .width(160.dp)
         ) {
             Canvas(Modifier.matchParentSize()) {
                 val radius = size.height / 2f
-                // Base underline capsule
+                // Underline capsule with gradient stroke
                 drawRoundRect(
                     brush = Brush.horizontalGradient(
                         listOf(
@@ -156,23 +227,20 @@ private fun MultiWordmark(
                             c.tertiary.copy(alpha = 0.22f)
                         )
                     ),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius, radius)
+                    cornerRadius = CornerRadius(radius, radius)
                 )
-                // Subtle inner highlight
+                // Inner highlight
                 drawRoundRect(
                     brush = Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.25f), Color.Transparent)
                     ),
-                    size = androidx.compose.ui.geometry.Size(
-                        width = size.width,
-                        height = size.height / 2.2f
-                    ),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius, radius)
+                    size = Size(width = size.width, height = size.height / 2.2f),
+                    cornerRadius = CornerRadius(radius, radius)
                 )
-                // Moving sparkle dot (faster)
+                // Moving sparkle dot (slower via Motion.SparkleMs)
                 val x = sparkX * size.width
                 drawCircle(
-                    color = Color.White.copy(alpha = 0.82f),
+                    color = Color.White.copy(alpha = 0.85f),
                     radius = size.height * 0.45f,
                     center = Offset(x, size.height / 2f)
                 )
@@ -181,11 +249,9 @@ private fun MultiWordmark(
     }
 }
 
-/**
- * Basic button used by [Medallion] segments.
- */
+/** Card for each segment with gradient border + press scale + soft gloss */
 @Composable
-private fun SegmentButton(
+private fun SegmentCard(
     label: String,
     icon: ImageVector,
     containerColor: Color,
@@ -193,33 +259,73 @@ private fun SegmentButton(
     modifier: Modifier = Modifier,
     square: Boolean = true
 ) {
-    val cardModifier = if (square) {
-        modifier.aspectRatio(1f)
-    } else {
-        modifier
-    }
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.98f else 1f,
+        animationSpec = tween(Motion.CardPressMs, easing = LinearEasing),
+        label = "cardScale"
+    )
     val contentColor = contentColorFor(containerColor)
+    val shape = RoundedCornerShape(16.dp)
+
+    val cardModifier = (if (square) modifier.aspectRatio(1f) else modifier)
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        // ⬇️ gradient border moved to modifier.border instead of Card(border=…)
+        .border(
+            width = 1.dp,
+            brush = Brush.linearGradient(
+                listOf(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)
+                )
+            ),
+            shape = shape
+        )
+        .semantics { contentDescription = label }
+        .drawBehind {
+            // Subtle top-left to bottom-right gloss
+            drawRoundRect(
+                brush = Brush.linearGradient(
+                    listOf(Color.White.copy(0.09f), Color.Transparent)
+                ),
+                size = Size(size.width, size.height / 2.6f),
+                cornerRadius = CornerRadius(16.dp.toPx())
+            )
+            // Inner hairline for depth
+            drawRoundRect(
+                color = Color.White.copy(0.06f),
+                style = Stroke(width = 1.dp.toPx()),
+                cornerRadius = CornerRadius(16.dp.toPx())
+            )
+        }
+
     ElevatedCard(
         onClick = onClick,
         colors = CardDefaults.elevatedCardColors(
             containerColor = containerColor,
             contentColor = contentColor
         ),
-        shape = RoundedCornerShape(12.dp),
-        modifier = cardModifier.semantics { contentDescription = label }
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+        shape = shape,
+        modifier = cardModifier,
+        interactionSource = interaction
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(icon, contentDescription = null)
-            Spacer(modifier = Modifier.height(4.dp))
+            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 label,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 textAlign = TextAlign.Center
             )
         }
@@ -263,8 +369,8 @@ fun Medallion(
         )
     }
 
-    // Keep just the ORDER as state; items will read definitions by key.
-    var order by remember {
+    // Persist order across configuration & process recreation
+    var order by rememberSaveable {
         mutableStateOf(
             listOf(
                 MedallionSegment.NOTES,
@@ -275,43 +381,55 @@ fun Medallion(
         )
     }
 
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Clickable animated wordmark triggers reorder
-        MultiWordmark(
-            modifier = Modifier.padding(bottom = 8.dp),
-            onClick = { order = order.shuffled() }
-        )
+    Box(modifier = modifier.fillMaxSize()) {
+        // Ambient animated background
+        AnimatedBackdrop(Modifier.matchParentSize())
 
-        // Grid with faster item motion
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(0.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            items(
-                items = order,
-                key = { it } // stable key = enum itself
-            ) { segment ->
-                val def = definitions.getValue(segment)
-                SegmentButton(
-                    label = stringResource(def.labelRes),
-                    icon = def.icon,
-                    containerColor = def.containerColor,
-                    onClick = { onSegmentClick(def.segment) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateItemPlacement(
-                            animationSpec = tween(
-                                durationMillis = Motion.ItemMoveMs,
-                                easing = LinearEasing
+            // Title + shuffle on tap
+            MultiWordmark(
+                modifier = Modifier.padding(top = 8.dp),
+                onClick = { order = order.shuffled() }
+            )
+
+            // Grid
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(
+                    items = order,
+                    key = { it } // stable key = enum itself
+                ) { segment ->
+                    val def = definitions.getValue(segment)
+                    SegmentCard(
+                        label = stringResource(def.labelRes),
+                        icon = def.icon,
+                        containerColor = def.containerColor,
+                        onClick = { onSegmentClick(def.segment) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItemPlacement(
+                                animationSpec = tween(
+                                    durationMillis = Motion.ItemMoveMs,
+                                    easing = LinearEasing
+                                )
                             )
-                        )
-                )
+                    )
+                }
             }
+
+            Spacer(Modifier.height(8.dp))
         }
     }
 }
@@ -320,21 +438,25 @@ fun Medallion(
 @Composable
 fun MedallionScreen() {
     val context = LocalContext.current
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.surface
     ) {
-        Medallion { segment ->
-            val cls = when (segment) {
-                MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                MedallionSegment.EVENTS -> EventsActivity::class.java
-                MedallionSegment.NOTES -> NotesActivity::class.java
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Medallion { segment ->
+                val cls = when (segment) {
+                    MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
+                    MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+                    MedallionSegment.EVENTS -> EventsActivity::class.java
+                    MedallionSegment.NOTES -> NotesActivity::class.java
+                }
+                context.startActivity(Intent(context, cls))
             }
-            context.startActivity(Intent(context, cls))
         }
     }
 }
