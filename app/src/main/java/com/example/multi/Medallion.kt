@@ -10,6 +10,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -280,9 +281,19 @@ fun Medallion(
 fun MedallionScreen() {
     val context = LocalContext.current
 
+    val c = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    listOf(
+                        c.primary.copy(alpha = 0.05f),
+                        c.secondary.copy(alpha = 0.05f),
+                        c.tertiary.copy(alpha = 0.05f)
+                    )
+                )
+            )
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
