@@ -10,6 +10,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -185,14 +187,26 @@ private fun SegmentButton(
         modifier
     }
     val contentColor = contentColorFor(containerColor)
+    val shape = RoundedCornerShape(16.dp)
     ElevatedCard(
         onClick = onClick,
         colors = CardDefaults.elevatedCardColors(
             containerColor = containerColor,
             contentColor = contentColor
         ),
-        shape = RoundedCornerShape(12.dp),
-        modifier = cardModifier.semantics { contentDescription = label }
+        shape = shape,
+        modifier = cardModifier
+            .border(
+                width = 1.dp,
+                brush = Brush.linearGradient(
+                    listOf(
+                        containerColor.copy(alpha = 0.6f),
+                        containerColor
+                    )
+                ),
+                shape = shape
+            )
+            .semantics { contentDescription = label }
     ) {
         Column(
             modifier = Modifier
@@ -201,11 +215,11 @@ private fun SegmentButton(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(icon, contentDescription = null)
-            Spacer(modifier = Modifier.height(4.dp))
+            Icon(icon, contentDescription = null, modifier = Modifier.size(32.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 label,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                 textAlign = TextAlign.Center
             )
         }
@@ -283,6 +297,14 @@ fun MedallionScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        Color.Transparent
+                    )
+                )
+            )
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
