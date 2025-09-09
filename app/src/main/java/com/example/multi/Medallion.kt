@@ -435,12 +435,6 @@ fun Medallion(
                 onClick = { if (!spinning) order = order.shuffled() }
             )
 
-            Text(
-                text = "Your productivity hub",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
             // Circular ring layout (measured box, no lint warning)
             val density = LocalDensity.current
             var containerSize by remember { mutableStateOf(0.dp) }
