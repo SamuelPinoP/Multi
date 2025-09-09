@@ -1,5 +1,8 @@
 package com.example.multi
 
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
@@ -13,12 +16,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -48,21 +49,32 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sin
 
 /** Motion tuning */
 private object Motion {
     const val WordmarkShiftMs = 2400   // gradient sweep
     const val SparkleMs = 3000         // underline sparkle (slower ball)
     const val TapScaleMs = 120         // wordmark tap effect
-    const val ItemMoveMs = 150         // grid swap animation
     const val CardPressMs = 120        // card press scale
+
+    // Orbit motion (hold)
+    const val SpinStepMs = 70          // delay between angle steps while holding (bigger = slower)
+    const val SpinStepDeg = 3f         // degrees added per step (smaller = smoother/slower)
 }
 
 /** Enum describing each clickable segment of the medallion. */
@@ -100,7 +112,6 @@ private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
         val w = size.width
         val h = size.height
 
-        // Large soft radial blobs
         fun blob(centerX: Float, centerY: Float, color: Color, radius: Float) {
             drawCircle(
                 brush = Brush.radialGradient(
@@ -118,7 +129,6 @@ private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
         blob(w * (0.85f - 0.1f * shiftB), h * 0.75f, c.tertiary, w * 0.7f)
         blob(w * 0.5f, h * (0.5f + 0.05f * (shiftA - shiftB)), c.secondary, w * 0.55f)
 
-        // Subtle top glow line
         drawLine(
             brush = Brush.horizontalGradient(listOf(c.primary.copy(0.2f), Color.Transparent)),
             start = Offset(0f, 0f),
@@ -201,7 +211,6 @@ private fun MultiWordmark(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Tagline for a store-ready feel (optional)
         Text(
             text = "Notes • Goals • Events • Calendar",
             style = MaterialTheme.typography.labelLarge.copy(
@@ -218,7 +227,6 @@ private fun MultiWordmark(
         ) {
             Canvas(Modifier.matchParentSize()) {
                 val radius = size.height / 2f
-                // Underline capsule with gradient stroke
                 drawRoundRect(
                     brush = Brush.horizontalGradient(
                         listOf(
@@ -229,7 +237,6 @@ private fun MultiWordmark(
                     ),
                     cornerRadius = CornerRadius(radius, radius)
                 )
-                // Inner highlight
                 drawRoundRect(
                     brush = Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.25f), Color.Transparent)
@@ -237,7 +244,6 @@ private fun MultiWordmark(
                     size = Size(width = size.width, height = size.height / 2.2f),
                     cornerRadius = CornerRadius(radius, radius)
                 )
-                // Moving sparkle dot (slower via Motion.SparkleMs)
                 val x = sparkX * size.width
                 drawCircle(
                     color = Color.White.copy(alpha = 0.85f),
@@ -257,7 +263,8 @@ private fun SegmentCard(
     containerColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    square: Boolean = true
+    square: Boolean = true,
+    enabled: Boolean = true
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -274,7 +281,6 @@ private fun SegmentCard(
             scaleX = scale
             scaleY = scale
         }
-        // ⬇️ gradient border moved to modifier.border instead of Card(border=…)
         .border(
             width = 1.dp,
             brush = Brush.linearGradient(
@@ -287,7 +293,6 @@ private fun SegmentCard(
         )
         .semantics { contentDescription = label }
         .drawBehind {
-            // Subtle top-left to bottom-right gloss
             drawRoundRect(
                 brush = Brush.linearGradient(
                     listOf(Color.White.copy(0.09f), Color.Transparent)
@@ -295,7 +300,6 @@ private fun SegmentCard(
                 size = Size(size.width, size.height / 2.6f),
                 cornerRadius = CornerRadius(16.dp.toPx())
             )
-            // Inner hairline for depth
             drawRoundRect(
                 color = Color.White.copy(0.06f),
                 style = Stroke(width = 1.dp.toPx()),
@@ -305,6 +309,7 @@ private fun SegmentCard(
 
     ElevatedCard(
         onClick = onClick,
+        enabled = enabled,
         colors = CardDefaults.elevatedCardColors(
             containerColor = containerColor,
             contentColor = contentColor
@@ -369,7 +374,7 @@ fun Medallion(
         )
     }
 
-    // Persist order across configuration & process recreation
+    // Which segment sits at which base slot (top/right/bottom/left). We shuffle this on wordmark tap.
     var order by rememberSaveable {
         mutableStateOf(
             listOf(
@@ -381,7 +386,46 @@ fun Medallion(
         )
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    // Current orbit angle (degrees). Increases clockwise while holding.
+    var angleDeg by rememberSaveable { mutableStateOf(0f) }
+    var spinning by remember { mutableStateOf(false) }
+
+    // Compose scope for launching coroutines from pointer input
+    val scope = rememberCoroutineScope()
+    val viewConfig = LocalViewConfiguration.current
+    val longPressMs = viewConfig.longPressTimeoutMillis
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            // Long-press anywhere to start orbit; release to stop.
+            .pointerInput(longPressMs) {
+                while (true) {
+                    awaitPointerEventScope {
+                        awaitFirstDown(requireUnconsumed = false)
+                        val starter = scope.launch {
+                            delay(longPressMs)
+                            spinning = true
+                            launch {
+                                while (true) {
+                                    angleDeg = (angleDeg + Motion.SpinStepDeg) % 360f
+                                    delay(Motion.SpinStepMs.toLong())
+                                }
+                            }
+                        }
+                        // Wait until all pointers are up
+                        var done = false
+                        while (!done) {
+                            val ev = awaitPointerEvent()
+                            val allUp = ev.changes.all { !it.pressed }
+                            if (allUp) done = true
+                        }
+                        spinning = false
+                        starter.cancel()
+                    }
+                }
+            }
+    ) {
         // Ambient animated background
         AnimatedBackdrop(Modifier.matchParentSize())
 
@@ -393,7 +437,7 @@ fun Medallion(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Title + shuffle on tap
+            // TAP on the wordmark = random shuffle of the four slots (kept behavior)
             MultiWordmark(
                 modifier = Modifier.padding(top = 8.dp),
                 onClick = { order = order.shuffled() }
@@ -405,33 +449,51 @@ fun Medallion(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // Grid
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
+            // 🟡 Circular ring layout (no BoxWithConstraints; no lint warning)
+            val density = LocalDensity.current
+            var containerSize by remember { mutableStateOf(0.dp) }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .onSizeChanged { sz ->
+                        val minPx = min(sz.width, sz.height)
+                        containerSize = with(density) { minPx.toDp() }
+                    }
             ) {
-                items(
-                    items = order,
-                    key = { it } // stable key = enum itself
-                ) { segment ->
-                    val def = definitions.getValue(segment)
-                    SegmentCard(
-                        label = stringResource(def.labelRes),
-                        icon = def.icon,
-                        containerColor = def.containerColor,
-                        onClick = { onSegmentClick(def.segment) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItemPlacement(
-                                animationSpec = tween(
-                                    durationMillis = Motion.ItemMoveMs,
-                                    easing = LinearEasing
+                if (containerSize > 0.dp) {
+                    val size = containerSize
+                    val cardSize = (size * 0.38f).coerceIn(96.dp, 160.dp)
+                    val radius = size / 2 - cardSize / 2 - 8.dp
+
+                    val base = listOf(270f, 0f, 90f, 180f) // top, right, bottom, left (clockwise)
+
+                    Box(Modifier.fillMaxSize()) {
+                        order.forEachIndexed { index, seg ->
+                            val def = definitions.getValue(seg)
+                            val theta = (base[index] + angleDeg) * (PI / 180f)
+                            val dx = radius * cos(theta).toFloat()
+                            val dy = radius * sin(theta).toFloat()
+
+                            Box(
+                                modifier = Modifier
+                                    .size(cardSize)
+                                    .align(Alignment.Center)
+                                    .offset(x = dx, y = dy)
+                            ) {
+                                SegmentCard(
+                                    label = stringResource(def.labelRes),
+                                    icon = def.icon,
+                                    containerColor = def.containerColor,
+                                    enabled = !spinning,
+                                    onClick = { if (!spinning) onSegmentClick(def.segment) },
+                                    modifier = Modifier.fillMaxSize(),
+                                    square = false
                                 )
-                            )
-                    )
+                            }
+                        }
+                    }
                 }
             }
 
