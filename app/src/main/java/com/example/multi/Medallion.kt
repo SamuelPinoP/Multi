@@ -58,13 +58,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-/** Motion tuning (unchanged) */
+/** Motion tuning */
 private object Motion {
     const val WordmarkShiftMs = 2400
     const val SparkleMs = 3000
@@ -74,6 +75,9 @@ private object Motion {
     // Orbit motion (touch)
     const val SpinStepMs = 16
     const val SpinStepDeg = 3f
+
+    // Grid → Ring blend
+    const val MorphMs = 280
 }
 
 /** Enum describing each clickable segment of the medallion. */
@@ -354,19 +358,26 @@ fun Medallion(
     // Orbit state
     var angleDeg by rememberSaveable { mutableStateOf(0f) }
     var spinning by remember { mutableStateOf(false) }
-    var inRing by rememberSaveable { mutableStateOf(false) } // stays true after release
+    var inRing by rememberSaveable { mutableStateOf(false) } // stays true after first spin
+
+    // Smoothly blend grid → ring (no jump)
+    val morph by animateFloatAsState(
+        targetValue = if (inRing) 1f else 0f,
+        animationSpec = tween(Motion.MorphMs, easing = LinearEasing),
+        label = "gridToRingMorph"
+    )
 
     val scope = rememberCoroutineScope()
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            // Touch anywhere that's NOT a card/header to start orbit immediately; stop on release.
+            // Touch anywhere NOT consumed by a card/wordmark to start orbit; stop on release.
             .pointerInput(Unit) {
                 while (true) {
                     awaitPointerEventScope {
-                        val down = awaitFirstDown(requireUnconsumed = true) // don't start if a card consumed
-                        inRing = true
+                        val down = awaitFirstDown(requireUnconsumed = true)
+                        inRing = true                       // triggers morph 0→1
                         spinning = true
                         val spinner = scope.launch {
                             while (true) {
@@ -425,86 +436,65 @@ fun Medallion(
                 if (containerSize > 0.dp) {
                     val size = containerSize
 
-                    // --- EXACTLY keep your previous sizes/edge distances ---
-                    // Grid cards: perfect 2x2 (like before), use the simple half split with your gaps.
+                    // EXACT grid gaps you had
                     val gridGapH = 12.dp
                     val gridGapV = 16.dp
-                    val gridCardSize = ((size - gridGapH) / 2f)
 
-                    if (!inRing) {
-                        // RESTING 2x2 GRID
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(gridGapV)
-                        ) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(gridGapH),
-                                verticalAlignment = Alignment.CenterVertically
+                    // Keep card size CONSTANT (same in grid & ring)
+                    val cardSize = ((size - gridGapH) / 2f)
+
+                    // GRID offsets (centered) using your gaps
+                    val halfX = cardSize / 2 + gridGapH / 2
+                    val halfY = cardSize / 2 + gridGapV / 2
+                    val gridOffsets = listOf(
+                        OffsetDp(-halfX, -halfY), // index 0
+                        OffsetDp( halfX, -halfY), // index 1
+                        OffsetDp(-halfX,  halfY), // index 2
+                        OffsetDp( halfX,  halfY)  // index 3
+                    )
+
+                    // --- keep original ring edge separation ---
+                    // Your earlier ring used: ringCardSize = size * 0.48 (clamped), and:
+                    // radiusPrev = size/2 - ringCardSize/4 - 1.dp
+                    // To keep the OUTER distance to the edge the same with a different cardSize,
+                    // adjust radius so that (radius + cardSize/2) matches the previous (radiusPrev + ringCardSize/2).
+                    val ringBaselineSize = (size * 0.48f).coerceIn(96.dp, 200.dp)
+                    val ringBaselineRadius = size / 2 - ringBaselineSize / 4 - 1.dp
+                    val radius = ringBaselineRadius + (ringBaselineSize - cardSize) / 2
+
+                    val base = listOf(270f, 0f, 90f, 180f) // top, right, bottom, left
+
+                    Box(Modifier.fillMaxSize()) {
+                        order.forEachIndexed { index, seg ->
+                            val def = definitions.getValue(seg)
+
+                            // Ring offset for this item (Dp math)
+                            val theta = (base[index] + angleDeg) * (PI / 180f)
+                            val ringDx = radius * cos(theta).toFloat()  // Dp
+                            val ringDy = radius * sin(theta).toFloat()  // Dp
+                            val ringOffset = OffsetDp(ringDx, ringDy)
+
+                            // Grid offset for this index
+                            val gridOffset = gridOffsets[index]
+
+                            // Final offset = blend(grid, ring, morph)
+                            val finalOffset = gridOffset.lerp(ringOffset, morph)
+
+                            Box(
+                                modifier = Modifier
+                                    .size(cardSize)
+                                    .align(Alignment.Center)
+                                    .offset(x = finalOffset.x, y = finalOffset.y)
                             ) {
-                                listOf(0, 1).forEach { idx ->
-                                    val seg = order[idx]
-                                    val def = definitions.getValue(seg)
-                                    Box(Modifier.size(gridCardSize)) {
-                                        SegmentCard(
-                                            label = stringResource(def.labelRes),
-                                            icon = def.icon,
-                                            containerColor = def.containerColor,
-                                            onClick = { onSegmentClick(def.segment) },
-                                            modifier = Modifier.fillMaxSize(),
-                                            square = false
-                                        )
-                                    }
-                                }
-                            }
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(gridGapH),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                listOf(2, 3).forEach { idx ->
-                                    val seg = order[idx]
-                                    val def = definitions.getValue(seg)
-                                    Box(Modifier.size(gridCardSize)) {
-                                        SegmentCard(
-                                            label = stringResource(def.labelRes),
-                                            icon = def.icon,
-                                            containerColor = def.containerColor,
-                                            onClick = { onSegmentClick(def.segment) },
-                                            modifier = Modifier.fillMaxSize(),
-                                            square = false
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // RING (KEEP your previous card size and distance from edge)
-                        val ringCardSize = (size * 0.48f).coerceIn(96.dp, 200.dp) // your earlier value
-                        val radius = size / 2 - ringCardSize / 4 - 1.dp          // your earlier distance rule
-
-                        val base = listOf(270f, 0f, 90f, 180f) // top, right, bottom, left
-
-                        Box(Modifier.fillMaxSize()) {
-                            order.forEachIndexed { index, seg ->
-                                val def = definitions.getValue(seg)
-                                val theta = (base[index] + angleDeg) * (PI / 180f)
-                                val dx = radius * cos(theta).toFloat()
-                                val dy = radius * sin(theta).toFloat()
-
-                                Box(
-                                    modifier = Modifier
-                                        .size(ringCardSize)
-                                        .align(Alignment.Center)
-                                        .offset(x = dx, y = dy)
-                                ) {
-                                    SegmentCard(
-                                        label = stringResource(def.labelRes),
-                                        icon = def.icon,
-                                        containerColor = def.containerColor,
-                                        onClick = { onSegmentClick(def.segment) },
-                                        modifier = Modifier.fillMaxSize(),
-                                        square = false
-                                    )
-                                }
+                                SegmentCard(
+                                    label = stringResource(def.labelRes),
+                                    icon = def.icon,
+                                    containerColor = def.containerColor,
+                                    // Card tap ALWAYS opens (does not start spin)
+                                    onClick = { onSegmentClick(def.segment) },
+                                    modifier = Modifier.fillMaxSize(),
+                                    square = false
+                                )
                             }
                         }
                     }
@@ -515,6 +505,12 @@ fun Medallion(
         }
     }
 }
+
+/** Small helpers for Dp interpolation */
+private data class OffsetDp(val x: Dp, val y: Dp)
+private fun OffsetDp.lerp(to: OffsetDp, t: Float) =
+    OffsetDp(lerpDp(this.x, to.x, t), lerpDp(this.y, to.y, t))
+private fun lerpDp(a: Dp, b: Dp, t: Float): Dp = a + (b - a) * t
 
 /** Simple screen displaying the [Medallion] in the center. */
 @Composable
