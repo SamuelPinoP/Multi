@@ -64,16 +64,16 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-/** Motion tuning */
+/** Motion tuning (unchanged) */
 private object Motion {
-    const val WordmarkShiftMs = 2400   // gradient sweep
-    const val SparkleMs = 3000         // underline sparkle (slower ball)
-    const val TapScaleMs = 120         // wordmark tap effect
-    const val CardPressMs = 120        // card press scale
+    const val WordmarkShiftMs = 2400
+    const val SparkleMs = 3000
+    const val TapScaleMs = 120
+    const val CardPressMs = 120
 
     // Orbit motion (touch)
-    const val SpinStepMs = 16          // delay between angle steps while touching (bigger = slower)
-    const val SpinStepDeg = 3f         // degrees added per step (smaller = smoother/slower)
+    const val SpinStepMs = 16
+    const val SpinStepDeg = 3f
 }
 
 /** Enum describing each clickable segment of the medallion. */
@@ -138,7 +138,7 @@ private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
     }
 }
 
-/** Wordmark with animated gradient + slower sparkle bar */
+/** Wordmark with animated gradient + sparkle bar */
 @Composable
 private fun MultiWordmark(
     modifier: Modifier = Modifier,
@@ -210,6 +210,8 @@ private fun MultiWordmark(
             modifier = Modifier.fillMaxWidth()
         )
 
+        Spacer(Modifier.height(8.dp))
+
         Text(
             text = "Notes • Goals • Events • Calendar",
             style = MaterialTheme.typography.labelLarge.copy(
@@ -217,40 +219,6 @@ private fun MultiWordmark(
             ),
             modifier = Modifier.padding(top = 2.dp)
         )
-
-        Spacer(Modifier.height(8.dp))
-        Box(
-            modifier = Modifier
-                .height(10.dp)
-                .width(160.dp)
-        ) {
-            Canvas(Modifier.matchParentSize()) {
-                val radius = size.height / 2f
-                drawRoundRect(
-                    brush = Brush.horizontalGradient(
-                        listOf(
-                            c.primary.copy(alpha = 0.22f),
-                            c.secondary.copy(alpha = 0.22f),
-                            c.tertiary.copy(alpha = 0.22f)
-                        )
-                    ),
-                    cornerRadius = CornerRadius(radius, radius)
-                )
-                drawRoundRect(
-                    brush = Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.25f), Color.Transparent)
-                    ),
-                    size = Size(width = size.width, height = size.height / 2.2f),
-                    cornerRadius = CornerRadius(radius, radius)
-                )
-                val x = sparkX * size.width
-                drawCircle(
-                    color = Color.White.copy(alpha = 0.85f),
-                    radius = size.height * 0.45f,
-                    center = Offset(x, size.height / 2f)
-                )
-            }
-        }
     }
 }
 
@@ -386,18 +354,19 @@ fun Medallion(
     // Orbit state
     var angleDeg by rememberSaveable { mutableStateOf(0f) }
     var spinning by remember { mutableStateOf(false) }
+    var inRing by rememberSaveable { mutableStateOf(false) } // stays true after release
 
     val scope = rememberCoroutineScope()
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            // Touch anywhere that's NOT a card to start orbit immediately; stop on release.
+            // Touch anywhere that's NOT a card/header to start orbit immediately; stop on release.
             .pointerInput(Unit) {
                 while (true) {
                     awaitPointerEventScope {
-                        // Only proceed if the DOWN event was NOT consumed by children (cards/header)
-                        val down = awaitFirstDown(requireUnconsumed = true)
+                        val down = awaitFirstDown(requireUnconsumed = true) // don't start if a card consumed
+                        inRing = true
                         spinning = true
                         val spinner = scope.launch {
                             while (true) {
@@ -405,7 +374,6 @@ fun Medallion(
                                 delay(Motion.SpinStepMs.toLong())
                             }
                         }
-                        // Wait until all pointers are up
                         var done = false
                         while (!done) {
                             val ev = awaitPointerEvent()
@@ -418,72 +386,132 @@ fun Medallion(
                 }
             }
     ) {
-        // Ambient animated background
+        // Background
         AnimatedBackdrop(Modifier.matchParentSize())
 
+        // Layout & spacing
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(top = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // TAP on the wordmark = random shuffle (never starts spin)
+            Spacer(Modifier.height(16.dp))
+
             MultiWordmark(
                 modifier = Modifier.padding(top = 8.dp),
                 onClick = { if (!spinning) order = order.shuffled() }
             )
 
-            // Circular ring layout (measured box, no lint warning)
+            Spacer(Modifier.height(24.dp))
+
+            // Square content area
             val density = LocalDensity.current
             var containerSize by remember { mutableStateOf(0.dp) }
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .weight(1f, fill = true)
                     .aspectRatio(1f)
                     .onSizeChanged { sz ->
                         val minPx = min(sz.width, sz.height)
                         containerSize = with(density) { minPx.toDp() }
-                    }
+                    },
+                contentAlignment = Alignment.Center
             ) {
                 if (containerSize > 0.dp) {
                     val size = containerSize
-                    val cardSize = (size * 0.48f).coerceIn(96.dp, 200.dp)
-                    val radius = size / 2 - cardSize / 4 - 1.dp
 
-                    val base = listOf(270f, 0f, 90f, 180f) // top, right, bottom, left
+                    // --- EXACTLY keep your previous sizes/edge distances ---
+                    // Grid cards: perfect 2x2 (like before), use the simple half split with your gaps.
+                    val gridGapH = 12.dp
+                    val gridGapV = 16.dp
+                    val gridCardSize = ((size - gridGapH) / 2f)
 
-                    Box(Modifier.fillMaxSize()) {
-                        order.forEachIndexed { index, seg ->
-                            val def = definitions.getValue(seg)
-                            val theta = (base[index] + angleDeg) * (PI / 180f)
-                            val dx = radius * cos(theta).toFloat()
-                            val dy = radius * sin(theta).toFloat()
-
-                            Box(
-                                modifier = Modifier
-                                    .size(cardSize)
-                                    .align(Alignment.Center)
-                                    .offset(x = dx, y = dy)
+                    if (!inRing) {
+                        // RESTING 2x2 GRID
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(gridGapV)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(gridGapH),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                SegmentCard(
-                                    label = stringResource(def.labelRes),
-                                    icon = def.icon,
-                                    containerColor = def.containerColor,
-                                    // Always open on tap; spinning is controlled only by background touches
-                                    onClick = { onSegmentClick(def.segment) },
-                                    modifier = Modifier.fillMaxSize(),
-                                    square = false
-                                )
+                                listOf(0, 1).forEach { idx ->
+                                    val seg = order[idx]
+                                    val def = definitions.getValue(seg)
+                                    Box(Modifier.size(gridCardSize)) {
+                                        SegmentCard(
+                                            label = stringResource(def.labelRes),
+                                            icon = def.icon,
+                                            containerColor = def.containerColor,
+                                            onClick = { onSegmentClick(def.segment) },
+                                            modifier = Modifier.fillMaxSize(),
+                                            square = false
+                                        )
+                                    }
+                                }
+                            }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(gridGapH),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                listOf(2, 3).forEach { idx ->
+                                    val seg = order[idx]
+                                    val def = definitions.getValue(seg)
+                                    Box(Modifier.size(gridCardSize)) {
+                                        SegmentCard(
+                                            label = stringResource(def.labelRes),
+                                            icon = def.icon,
+                                            containerColor = def.containerColor,
+                                            onClick = { onSegmentClick(def.segment) },
+                                            modifier = Modifier.fillMaxSize(),
+                                            square = false
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // RING (KEEP your previous card size and distance from edge)
+                        val ringCardSize = (size * 0.48f).coerceIn(96.dp, 200.dp) // your earlier value
+                        val radius = size / 2 - ringCardSize / 4 - 1.dp          // your earlier distance rule
+
+                        val base = listOf(270f, 0f, 90f, 180f) // top, right, bottom, left
+
+                        Box(Modifier.fillMaxSize()) {
+                            order.forEachIndexed { index, seg ->
+                                val def = definitions.getValue(seg)
+                                val theta = (base[index] + angleDeg) * (PI / 180f)
+                                val dx = radius * cos(theta).toFloat()
+                                val dy = radius * sin(theta).toFloat()
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(ringCardSize)
+                                        .align(Alignment.Center)
+                                        .offset(x = dx, y = dy)
+                                ) {
+                                    SegmentCard(
+                                        label = stringResource(def.labelRes),
+                                        icon = def.icon,
+                                        containerColor = def.containerColor,
+                                        onClick = { onSegmentClick(def.segment) },
+                                        modifier = Modifier.fillMaxSize(),
+                                        square = false
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
@@ -497,9 +525,7 @@ fun MedallionScreen() {
         color = MaterialTheme.colorScheme.surface
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Medallion { segment ->
