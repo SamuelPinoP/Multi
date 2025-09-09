@@ -72,7 +72,7 @@ private object Motion {
     const val CardPressMs = 120        // card press scale
 
     // Orbit motion (touch)
-    const val SpinStepMs = 70          // delay between angle steps while touching (bigger = slower)
+    const val SpinStepMs = 16          // delay between angle steps while touching (bigger = slower)
     const val SpinStepDeg = 3f         // degrees added per step (smaller = smoother/slower)
 }
 
@@ -456,8 +456,8 @@ fun Medallion(
             ) {
                 if (containerSize > 0.dp) {
                     val size = containerSize
-                    val cardSize = (size * 0.38f).coerceIn(96.dp, 160.dp)
-                    val radius = size / 2 - cardSize / 2 - 8.dp
+                    val cardSize = (size * 0.48f).coerceIn(96.dp, 200.dp)
+                    val radius = size / 2 - cardSize / 4 - 1.dp
 
                     val base = listOf(270f, 0f, 90f, 180f) // top, right, bottom, left
 
