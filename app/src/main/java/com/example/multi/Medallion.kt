@@ -53,7 +53,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -72,8 +71,8 @@ private object Motion {
     const val TapScaleMs = 120         // wordmark tap effect
     const val CardPressMs = 120        // card press scale
 
-    // Orbit motion (hold)
-    const val SpinStepMs = 70          // delay between angle steps while holding (bigger = slower)
+    // Orbit motion (touch)
+    const val SpinStepMs = 70          // delay between angle steps while touching (bigger = slower)
     const val SpinStepDeg = 3f         // degrees added per step (smaller = smoother/slower)
 }
 
@@ -107,7 +106,7 @@ private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
         label = "bgB"
     )
     Canvas(modifier.fillMaxSize()) {
-        drawRect(color = c.surface) // base
+        drawRect(color = c.surface)
 
         val w = size.width
         val h = size.height
@@ -343,7 +342,6 @@ fun Medallion(
     modifier: Modifier = Modifier,
     onSegmentClick: (MedallionSegment) -> Unit = {}
 ) {
-    // Build definitions immediately (safe on first composition)
     val c = MaterialTheme.colorScheme
     val definitions = remember(c) {
         mapOf(
@@ -374,7 +372,6 @@ fun Medallion(
         )
     }
 
-    // Which segment sits at which base slot (top/right/bottom/left). We shuffle this on wordmark tap.
     var order by rememberSaveable {
         mutableStateOf(
             listOf(
@@ -386,31 +383,26 @@ fun Medallion(
         )
     }
 
-    // Current orbit angle (degrees). Increases clockwise while holding.
+    // Orbit state
     var angleDeg by rememberSaveable { mutableStateOf(0f) }
     var spinning by remember { mutableStateOf(false) }
 
-    // Compose scope for launching coroutines from pointer input
     val scope = rememberCoroutineScope()
-    val viewConfig = LocalViewConfiguration.current
-    val longPressMs = viewConfig.longPressTimeoutMillis
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            // Long-press anywhere to start orbit; release to stop.
-            .pointerInput(longPressMs) {
+            // Touch anywhere that's NOT a card to start orbit immediately; stop on release.
+            .pointerInput(Unit) {
                 while (true) {
                     awaitPointerEventScope {
-                        awaitFirstDown(requireUnconsumed = false)
-                        val starter = scope.launch {
-                            delay(longPressMs)
-                            spinning = true
-                            launch {
-                                while (true) {
-                                    angleDeg = (angleDeg + Motion.SpinStepDeg) % 360f
-                                    delay(Motion.SpinStepMs.toLong())
-                                }
+                        // Only proceed if the DOWN event was NOT consumed by children (cards/header)
+                        val down = awaitFirstDown(requireUnconsumed = true)
+                        spinning = true
+                        val spinner = scope.launch {
+                            while (true) {
+                                angleDeg = (angleDeg + Motion.SpinStepDeg) % 360f
+                                delay(Motion.SpinStepMs.toLong())
                             }
                         }
                         // Wait until all pointers are up
@@ -421,7 +413,7 @@ fun Medallion(
                             if (allUp) done = true
                         }
                         spinning = false
-                        starter.cancel()
+                        spinner.cancel()
                     }
                 }
             }
@@ -437,10 +429,10 @@ fun Medallion(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // TAP on the wordmark = random shuffle of the four slots (kept behavior)
+            // TAP on the wordmark = random shuffle (never starts spin)
             MultiWordmark(
                 modifier = Modifier.padding(top = 8.dp),
-                onClick = { order = order.shuffled() }
+                onClick = { if (!spinning) order = order.shuffled() }
             )
 
             Text(
@@ -449,7 +441,7 @@ fun Medallion(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // 🟡 Circular ring layout (no BoxWithConstraints; no lint warning)
+            // Circular ring layout (measured box, no lint warning)
             val density = LocalDensity.current
             var containerSize by remember { mutableStateOf(0.dp) }
 
@@ -467,7 +459,7 @@ fun Medallion(
                     val cardSize = (size * 0.38f).coerceIn(96.dp, 160.dp)
                     val radius = size / 2 - cardSize / 2 - 8.dp
 
-                    val base = listOf(270f, 0f, 90f, 180f) // top, right, bottom, left (clockwise)
+                    val base = listOf(270f, 0f, 90f, 180f) // top, right, bottom, left
 
                     Box(Modifier.fillMaxSize()) {
                         order.forEachIndexed { index, seg ->
@@ -486,8 +478,8 @@ fun Medallion(
                                     label = stringResource(def.labelRes),
                                     icon = def.icon,
                                     containerColor = def.containerColor,
-                                    enabled = !spinning,
-                                    onClick = { if (!spinning) onSegmentClick(def.segment) },
+                                    // Always open on tap; spinning is controlled only by background touches
+                                    onClick = { onSegmentClick(def.segment) },
                                     modifier = Modifier.fillMaxSize(),
                                     square = false
                                 )
