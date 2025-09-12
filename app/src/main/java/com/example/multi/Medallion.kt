@@ -393,14 +393,23 @@ fun Medallion(
                                         val cy = h / 2f
                                         val dx = tap.x - cx
                                         val dy = tap.y - cy
-                                        val dist = sqrt(dx * dx + dy * dy)
+                                        val dist = kotlin.math.sqrt(dx * dx + dy * dy)
                                         val rPx = with(densityHere) { radiusDp.toPx() }
                                         if (dist <= rPx) {
-                                            var ang = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                            // Angle of tap in [0,360)
+                                            var ang = Math.toDegrees(kotlin.math.atan2(dy.toDouble(), dx.toDouble())).toFloat()
                                             if (ang < 0f) ang += 360f
+
+                                            // Convert to local wheel space (0° at right, CCW positive)
                                             val local = (ang - angleDeg + 360f) % 360f
-                                            val idx = (((local + 45f) / 90f).toInt()) % 4
-                                            onSegmentClick(order[idx])
+
+                                            // Quadrant index where 0=right, 1=bottom, 2=left, 3=top
+                                            val quad = (((local + 45f) / 90f).toInt()) % 4
+
+                                            // Map to your 'order' indexing where 0=top (270°), 1=right (0°), 2=bottom (90°), 3=left (180°)
+                                            val mappedIndex = (quad + 1) % 4
+
+                                            onSegmentClick(order[mappedIndex])
                                         }
                                     }
                                 }
