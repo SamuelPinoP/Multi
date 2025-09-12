@@ -14,20 +14,15 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Note
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -37,16 +32,14 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -61,88 +54,66 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /** Motion tuning */
 private object Motion {
     const val WordmarkShiftMs = 2400
-    const val SparkleMs = 3000
     const val TapScaleMs = 120
-    const val CardPressMs = 120
-
-    // Orbit motion (touch)
     const val SpinStepMs = 16
     const val SpinStepDeg = 3f
-
-    // Grid → Ring blend
-    const val MorphMs = 280
 }
 
-/** Enum describing each clickable segment of the medallion. */
+/** Enum describing each clickable slice. */
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, NOTES }
 
 private data class SegmentDefinition(
     val segment: MedallionSegment,
     @StringRes val labelRes: Int,
     val icon: ImageVector,
-    val containerColor: Color
+    val color: Color
 )
 
-/** Ambient animated background with soft moving blobs */
+/** Soft animated backdrop */
 @Composable
 private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
     val c = MaterialTheme.colorScheme
     val infinite = rememberInfiniteTransition(label = "bg")
     val shiftA by infinite.animateFloat(
-        0f, 1f,
-        animationSpec = infiniteRepeatable(
-            tween(9000, easing = LinearEasing), RepeatMode.Reverse
-        ),
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(9000, easing = LinearEasing), RepeatMode.Reverse),
         label = "bgA"
     )
     val shiftB by infinite.animateFloat(
-        1f, 0f,
-        animationSpec = infiniteRepeatable(
-            tween(11000, easing = LinearEasing), RepeatMode.Reverse
-        ),
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(tween(11000, easing = LinearEasing), RepeatMode.Reverse),
         label = "bgB"
     )
     Canvas(modifier.fillMaxSize()) {
         drawRect(color = c.surface)
-
         val w = size.width
         val h = size.height
-
-        fun blob(centerX: Float, centerY: Float, color: Color, radius: Float) {
+        fun blob(cx: Float, cy: Float, color: Color, r: Float) {
             drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(color.copy(alpha = 0.25f), Color.Transparent),
-                    center = Offset(centerX, centerY),
-                    radius = radius
-                ),
-                radius = radius,
-                center = Offset(centerX, centerY),
+                brush = Brush.radialGradient(listOf(color.copy(alpha = 0.25f), Color.Transparent)),
+                radius = r,
+                center = Offset(cx, cy),
                 blendMode = BlendMode.SrcOver
             )
         }
-
         blob(w * (0.25f + 0.1f * shiftA), h * 0.2f, c.primary, w * 0.6f)
         blob(w * (0.85f - 0.1f * shiftB), h * 0.75f, c.tertiary, w * 0.7f)
         blob(w * 0.5f, h * (0.5f + 0.05f * (shiftA - shiftB)), c.secondary, w * 0.55f)
-
-        drawLine(
-            brush = Brush.horizontalGradient(listOf(c.primary.copy(0.2f), Color.Transparent)),
-            start = Offset(0f, 0f),
-            end = Offset(w, 0f),
-            strokeWidth = 2.dp.toPx(),
-            cap = StrokeCap.Round
-        )
     }
 }
 
-/** Wordmark with animated gradient + sparkle bar */
+/** Gradient wordmark */
 @Composable
 private fun MultiWordmark(
     modifier: Modifier = Modifier,
@@ -155,48 +126,25 @@ private fun MultiWordmark(
         animationSpec = tween(durationMillis = Motion.TapScaleMs, easing = LinearEasing),
         label = "wordmarkScale"
     )
-
     val infinite = rememberInfiniteTransition(label = "wordmarkAnim")
     val shift by infinite.animateFloat(
         initialValue = 0f,
         targetValue = 540f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = Motion.WordmarkShiftMs, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
+        animationSpec = infiniteRepeatable(tween(Motion.WordmarkShiftMs, easing = LinearEasing)),
         label = "shift"
     )
-    val sparkX by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(Motion.SparkleMs, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "sparkX"
-    )
-
     val c = MaterialTheme.colorScheme
     val fillBrush = Brush.linearGradient(
         colors = listOf(c.primary, c.secondary, c.tertiary, c.primary),
         start = Offset(shift, 0f),
         end = Offset(shift + 360f, 220f)
     )
-
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .semantics { contentDescription = "Multi logo" }
-            .then(
-                if (onClick != null) Modifier.clickable {
-                    pressed = !pressed
-                    onClick()
-                } else Modifier.clickable { pressed = !pressed }
-            ),
+            .then(if (onClick != null) Modifier.clickable { pressed = !pressed; onClick() } else Modifier),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -213,98 +161,13 @@ private fun MultiWordmark(
             ),
             modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(Modifier.height(8.dp))
-
         Text(
             text = "Notes • Goals • Events • Calendar",
             style = MaterialTheme.typography.labelLarge.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
-            ),
-            modifier = Modifier.padding(top = 2.dp)
+            )
         )
-    }
-}
-
-/** Card for each segment with gradient border + press scale + soft gloss */
-@Composable
-private fun SegmentCard(
-    label: String,
-    icon: ImageVector,
-    containerColor: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    square: Boolean = true,
-    enabled: Boolean = true
-) {
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.98f else 1f,
-        animationSpec = tween(Motion.CardPressMs, easing = LinearEasing),
-        label = "cardScale"
-    )
-    val contentColor = contentColorFor(containerColor)
-    val shape = RoundedCornerShape(16.dp)
-
-    val cardModifier = (if (square) modifier.aspectRatio(1f) else modifier)
-        .graphicsLayer {
-            scaleX = scale
-            scaleY = scale
-        }
-        .border(
-            width = 1.dp,
-            brush = Brush.linearGradient(
-                listOf(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)
-                )
-            ),
-            shape = shape
-        )
-        .semantics { contentDescription = label }
-        .drawBehind {
-            drawRoundRect(
-                brush = Brush.linearGradient(
-                    listOf(Color.White.copy(0.09f), Color.Transparent)
-                ),
-                size = Size(size.width, size.height / 2.6f),
-                cornerRadius = CornerRadius(16.dp.toPx())
-            )
-            drawRoundRect(
-                color = Color.White.copy(0.06f),
-                style = Stroke(width = 1.dp.toPx()),
-                cornerRadius = CornerRadius(16.dp.toPx())
-            )
-        }
-
-    ElevatedCard(
-        onClick = onClick,
-        enabled = enabled,
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = containerColor,
-            contentColor = contentColor
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
-        shape = shape,
-        modifier = cardModifier,
-        interactionSource = interaction
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp))
-            Spacer(Modifier.height(6.dp))
-            Text(
-                label,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                textAlign = TextAlign.Center
-            )
-        }
     }
 }
 
@@ -315,31 +178,19 @@ fun Medallion(
     onSegmentClick: (MedallionSegment) -> Unit = {}
 ) {
     val c = MaterialTheme.colorScheme
-    val definitions = remember(c) {
+    val defs = remember(c) {
         mapOf(
             MedallionSegment.NOTES to SegmentDefinition(
-                segment = MedallionSegment.NOTES,
-                labelRes = R.string.label_notes,
-                icon = Icons.Default.Note,
-                containerColor = c.inversePrimary
+                MedallionSegment.NOTES, R.string.label_notes, Icons.Default.Note, c.inversePrimary
             ),
             MedallionSegment.WEEKLY_GOALS to SegmentDefinition(
-                segment = MedallionSegment.WEEKLY_GOALS,
-                labelRes = R.string.label_weekly_goals,
-                icon = Icons.Default.Flag,
-                containerColor = c.primaryContainer
+                MedallionSegment.WEEKLY_GOALS, R.string.label_weekly_goals, Icons.Default.Flag, c.primaryContainer
             ),
             MedallionSegment.EVENTS to SegmentDefinition(
-                segment = MedallionSegment.EVENTS,
-                labelRes = R.string.label_events,
-                icon = Icons.Default.Event,
-                containerColor = c.tertiaryContainer
+                MedallionSegment.EVENTS, R.string.label_events, Icons.Default.Event, c.tertiaryContainer
             ),
             MedallionSegment.CALENDAR to SegmentDefinition(
-                segment = MedallionSegment.CALENDAR,
-                labelRes = R.string.label_calendar,
-                icon = Icons.Default.DateRange,
-                containerColor = c.secondaryContainer
+                MedallionSegment.CALENDAR, R.string.label_calendar, Icons.Default.DateRange, c.secondaryContainer
             )
         )
     }
@@ -355,29 +206,22 @@ fun Medallion(
         )
     }
 
-    // Orbit state
+    // Wheel rotation (deg)
     var angleDeg by rememberSaveable { mutableStateOf(0f) }
     var spinning by remember { mutableStateOf(false) }
-    var inRing by rememberSaveable { mutableStateOf(false) } // stays true after first spin
-
-    // Smoothly blend grid → ring (no jump)
-    val morph by animateFloatAsState(
-        targetValue = if (inRing) 1f else 0f,
-        animationSpec = tween(Motion.MorphMs, easing = LinearEasing),
-        label = "gridToRingMorph"
-    )
-
     val scope = rememberCoroutineScope()
+
+    // PRE-CAPTURE THEME COLORS (avoid calling composables inside Canvas)
+    val outlineRing: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+    val dividerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            // Touch anywhere NOT consumed by a card/wordmark to start orbit; stop on release.
             .pointerInput(Unit) {
                 while (true) {
                     awaitPointerEventScope {
-                        val down = awaitFirstDown(requireUnconsumed = true)
-                        inRing = true                       // triggers morph 0→1
+                        awaitFirstDown(requireUnconsumed = true)
                         spinning = true
                         val spinner = scope.launch {
                             while (true) {
@@ -397,10 +241,8 @@ fun Medallion(
                 }
             }
     ) {
-        // Background
         AnimatedBackdrop(Modifier.matchParentSize())
 
-        // Layout & spacing
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -418,9 +260,8 @@ fun Medallion(
 
             Spacer(Modifier.height(24.dp))
 
-            // Square content area
             val density = LocalDensity.current
-            var containerSize by remember { mutableStateOf(0.dp) }
+            var containerDp by remember { mutableStateOf(0.dp) }
 
             Box(
                 modifier = Modifier
@@ -429,74 +270,126 @@ fun Medallion(
                     .aspectRatio(1f)
                     .onSizeChanged { sz ->
                         val minPx = min(sz.width, sz.height)
-                        containerSize = with(density) { minPx.toDp() }
+                        containerDp = with(density) { minPx.toDp() }
                     },
                 contentAlignment = Alignment.Center
             ) {
-                if (containerSize > 0.dp) {
-                    val size = containerSize
+                if (containerDp > 0.dp) {
+                    val edgePad = 8.dp
+                    val radiusDp: Dp = containerDp / 2 - edgePad
+                    val diameterDp: Dp = radiusDp * 2
 
-                    // EXACT grid gaps you had
-                    val gridGapH = 12.dp
-                    val gridGapV = 16.dp
+                    val mids = listOf(270f, 0f, 90f, 180f)
 
-                    // Keep card size CONSTANT (same in grid & ring)
-                    val cardSize = ((size - gridGapH) / 2f)
+                    // Big wheel (no composable calls inside draw lambda)
+                    Canvas(
+                        modifier = Modifier
+                            .size(diameterDp)
+                            .semantics { contentDescription = "Multi wheel" }
+                    ) {
+                        val center = Offset(size.width / 2f, size.height / 2f)
+                        val rPx = with(density) { radiusDp.toPx() }
+                        val rectTopLeft = Offset(center.x - rPx, center.y - rPx)
+                        val rect = Rect(rectTopLeft, androidx.compose.ui.geometry.Size(rPx * 2, rPx * 2))
 
-                    // GRID offsets (centered) using your gaps
-                    val halfX = cardSize / 2 + gridGapH / 2
-                    val halfY = cardSize / 2 + gridGapV / 2
-                    val gridOffsets = listOf(
-                        OffsetDp(-halfX, -halfY), // index 0
-                        OffsetDp( halfX, -halfY), // index 1
-                        OffsetDp(-halfX,  halfY), // index 2
-                        OffsetDp( halfX,  halfY)  // index 3
-                    )
+                        drawCircle(
+                            color = outlineRing,
+                            radius = rPx,
+                            center = center,
+                            style = Stroke(width = with(density) { 2.dp.toPx() })
+                        )
 
-                    // --- keep original ring edge separation ---
-                    // Your earlier ring used: ringCardSize = size * 0.48 (clamped), and:
-                    // radiusPrev = size/2 - ringCardSize/4 - 1.dp
-                    // To keep the OUTER distance to the edge the same with a different cardSize,
-                    // adjust radius so that (radius + cardSize/2) matches the previous (radiusPrev + ringCardSize/2).
-                    val ringBaselineSize = (size * 0.48f).coerceIn(96.dp, 200.dp)
-                    val ringBaselineRadius = size / 2 - ringBaselineSize / 4 - 1.dp
-                    val radius = ringBaselineRadius + (ringBaselineSize - cardSize) / 2
+                        repeat(4) { i ->
+                            val seg = order[i]
+                            val color = defs.getValue(seg).color
+                            val start = mids[i] + angleDeg - 45f
+                            drawArc(
+                                color = color,
+                                startAngle = start,
+                                sweepAngle = 90f,
+                                useCenter = true,
+                                topLeft = rect.topLeft,
+                                size = rect.size
+                            )
+                        }
 
-                    val base = listOf(270f, 0f, 90f, 180f) // top, right, bottom, left
+                        repeat(4) { i ->
+                            val a = (mids[i] + angleDeg) * (PI / 180f)
+                            val end = Offset(
+                                center.x + rPx * cos(a).toFloat(),
+                                center.y + rPx * sin(a).toFloat()
+                            )
+                            drawLine(
+                                color = dividerColor,
+                                start = center,
+                                end = end,
+                                strokeWidth = with(density) { 1.5.dp.toPx() }
+                            )
+                        }
 
-                    Box(Modifier.fillMaxSize()) {
-                        order.forEachIndexed { index, seg ->
-                            val def = definitions.getValue(seg)
+                        rotate(angleDeg) {
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    listOf(Color.White.copy(0.08f), Color.Transparent)
+                                ),
+                                radius = rPx * 0.7f,
+                                center = Offset(center.x, center.y - rPx * 0.15f)
+                            )
+                        }
+                    }
 
-                            // Ring offset for this item (Dp math)
-                            val theta = (base[index] + angleDeg) * (PI / 180f)
-                            val ringDx = radius * cos(theta).toFloat()  // Dp
-                            val ringDy = radius * sin(theta).toFloat()  // Dp
-                            val ringOffset = OffsetDp(ringDx, ringDy)
-
-                            // Grid offset for this index
-                            val gridOffset = gridOffsets[index]
-
-                            // Final offset = blend(grid, ring, morph)
-                            val finalOffset = gridOffset.lerp(ringOffset, morph)
-
-                            Box(
+                    // Overlay: icons & labels and tap detection (all composable-safe)
+                    Box(Modifier.size(diameterDp)) {
+                        repeat(4) { i ->
+                            val seg = order[i]
+                            val def = defs.getValue(seg)
+                            val labelColor = contentColorFor(def.color)
+                            val theta = (mids[i] + angleDeg) * (PI / 180f)
+                            val labelRadius = radiusDp * 0.55f
+                            val dx = labelRadius * cos(theta).toFloat()
+                            val dy = labelRadius * sin(theta).toFloat()
+                            Column(
                                 modifier = Modifier
-                                    .size(cardSize)
                                     .align(Alignment.Center)
-                                    .offset(x = finalOffset.x, y = finalOffset.y)
+                                    .offset(x = dx, y = dy),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                SegmentCard(
-                                    label = stringResource(def.labelRes),
-                                    icon = def.icon,
-                                    containerColor = def.containerColor,
-                                    // Card tap ALWAYS opens (does not start spin)
-                                    onClick = { onSegmentClick(def.segment) },
-                                    modifier = Modifier.fillMaxSize(),
-                                    square = false
+                                Icon(def.icon, contentDescription = null, tint = labelColor)
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(def.labelRes),
+                                    color = labelColor,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }
+
+                        // Consume taps inside the wheel to open slice (prevents background spin)
+                        val densityHere = density
+                        Box(
+                            Modifier
+                                .matchParentSize()
+                                .pointerInput(order, angleDeg, radiusDp) {
+                                    detectTapGestures { tap ->
+                                        val w = size.width.toFloat()
+                                        val h = size.height.toFloat()
+                                        val cx = w / 2f
+                                        val cy = h / 2f
+                                        val dx = tap.x - cx
+                                        val dy = tap.y - cy
+                                        val dist = sqrt(dx * dx + dy * dy)
+                                        val rPx = with(densityHere) { radiusDp.toPx() }
+                                        if (dist <= rPx) {
+                                            var ang = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                            if (ang < 0f) ang += 360f
+                                            val local = (ang - angleDeg + 360f) % 360f
+                                            val idx = (((local + 45f) / 90f).toInt()) % 4
+                                            onSegmentClick(order[idx])
+                                        }
+                                    }
+                                }
+                        )
                     }
                 }
             }
@@ -506,13 +399,7 @@ fun Medallion(
     }
 }
 
-/** Small helpers for Dp interpolation */
-private data class OffsetDp(val x: Dp, val y: Dp)
-private fun OffsetDp.lerp(to: OffsetDp, t: Float) =
-    OffsetDp(lerpDp(this.x, to.x, t), lerpDp(this.y, to.y, t))
-private fun lerpDp(a: Dp, b: Dp, t: Float): Dp = a + (b - a) * t
-
-/** Simple screen displaying the [Medallion] in the center. */
+/** Whole screen scaffold */
 @Composable
 fun MedallionScreen() {
     val context = LocalContext.current
