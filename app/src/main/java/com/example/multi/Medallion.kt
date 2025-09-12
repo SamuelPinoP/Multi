@@ -15,8 +15,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -45,6 +46,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.consume
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -412,13 +414,19 @@ fun Medallion(
                             Modifier
                                 .matchParentSize()
                                 .pointerInput(order, angleDeg, aDp, bDp) {
-                                    detectTapGestures { tap ->
+                                    awaitEachGesture {
+                                        val down = awaitFirstDown()
+                                        down.consume()
+                                        val up = waitForUpOrCancellation()
+
                                         val w = size.width.toFloat()
                                         val h = size.height.toFloat()
                                         val cx = w / 2f
                                         val cy = h / 2f
-                                        val dxPx = tap.x - cx
-                                        val dyPx = tap.y - cy
+                                        // Fall back to the down position if the up event was cancelled
+                                        val pos = (up ?: down).position
+                                        val dxPx = pos.x - cx
+                                        val dyPx = pos.y - cy
 
                                         val aPx = with(densityHere) { aDp.toPx() }
                                         val bPx = with(densityHere) { bDp.toPx() }
