@@ -18,8 +18,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -68,11 +69,20 @@ private object Motion {
     const val SpinStepDeg = 3f
 }
 
-/** Visual tweaks */
+/** Visual & layout knobs (✅ tweak here) */
 private object Wheel {
-    const val ShowDividers = false   // set true to draw center spokes
-    const val ArcEpsilonDeg = 0.8f   // tiny overlap to hide anti-aliased seams
-    const val WheelScale = 0.96f     // increase (e.g., 0.98f or 1.0f) to make wheel bigger
+    const val ShowDividers = false       // true = draw center spokes
+    const val ArcEpsilonDeg = 0.8f       // tiny overlap to hide seams
+    const val BaseScale = 0.96f          // overall fit inside its square container (0.90..1.00)
+
+    // 🔧 NEW: Move the wheel center up/down. Positive = move DOWN.
+    val CenterShiftY: Dp = 190.dp
+
+    // 🔧 NEW: Ellipse scaling. 1.0 = perfect circle
+    // Increase ScaleY (keep ScaleX=1) to make it taller than wide.
+    // Increase ScaleX (keep ScaleY=1) to make it wider than tall.
+    const val ScaleX = 2.50f
+    const val ScaleY = 2.50f
 }
 
 /** Enum describing each clickable slice. */
@@ -218,7 +228,7 @@ fun Medallion(
     var spinning by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // Pre-captured theme colors for Canvas
+    // Colors for Canvas (no composable calls in draw lambda)
     val outlineRing: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
     val dividerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
 
@@ -282,31 +292,38 @@ fun Medallion(
                 contentAlignment = Alignment.Center
             ) {
                 if (containerDp > 0.dp) {
-                    // 🔧 SIZE KNOB: increase Wheel.WheelScale to make the wheel bigger
-                    val radiusDp: Dp = containerDp * Wheel.WheelScale / 2f
-                    val diameterDp: Dp = radiusDp * 2f
+                    // Base radius that fits into a square, then apply ellipse scales.
+                    val baseRadiusDp: Dp = containerDp * Wheel.BaseScale / 2f
+                    val aDp: Dp = baseRadiusDp * Wheel.ScaleX   // horizontal radius
+                    val bDp: Dp = baseRadiusDp * Wheel.ScaleY   // vertical radius
+
+                    val canvasWidthDp: Dp = aDp * 2f
+                    val canvasHeightDp: Dp = bDp * 2f
 
                     val mids = listOf(270f, 0f, 90f, 180f)
 
-                    // Base wheel (slices)
+                    // --- SLICES (Canvas) ---
                     Canvas(
                         modifier = Modifier
-                            .size(diameterDp)
+                            .size(width = canvasWidthDp, height = canvasHeightDp)
+                            .offset(y = Wheel.CenterShiftY) // move center vertically
                             .semantics { contentDescription = "Multi wheel" }
                     ) {
                         val center = Offset(size.width / 2f, size.height / 2f)
-                        val rPx = with(density) { radiusDp.toPx() }
-                        val rectTopLeft = Offset(center.x - rPx, center.y - rPx)
-                        val rect = Rect(rectTopLeft, androidx.compose.ui.geometry.Size(rPx * 2, rPx * 2))
+                        val aPx = with(density) { aDp.toPx() }
+                        val bPx = with(density) { bDp.toPx() }
+                        val rectTopLeft = Offset(center.x - aPx, center.y - bPx)
+                        val rect = Rect(rectTopLeft, androidx.compose.ui.geometry.Size(aPx * 2, bPx * 2))
 
-                        drawCircle(
+                        // Outline ellipse
+                        drawOval(
                             color = outlineRing,
-                            radius = rPx,
-                            center = center,
+                            topLeft = rect.topLeft,
+                            size = rect.size,
                             style = Stroke(width = with(density) { 2.dp.toPx() })
                         )
 
-                        // Draw 4 arcs with slight overlap to avoid visible seams
+                        // Four arcs, with tiny overlap to hide seams
                         repeat(4) { i ->
                             val seg = order[i]
                             val color = defs.getValue(seg).color
@@ -322,13 +339,13 @@ fun Medallion(
                             )
                         }
 
-                        // Optional spokes (disabled by default)
+                        // Optional spokes
                         if (Wheel.ShowDividers) {
                             repeat(4) { i ->
                                 val a = (mids[i] + angleDeg) * (PI / 180f)
                                 val end = Offset(
-                                    center.x + rPx * cos(a).toFloat(),
-                                    center.y + rPx * sin(a).toFloat()
+                                    center.x + aPx * cos(a).toFloat(),
+                                    center.y + bPx * sin(a).toFloat()
                                 )
                                 drawLine(
                                     color = dividerColor,
@@ -339,28 +356,39 @@ fun Medallion(
                             }
                         }
 
-                        // Soft rotating highlight
+                        // Soft rotating highlight (scaled to ellipse)
                         rotate(angleDeg) {
-                            drawCircle(
+                            drawOval(
                                 brush = Brush.radialGradient(
                                     listOf(Color.White.copy(0.08f), Color.Transparent)
                                 ),
-                                radius = rPx * 0.7f,
-                                center = Offset(center.x, center.y - rPx * 0.15f)
+                                topLeft = Offset(
+                                    center.x - aPx * 0.7f,
+                                    center.y - bPx * 0.85f // slightly above center
+                                ),
+                                size = androidx.compose.ui.geometry.Size(aPx * 1.4f, bPx * 1.1f)
                             )
                         }
                     }
 
-                    // Overlay: icons/labels & tap detection
-                    Box(Modifier.size(diameterDp)) {
+                    // --- ICONS/LABELS + TAP HIT TEST (overlay) ---
+                    Box(
+                        Modifier
+                            .size(width = canvasWidthDp, height = canvasHeightDp)
+                            .offset(y = Wheel.CenterShiftY)
+                    ) {
+                        // Labels positioned on the ellipse
                         repeat(4) { i ->
                             val seg = order[i]
                             val def = defs.getValue(seg)
                             val labelColor = contentColorFor(def.color)
                             val theta = (mids[i] + angleDeg) * (PI / 180f)
-                            val labelRadius = radiusDp * 0.55f
-                            val dx = labelRadius * cos(theta).toFloat()
-                            val dy = labelRadius * sin(theta).toFloat()
+
+                            val aLabel = aDp * 0.55f
+                            val bLabel = bDp * 0.55f
+                            val dx = aLabel * cos(theta).toFloat()
+                            val dy = bLabel * sin(theta).toFloat()
+
                             Column(
                                 modifier = Modifier
                                     .align(Alignment.Center)
@@ -378,35 +406,35 @@ fun Medallion(
                             }
                         }
 
-                        // Tap inside wheel to open the slice (consumes taps so background won't start spin)
+                        // Tap inside ellipse -> open slice (consumes tap, so background doesn't spin)
                         val densityHere = density
                         Box(
                             Modifier
                                 .matchParentSize()
-                                .pointerInput(order, angleDeg, radiusDp) {
+                                .pointerInput(order, angleDeg, aDp, bDp) {
                                     detectTapGestures { tap ->
                                         val w = size.width.toFloat()
                                         val h = size.height.toFloat()
                                         val cx = w / 2f
                                         val cy = h / 2f
-                                        val dx = tap.x - cx
-                                        val dy = tap.y - cy
-                                        val dist = kotlin.math.sqrt(dx * dx + dy * dy)
-                                        val rPx = with(densityHere) { radiusDp.toPx() }
-                                        if (dist <= rPx) {
-                                            // Angle of tap in [0,360)
-                                            var ang = Math.toDegrees(kotlin.math.atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                        val dxPx = tap.x - cx
+                                        val dyPx = tap.y - cy
+
+                                        val aPx = with(densityHere) { aDp.toPx() }
+                                        val bPx = with(densityHere) { bDp.toPx() }
+
+                                        // Inside ellipse check
+                                        val u = dxPx / aPx
+                                        val v = dyPx / bPx
+                                        if (u * u + v * v <= 1f) {
+                                            // Angle on normalized unit circle
+                                            var ang = Math.toDegrees(atan2(v.toDouble(), u.toDouble())).toFloat()
                                             if (ang < 0f) ang += 360f
 
-                                            // Convert to local wheel space (0° at right, CCW positive)
                                             val local = (ang - angleDeg + 360f) % 360f
-
-                                            // Quadrant index where 0=right, 1=bottom, 2=left, 3=top
                                             val quad = (((local + 45f) / 90f).toInt()) % 4
-
-                                            // Map to your 'order' indexing where 0=top (270°), 1=right (0°), 2=bottom (90°), 3=left (180°)
+                                            // Map quad(0=right,1=bottom,2=left,3=top) to order index(0=top,1=right,2=bottom,3=left)
                                             val mappedIndex = (quad + 1) % 4
-
                                             onSegmentClick(order[mappedIndex])
                                         }
                                     }
