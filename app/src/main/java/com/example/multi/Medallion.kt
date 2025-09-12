@@ -45,7 +45,9 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -223,6 +225,11 @@ fun Medallion(
         )
     }
 
+    // Geometry of the wheel for hit testing spins vs taps
+    var wheelCenter by remember { mutableStateOf(Offset.Zero) }
+    var wheelRadiusA by remember { mutableStateOf(0f) }
+    var wheelRadiusB by remember { mutableStateOf(0f) }
+
     // Wheel rotation (deg)
     var angleDeg by rememberSaveable { mutableStateOf(0f) }
     var spinning by remember { mutableStateOf(false) }
@@ -235,25 +242,42 @@ fun Medallion(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
+            .pointerInput(wheelCenter, wheelRadiusA, wheelRadiusB) {
                 while (true) {
                     awaitPointerEventScope {
-                        awaitFirstDown(requireUnconsumed = true)
-                        spinning = true
-                        val spinner = scope.launch {
+                        val down = awaitFirstDown()
+                        val dx = down.position.x - wheelCenter.x
+                        val dy = down.position.y - wheelCenter.y
+                        val inside = if (wheelRadiusA > 0f && wheelRadiusB > 0f) {
+                            (dx * dx) / (wheelRadiusA * wheelRadiusA) +
+                                (dy * dy) / (wheelRadiusB * wheelRadiusB) <= 1f
+                        } else {
+                            false
+                        }
+                        if (!inside) {
+                            spinning = true
+                            val spinner = scope.launch {
+                                while (true) {
+                                    angleDeg = (angleDeg + Motion.SpinStepDeg) % 360f
+                                    delay(Motion.SpinStepMs.toLong())
+                                }
+                            }
+                            try {
+                                while (true) {
+                                    val ev = awaitPointerEvent()
+                                    if (ev.changes.all { !it.pressed }) break
+                                }
+                            } finally {
+                                spinning = false
+                                spinner.cancel()
+                            }
+                        } else {
+                            // Touch inside the wheel: wait for release without spinning
                             while (true) {
-                                angleDeg = (angleDeg + Motion.SpinStepDeg) % 360f
-                                delay(Motion.SpinStepMs.toLong())
+                                val ev = awaitPointerEvent()
+                                if (ev.changes.all { !it.pressed }) break
                             }
                         }
-                        var done = false
-                        while (!done) {
-                            val ev = awaitPointerEvent()
-                            val allUp = ev.changes.all { !it.pressed }
-                            if (allUp) done = true
-                        }
-                        spinning = false
-                        spinner.cancel()
                     }
                 }
             }
@@ -288,6 +312,14 @@ fun Medallion(
                     .onSizeChanged { sz ->
                         val minPx = min(sz.width, sz.height)
                         containerDp = with(density) { minPx.toDp() }
+                    }
+                    .onGloballyPositioned { coords ->
+                        val pos = coords.positionInRoot()
+                        val shiftYPx = with(density) { Wheel.CenterShiftY.toPx() }
+                        wheelCenter = Offset(
+                            pos.x + coords.size.width / 2f,
+                            pos.y + coords.size.height / 2f + shiftYPx
+                        )
                     },
                 contentAlignment = Alignment.Center
             ) {
@@ -302,6 +334,11 @@ fun Medallion(
 
                     val mids = listOf(270f, 0f, 90f, 180f)
 
+                    val aPx = with(density) { aDp.toPx() }
+                    val bPx = with(density) { bDp.toPx() }
+                    wheelRadiusA = aPx
+                    wheelRadiusB = bPx
+
                     // --- SLICES (Canvas) ---
                     Canvas(
                         modifier = Modifier
@@ -310,8 +347,6 @@ fun Medallion(
                             .semantics { contentDescription = "Multi wheel" }
                     ) {
                         val center = Offset(size.width / 2f, size.height / 2f)
-                        val aPx = with(density) { aDp.toPx() }
-                        val bPx = with(density) { bDp.toPx() }
                         val rectTopLeft = Offset(center.x - aPx, center.y - bPx)
                         val rect = Rect(rectTopLeft, androidx.compose.ui.geometry.Size(aPx * 2, bPx * 2))
 
