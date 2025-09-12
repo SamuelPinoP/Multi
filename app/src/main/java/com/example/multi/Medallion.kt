@@ -524,7 +524,7 @@ fun MedallionScreen() {
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Medallion { segment ->
+            PieMedallion { segment ->
                 val cls = when (segment) {
                     MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
                     MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
