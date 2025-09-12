@@ -16,7 +16,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.awaitPointerEvent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -235,28 +235,6 @@ fun Medallion(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
-                while (true) {
-                    awaitPointerEventScope {
-                        awaitFirstDown(requireUnconsumed = true)
-                        spinning = true
-                        val spinner = scope.launch {
-                            while (true) {
-                                angleDeg = (angleDeg + Motion.SpinStepDeg) % 360f
-                                delay(Motion.SpinStepMs.toLong())
-                            }
-                        }
-                        var done = false
-                        while (!done) {
-                            val ev = awaitPointerEvent()
-                            val allUp = ev.changes.all { !it.pressed }
-                            if (allUp) done = true
-                        }
-                        spinning = false
-                        spinner.cancel()
-                    }
-                }
-            }
     ) {
         AnimatedBackdrop(Modifier.matchParentSize())
 
@@ -297,6 +275,10 @@ fun Medallion(
                     val aDp: Dp = baseRadiusDp * Wheel.ScaleX   // horizontal radius
                     val bDp: Dp = baseRadiusDp * Wheel.ScaleY   // vertical radius
 
+                    // Pre-calc pixel radii
+                    val aPx = with(density) { aDp.toPx() }
+                    val bPx = with(density) { bDp.toPx() }
+
                     val canvasWidthDp: Dp = aDp * 2f
                     val canvasHeightDp: Dp = bDp * 2f
 
@@ -310,8 +292,6 @@ fun Medallion(
                             .semantics { contentDescription = "Multi wheel" }
                     ) {
                         val center = Offset(size.width / 2f, size.height / 2f)
-                        val aPx = with(density) { aDp.toPx() }
-                        val bPx = with(density) { bDp.toPx() }
                         val rectTopLeft = Offset(center.x - aPx, center.y - bPx)
                         val rect = Rect(rectTopLeft, androidx.compose.ui.geometry.Size(aPx * 2, bPx * 2))
 
@@ -371,11 +351,53 @@ fun Medallion(
                         }
                     }
 
-                    // --- ICONS/LABELS + TAP HIT TEST (overlay) ---
+                    // --- ICONS/LABELS + INPUT HANDLING (overlay) ---
                     Box(
                         Modifier
                             .size(width = canvasWidthDp, height = canvasHeightDp)
                             .offset(y = Wheel.CenterShiftY)
+                            .pointerInput(order, angleDeg, aPx, bPx) {
+                                while (true) {
+                                    awaitPointerEventScope {
+                                        val down = awaitFirstDown()
+                                        val cx = size.width / 2f
+                                        val cy = size.height / 2f
+                                        val dx = down.position.x - cx
+                                        val dy = down.position.y - cy
+                                        val u = dx / aPx
+                                        val v = dy / bPx
+                                        val inside = u * u + v * v <= 1f
+                                        if (!inside) {
+                                            spinning = true
+                                            val spinner = scope.launch {
+                                                while (true) {
+                                                    angleDeg = (angleDeg + Motion.SpinStepDeg) % 360f
+                                                    delay(Motion.SpinStepMs.toLong())
+                                                }
+                                            }
+                                            do {
+                                                val ev = awaitPointerEvent()
+                                                if (ev.changes.all { !it.pressed }) break
+                                            } while (true)
+                                            spinning = false
+                                            spinner.cancel()
+                                        } else {
+                                            do {
+                                                val ev = awaitPointerEvent()
+                                                if (ev.changes.all { !it.pressed }) {
+                                                    var ang = Math.toDegrees(atan2((dy / bPx).toDouble(), (dx / aPx).toDouble())).toFloat()
+                                                    if (ang < 0f) ang += 360f
+                                                    val local = (ang - angleDeg + 360f) % 360f
+                                                    val quad = (((local + 45f) / 90f).toInt()) % 4
+                                                    val mappedIndex = (quad + 1) % 4
+                                                    onSegmentClick(order[mappedIndex])
+                                                    break
+                                                }
+                                            } while (true)
+                                        }
+                                    }
+                                }
+                            }
                     ) {
                         // Labels positioned on the ellipse
                         repeat(4) { i ->
@@ -405,41 +427,6 @@ fun Medallion(
                                 )
                             }
                         }
-
-                        // Tap inside ellipse -> open slice (consumes tap, so background doesn't spin)
-                        val densityHere = density
-                        Box(
-                            Modifier
-                                .matchParentSize()
-                                .pointerInput(order, angleDeg, aDp, bDp) {
-                                    detectTapGestures { tap ->
-                                        val w = size.width.toFloat()
-                                        val h = size.height.toFloat()
-                                        val cx = w / 2f
-                                        val cy = h / 2f
-                                        val dxPx = tap.x - cx
-                                        val dyPx = tap.y - cy
-
-                                        val aPx = with(densityHere) { aDp.toPx() }
-                                        val bPx = with(densityHere) { bDp.toPx() }
-
-                                        // Inside ellipse check
-                                        val u = dxPx / aPx
-                                        val v = dyPx / bPx
-                                        if (u * u + v * v <= 1f) {
-                                            // Angle on normalized unit circle
-                                            var ang = Math.toDegrees(atan2(v.toDouble(), u.toDouble())).toFloat()
-                                            if (ang < 0f) ang += 360f
-
-                                            val local = (ang - angleDeg + 360f) % 360f
-                                            val quad = (((local + 45f) / 90f).toInt()) % 4
-                                            // Map quad(0=right,1=bottom,2=left,3=top) to order index(0=top,1=right,2=bottom,3=left)
-                                            val mappedIndex = (quad + 1) % 4
-                                            onSegmentClick(order[mappedIndex])
-                                        }
-                                    }
-                                }
-                        )
                     }
                 }
             }
