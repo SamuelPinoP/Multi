@@ -8,6 +8,15 @@ settings.
 4- Make two different widgets for the Calendar (says when is the next event Date above and days
 remaining under).
 
+* 1- Snow falling from the text that says Multi on the frosted side of the Medallion. Maybe also 
+rain drops that splash.
+2- Add ashes on the magma burned side of the medallion and also lit up ashes.
+3- Leaves and seeds will fall on the wooden side of the medallion.
+4- Tiny rocks and gems will fall on the rock side of the medallion.
+
+* Swipping up or to the right makes the medallion rotate right. Swipping down or left makes the meda-
+llion rotate to the left.
+
 * The trash needs a clear button that will clear all of the notes from it.
 
 * The information in the Record activity looks ugly. It needs to be more modern and interactive.
@@ -93,6 +102,10 @@ or they can use one of the default songs.
   Make the AI have two levels of difficulty. The Superium level is impossible to defeat. Virtually 
 nobody can. If you find an algorithm to win. If you find a way to win you are probably a genius. 
 Communicate that to the user.
+
+
+* Multi could use sign up for: Remembering the user if he deletes the app and reinstal its. AI chat
+  bot historial. Buying in a near Publix.
 
 * Security and no data leaks when posting the app.
   I will not ask for your personal data. I will give you real private use of technology.
