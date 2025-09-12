@@ -122,43 +122,66 @@ class NoteEditorActivity : SegmentActivity("Note") {
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
 
             LaunchedEffect(headerState.value, textState.value) {
-                if (!readOnly && !saved && (headerState.value.isNotBlank() || textState.value.text.isNotBlank())) {
+                if (!readOnly) {
+                    val headerBlank = headerState.value.isBlank()
+                    val textBlank = textState.value.text.isBlank()
                     val dao = EventDatabase.getInstance(context).noteDao()
-                    withContext(Dispatchers.IO) {
-                        val formattedHeader = headerState.value.trim().capitalizeSentences()
-                        val formattedContent = textState.value.text.trim().capitalizeSentences()
-                        if (noteId == 0L) {
-                            noteId = dao.insert(
-                                Note(
-                                    header = formattedHeader,
-                                    content = formattedContent,
-                                    created = noteCreated,
-                                    lastOpened = noteLastOpened,
-                                    scroll = scrollState.value,
-                                    cursor = textState.value.selection.start,
-                                    attachmentUri = noteAttachmentUri
-                                ).toEntity()
-                            )
-                        } else {
-                            dao.update(
-                                Note(
-                                    id = noteId,
-                                    header = formattedHeader,
-                                    content = formattedContent,
-                                    created = noteCreated,
-                                    lastOpened = noteLastOpened,
-                                    scroll = scrollState.value,
-                                    cursor = textState.value.selection.start,
-                                    attachmentUri = noteAttachmentUri
-                                ).toEntity()
-                            )
+                    if (headerBlank && textBlank) {
+                        if (noteId != 0L) {
+                            withContext(Dispatchers.IO) {
+                                dao.delete(
+                                    Note(
+                                        id = noteId,
+                                        header = currentHeader,
+                                        content = currentText,
+                                        created = noteCreated,
+                                        lastOpened = noteLastOpened,
+                                        scroll = noteScroll,
+                                        cursor = noteCursor,
+                                        attachmentUri = noteAttachmentUri
+                                    ).toEntity()
+                                )
+                            }
+                            noteId = 0L
                         }
+                        saved = true
+                    } else if (!saved) {
+                        withContext(Dispatchers.IO) {
+                            val formattedHeader = headerState.value.trim().capitalizeSentences()
+                            val formattedContent = textState.value.text.trim().capitalizeSentences()
+                            if (noteId == 0L) {
+                                noteId = dao.insert(
+                                    Note(
+                                        header = formattedHeader,
+                                        content = formattedContent,
+                                        created = noteCreated,
+                                        lastOpened = noteLastOpened,
+                                        scroll = scrollState.value,
+                                        cursor = textState.value.selection.start,
+                                        attachmentUri = noteAttachmentUri
+                                    ).toEntity()
+                                )
+                            } else {
+                                dao.update(
+                                    Note(
+                                        id = noteId,
+                                        header = formattedHeader,
+                                        content = formattedContent,
+                                        created = noteCreated,
+                                        lastOpened = noteLastOpened,
+                                        scroll = scrollState.value,
+                                        cursor = textState.value.selection.start,
+                                        attachmentUri = noteAttachmentUri
+                                    ).toEntity()
+                                )
+                            }
+                        }
+                        saved = true
+                        currentHeader = headerState.value
+                        currentText = textState.value.text
+                        noteScroll = scrollState.value
+                        noteCursor = textState.value.selection.start
                     }
-                    saved = true
-                    currentHeader = headerState.value
-                    currentText = textState.value.text
-                    noteScroll = scrollState.value
-                    noteCursor = textState.value.selection.start
                 }
             }
 
