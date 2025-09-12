@@ -18,6 +18,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -66,6 +68,13 @@ private object Motion {
     const val TapScaleMs = 120
     const val SpinStepMs = 16
     const val SpinStepDeg = 3f
+}
+
+/** Visual tweaks */
+private object Wheel {
+    const val ShowDividers = false   // set true to draw center spokes
+    const val ArcEpsilonDeg = 0.8f   // tiny overlap to hide anti-aliased seams
+    const val WheelScale = 0.96f     // increase (e.g., 0.98f or 1.0f) to make wheel bigger
 }
 
 /** Enum describing each clickable slice. */
@@ -211,7 +220,7 @@ fun Medallion(
     var spinning by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // PRE-CAPTURE THEME COLORS (avoid calling composables inside Canvas)
+    // Pre-captured theme colors for Canvas
     val outlineRing: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
     val dividerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
 
@@ -275,13 +284,13 @@ fun Medallion(
                 contentAlignment = Alignment.Center
             ) {
                 if (containerDp > 0.dp) {
-                    val edgePad = 8.dp
-                    val radiusDp: Dp = containerDp / 2 - edgePad
-                    val diameterDp: Dp = radiusDp * 2
+                    // 🔧 SIZE KNOB: increase Wheel.WheelScale to make the wheel bigger
+                    val radiusDp: Dp = containerDp * Wheel.WheelScale / 2f
+                    val diameterDp: Dp = radiusDp * 2f
 
                     val mids = listOf(270f, 0f, 90f, 180f)
 
-                    // Big wheel (no composable calls inside draw lambda)
+                    // Base wheel (slices)
                     Canvas(
                         modifier = Modifier
                             .size(diameterDp)
@@ -299,34 +308,40 @@ fun Medallion(
                             style = Stroke(width = with(density) { 2.dp.toPx() })
                         )
 
+                        // Draw 4 arcs with slight overlap to avoid visible seams
                         repeat(4) { i ->
                             val seg = order[i]
                             val color = defs.getValue(seg).color
-                            val start = mids[i] + angleDeg - 45f
+                            val start = mids[i] + angleDeg - 45f - Wheel.ArcEpsilonDeg
+                            val sweep = 90f + Wheel.ArcEpsilonDeg * 2f
                             drawArc(
                                 color = color,
                                 startAngle = start,
-                                sweepAngle = 90f,
+                                sweepAngle = sweep,
                                 useCenter = true,
                                 topLeft = rect.topLeft,
                                 size = rect.size
                             )
                         }
 
-                        repeat(4) { i ->
-                            val a = (mids[i] + angleDeg) * (PI / 180f)
-                            val end = Offset(
-                                center.x + rPx * cos(a).toFloat(),
-                                center.y + rPx * sin(a).toFloat()
-                            )
-                            drawLine(
-                                color = dividerColor,
-                                start = center,
-                                end = end,
-                                strokeWidth = with(density) { 1.5.dp.toPx() }
-                            )
+                        // Optional spokes (disabled by default)
+                        if (Wheel.ShowDividers) {
+                            repeat(4) { i ->
+                                val a = (mids[i] + angleDeg) * (PI / 180f)
+                                val end = Offset(
+                                    center.x + rPx * cos(a).toFloat(),
+                                    center.y + rPx * sin(a).toFloat()
+                                )
+                                drawLine(
+                                    color = dividerColor,
+                                    start = center,
+                                    end = end,
+                                    strokeWidth = with(density) { 1.5.dp.toPx() }
+                                )
+                            }
                         }
 
+                        // Soft rotating highlight
                         rotate(angleDeg) {
                             drawCircle(
                                 brush = Brush.radialGradient(
@@ -338,7 +353,7 @@ fun Medallion(
                         }
                     }
 
-                    // Overlay: icons & labels and tap detection (all composable-safe)
+                    // Overlay: icons/labels & tap detection
                     Box(Modifier.size(diameterDp)) {
                         repeat(4) { i ->
                             val seg = order[i]
@@ -365,7 +380,7 @@ fun Medallion(
                             }
                         }
 
-                        // Consume taps inside the wheel to open slice (prevents background spin)
+                        // Tap inside wheel to open the slice (consumes taps so background won't start spin)
                         val densityHere = density
                         Box(
                             Modifier
