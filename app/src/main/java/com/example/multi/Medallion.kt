@@ -20,7 +20,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -245,7 +245,7 @@ private fun SegmentCard(
         label = "cardScale"
     )
     val contentColor = contentColorFor(containerColor)
-    val shape = RoundedCornerShape(16.dp)
+    val shape = CircleShape
 
     val cardModifier = (if (square) modifier.aspectRatio(1f) else modifier)
         .graphicsLayer {
@@ -420,64 +420,52 @@ fun Medallion(
 
             // Square content area
             val density = LocalDensity.current
-            var containerSize by remember { mutableStateOf(0.dp) }
+            var containerWidth by remember { mutableStateOf(0.dp) }
+            var containerHeight by remember { mutableStateOf(0.dp) }
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f, fill = true)
-                    .aspectRatio(1f)
                     .onSizeChanged { sz ->
-                        val minPx = min(sz.width, sz.height)
-                        containerSize = with(density) { minPx.toDp() }
+                        with(density) {
+                            containerWidth = sz.width.toDp()
+                            containerHeight = sz.height.toDp()
+                        }
                     },
                 contentAlignment = Alignment.Center
             ) {
-                if (containerSize > 0.dp) {
-                    val size = containerSize
-
-                    // EXACT grid gaps you had
-                    val gridGapH = 12.dp
+                if (containerWidth > 0.dp && containerHeight > 0.dp) {
                     val gridGapV = 16.dp
-
-                    // Keep card size CONSTANT (same in grid & ring)
-                    val cardSize = ((size - gridGapH) / 2f)
-
-                    // GRID offsets (centered) using your gaps
+                    val cardSizeFromHeight = (containerHeight - gridGapV) / 2f
+                    val cardSize = min(cardSizeFromHeight, containerWidth / 2f)
+                    val gridGapH = containerWidth - cardSize * 2
                     val halfX = cardSize / 2 + gridGapH / 2
                     val halfY = cardSize / 2 + gridGapV / 2
                     val gridOffsets = listOf(
-                        OffsetDp(-halfX, -halfY), // index 0
-                        OffsetDp( halfX, -halfY), // index 1
-                        OffsetDp(-halfX,  halfY), // index 2
-                        OffsetDp( halfX,  halfY)  // index 3
+                        OffsetDp(-halfX, -halfY),
+                        OffsetDp( halfX, -halfY),
+                        OffsetDp(-halfX,  halfY),
+                        OffsetDp( halfX,  halfY)
                     )
 
-                    // --- keep original ring edge separation ---
-                    // Your earlier ring used: ringCardSize = size * 0.48 (clamped), and:
-                    // radiusPrev = size/2 - ringCardSize/4 - 1.dp
-                    // To keep the OUTER distance to the edge the same with a different cardSize,
-                    // adjust radius so that (radius + cardSize/2) matches the previous (radiusPrev + ringCardSize/2).
+                    val size = min(containerWidth, containerHeight)
                     val ringBaselineSize = (size * 0.48f).coerceIn(96.dp, 200.dp)
                     val ringBaselineRadius = size / 2 - ringBaselineSize / 4 - 1.dp
                     val radius = ringBaselineRadius + (ringBaselineSize - cardSize) / 2
 
-                    val base = listOf(270f, 0f, 90f, 180f) // top, right, bottom, left
+                    val base = listOf(270f, 0f, 90f, 180f)
 
                     Box(Modifier.fillMaxSize()) {
                         order.forEachIndexed { index, seg ->
                             val def = definitions.getValue(seg)
 
-                            // Ring offset for this item (Dp math)
                             val theta = (base[index] + angleDeg) * (PI / 180f)
-                            val ringDx = radius * cos(theta).toFloat()  // Dp
-                            val ringDy = radius * sin(theta).toFloat()  // Dp
+                            val ringDx = radius * cos(theta).toFloat()
+                            val ringDy = radius * sin(theta).toFloat()
                             val ringOffset = OffsetDp(ringDx, ringDy)
 
-                            // Grid offset for this index
                             val gridOffset = gridOffsets[index]
-
-                            // Final offset = blend(grid, ring, morph)
                             val finalOffset = gridOffset.lerp(ringOffset, morph)
 
                             Box(
@@ -490,7 +478,6 @@ fun Medallion(
                                     label = stringResource(def.labelRes),
                                     icon = def.icon,
                                     containerColor = def.containerColor,
-                                    // Card tap ALWAYS opens (does not start spin)
                                     onClick = { onSegmentClick(def.segment) },
                                     modifier = Modifier.fillMaxSize(),
                                     square = false
