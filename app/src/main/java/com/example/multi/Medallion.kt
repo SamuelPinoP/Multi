@@ -20,7 +20,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -38,7 +38,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
@@ -245,7 +244,7 @@ private fun SegmentCard(
         label = "cardScale"
     )
     val contentColor = contentColorFor(containerColor)
-    val shape = RoundedCornerShape(16.dp)
+    val shape = CircleShape
 
     val cardModifier = (if (square) modifier.aspectRatio(1f) else modifier)
         .graphicsLayer {
@@ -264,17 +263,20 @@ private fun SegmentCard(
         )
         .semantics { contentDescription = label }
         .drawBehind {
-            drawRoundRect(
-                brush = Brush.linearGradient(
-                    listOf(Color.White.copy(0.09f), Color.Transparent)
-                ),
-                size = Size(size.width, size.height / 2.6f),
-                cornerRadius = CornerRadius(16.dp.toPx())
+            val radius = size.minDimension / 2f
+            val center = Offset(size.width / 2f, size.height / 2f)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.09f), Color.Transparent),
+                    center = center,
+                    radius = radius
+                )
             )
-            drawRoundRect(
-                color = Color.White.copy(0.06f),
+            drawCircle(
+                color = Color.White.copy(alpha = 0.06f),
                 style = Stroke(width = 1.dp.toPx()),
-                cornerRadius = CornerRadius(16.dp.toPx())
+                radius = radius,
+                center = center
             )
         }
 
@@ -416,9 +418,8 @@ fun Medallion(
                 onClick = { if (!spinning) order = order.shuffled() }
             )
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(8.dp))
 
-            // Square content area
             val density = LocalDensity.current
             var containerSize by remember { mutableStateOf(0.dp) }
 
@@ -426,7 +427,6 @@ fun Medallion(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f, fill = true)
-                    .aspectRatio(1f)
                     .onSizeChanged { sz ->
                         val minPx = min(sz.width, sz.height)
                         containerSize = with(density) { minPx.toDp() }
@@ -436,14 +436,11 @@ fun Medallion(
                 if (containerSize > 0.dp) {
                     val size = containerSize
 
-                    // EXACT grid gaps you had
-                    val gridGapH = 12.dp
-                    val gridGapV = 16.dp
+                    val gridGapH = 0.dp
+                    val gridGapV = 0.dp
 
-                    // Keep card size CONSTANT (same in grid & ring)
-                    val cardSize = ((size - gridGapH) / 2f)
+                    val cardSize = (size / 2f)
 
-                    // GRID offsets (centered) using your gaps
                     val halfX = cardSize / 2 + gridGapH / 2
                     val halfY = cardSize / 2 + gridGapV / 2
                     val gridOffsets = listOf(
@@ -501,7 +498,7 @@ fun Medallion(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(8.dp))
         }
     }
 }
