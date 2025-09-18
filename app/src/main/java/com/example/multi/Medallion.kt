@@ -41,6 +41,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.min
+import kotlin.math.max
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -80,11 +82,16 @@ private object Wheel {
 
 /** Textured styles */
 private object Lava { // EVENTS
-    const val SpeedPxPerSec = 42f
-    const val Scale = 1.15f
+    val BaseDeep = Color(0xFF1A0201)
+    val BaseMid = Color(0xFF420904)
+    val BaseEdge = Color(0xFF260402)
+    val FlowCore = Color(0xFFFF6A1B)
+    val FlowHighlight = Color(0xFFFF9345)
+    val Ember = Color(0xFFFFC46D)
+    val Shadow = Color(0xCC0D0100)
+    val GlowColor = Color(0xFFFF7A00)
     const val GlowStrength = 0.55f
     const val TextOnRimBias = 0.82f
-    @DrawableRes val BitmapRes: Int = R.drawable.lava_tile
 }
 private object Ice { // NOTES
     const val SpeedPxPerSec = 22f
@@ -267,6 +274,168 @@ private fun DrawScope.drawTexturedSlice(
     )
 }
 
+/** Stylized, non-animated magma rendering */
+private fun DrawScope.drawMagmaSlice(
+    start: Float,
+    sweep: Float,
+    rect: Rect,
+    center: Offset,
+    rPx: Float
+) {
+    val wedge = arcPath(rect, start, sweep)
+    clipPath(wedge) {
+        drawRect(
+            brush = Brush.linearGradient(
+                colors = listOf(Lava.BaseDeep, Lava.BaseMid, Lava.BaseEdge),
+                start = Offset(center.x - rPx * 0.9f, center.y - rPx * 1.1f),
+                end = Offset(center.x + rPx * 0.85f, center.y + rPx * 0.95f)
+            ),
+            topLeft = rect.topLeft,
+            size = rect.size
+        )
+
+        val magmaFlows = listOf(
+            listOf(
+                Offset(center.x - rPx * 0.78f, center.y - rPx * 0.52f),
+                Offset(center.x - rPx * 0.46f, center.y - rPx * 0.18f),
+                Offset(center.x - rPx * 0.12f, center.y + rPx * 0.08f),
+                Offset(center.x + rPx * 0.32f, center.y + rPx * 0.38f)
+            ),
+            listOf(
+                Offset(center.x + rPx * 0.58f, center.y - rPx * 0.48f),
+                Offset(center.x + rPx * 0.22f, center.y - rPx * 0.22f),
+                Offset(center.x - rPx * 0.18f, center.y + rPx * 0.18f),
+                Offset(center.x - rPx * 0.48f, center.y + rPx * 0.58f)
+            )
+        )
+        magmaFlows.forEach { points ->
+            val path = Path().apply {
+                moveTo(points[0].x, points[0].y)
+                cubicTo(
+                    points[1].x, points[1].y,
+                    points[2].x, points[2].y,
+                    points[3].x, points[3].y
+                )
+            }
+            drawPath(
+                path = path,
+                color = Lava.BaseEdge.copy(alpha = 0.85f),
+                style = Stroke(width = rPx * 0.14f, cap = StrokeCap.Round)
+            )
+            drawPath(
+                path = path,
+                brush = Brush.linearGradient(
+                    colors = listOf(Lava.FlowHighlight, Lava.FlowCore),
+                    start = points[1],
+                    end = points[3]
+                ),
+                style = Stroke(width = rPx * 0.1f, cap = StrokeCap.Round)
+            )
+            drawPath(
+                path = path,
+                brush = Brush.linearGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.3f), Color.Transparent),
+                    start = points[1],
+                    end = points[2]
+                ),
+                style = Stroke(width = rPx * 0.05f, cap = StrokeCap.Round),
+                blendMode = BlendMode.Plus
+            )
+        }
+
+        val pools = listOf(
+            Offset(center.x - rPx * 0.35f, center.y - rPx * 0.18f) to Size(rPx * 1.05f, rPx * 0.7f),
+            Offset(center.x + rPx * 0.25f, center.y + rPx * 0.32f) to Size(rPx * 0.9f, rPx * 0.6f),
+            Offset(center.x - rPx * 0.15f, center.y + rPx * 0.12f) to Size(rPx * 0.82f, rPx * 0.55f)
+        )
+        pools.forEach { (poolCenter, size) ->
+            val radius = max(size.width, size.height) / 2f
+            val topLeft = Offset(
+                poolCenter.x - size.width / 2f,
+                poolCenter.y - size.height / 2f
+            )
+            drawOval(
+                brush = Brush.radialGradient(
+                    colors = listOf(Lava.Ember, Lava.FlowHighlight, Lava.FlowCore, Color.Transparent),
+                    center = poolCenter,
+                    radius = radius
+                ),
+                topLeft = topLeft,
+                size = size,
+                alpha = 0.92f,
+                blendMode = BlendMode.SrcOver
+            )
+            drawOval(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.35f), Color.Transparent),
+                    center = poolCenter,
+                    radius = radius * 0.45f
+                ),
+                topLeft = topLeft,
+                size = size,
+                blendMode = BlendMode.Plus
+            )
+        }
+
+        val emberSpots = listOf(
+            Offset(center.x - rPx * 0.55f, center.y + rPx * 0.14f),
+            Offset(center.x + rPx * 0.42f, center.y + rPx * 0.28f),
+            Offset(center.x - rPx * 0.05f, center.y - rPx * 0.52f)
+        )
+        emberSpots.forEach { emberCenter ->
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.22f), Color.Transparent),
+                    center = emberCenter,
+                    radius = rPx * 0.3f
+                ),
+                center = emberCenter,
+                radius = rPx * 0.3f,
+                blendMode = BlendMode.Plus
+            )
+        }
+
+        val shadowVeils = listOf(
+            Offset(center.x + rPx * 0.28f, center.y - rPx * 0.58f),
+            Offset(center.x - rPx * 0.62f, center.y + rPx * 0.46f)
+        )
+        shadowVeils.forEach { shadowCenter ->
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Lava.Shadow, Color.Transparent),
+                    center = shadowCenter,
+                    radius = rPx * 0.85f
+                ),
+                center = shadowCenter,
+                radius = rPx * 0.85f
+            )
+        }
+
+        drawArc(
+            brush = Brush.radialGradient(
+                listOf(Lava.GlowColor.copy(alpha = 0.18f * Lava.GlowStrength), Color.Transparent),
+                center = center,
+                radius = rPx * 0.95f
+            ),
+            startAngle = start,
+            sweepAngle = sweep,
+            useCenter = true,
+            topLeft = rect.topLeft,
+            size = rect.size,
+            blendMode = BlendMode.Plus
+        )
+    }
+    drawArc(
+        brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.08f), Color.Transparent)),
+        startAngle = start,
+        sweepAngle = sweep,
+        useCenter = false,
+        topLeft = rect.topLeft,
+        size = rect.size,
+        style = Stroke(width = rPx * 0.02f)
+    )
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Medallion(
@@ -296,22 +465,11 @@ fun Medallion(
     val dividerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
 
     // Assets + animation phases
-    val lavaBitmap = ImageBitmap.imageResource(Lava.BitmapRes)
     val iceBitmap = ImageBitmap.imageResource(Ice.BitmapRes)
     val rockBitmap = ImageBitmap.imageResource(Rock.BitmapRes)
     val mossBitmap = ImageBitmap.imageResource(Moss.BitmapRes)
 
     val phases = rememberInfiniteTransition(label = "textures")
-    val lavaPhase by phases.animateFloat(
-        initialValue = 0f, targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = (1000f / Lava.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(6000),
-                easing = LinearEasing
-            )
-        ),
-        label = "lavaPhase"
-    )
     val icePhase by phases.animateFloat(
         initialValue = 0f, targetValue = 1000f,
         animationSpec = infiniteRepeatable(
@@ -416,10 +574,8 @@ fun Medallion(
                             val sweep = 90f + Wheel.ArcEpsilonDeg * 2f
 
                             when (seg) {
-                                MedallionSegment.EVENTS -> drawTexturedSlice(
-                                    bitmap = lavaBitmap, start = start, sweep = sweep, rect = rect,
-                                    scale = Lava.Scale, phasePx = lavaPhase,
-                                    glowColor = Color(0xFFFF7A00), glowStrength = Lava.GlowStrength,
+                                MedallionSegment.EVENTS -> drawMagmaSlice(
+                                    start = start, sweep = sweep, rect = rect,
                                     center = center, rPx = rPx
                                 )
                                 MedallionSegment.NOTES -> drawTexturedSlice(
