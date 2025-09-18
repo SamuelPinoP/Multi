@@ -72,7 +72,7 @@ private object Motion {
 private object Wheel {
     const val ShowDividers = false   // set true to draw center spokes
     const val ArcEpsilonDeg = 0.8f   // tiny overlap to hide anti-aliased seams
-    const val WheelScale = 0.96f     // increase (e.g., 0.98f or 1.0f) to make wheel bigger
+    const val WheelScale = 1.22f     // increase (e.g., 0.98f or 1.0f) to make wheel bigger
 }
 
 /** Enum describing each clickable slice. */

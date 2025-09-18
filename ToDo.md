@@ -1,14 +1,11 @@
 /*
 
 1- Improve the design of the text that says Multi it is too simple add beauty and modernity.
-2- The event created pop up is displayed above the Add Event and Calendar buttons.
 3- Add a description that says: You can create an Event/ Weekly Goal the first time the user opens
 the app. Like a tutorial. After the user has clicked the tutorial then it disappears. Put it in the
 settings.
 4- Make two different widgets for the Calendar (says when is the next event Date above and days
 remaining under).
-
-* The trash needs a clear button that will clear all of the notes from it.
 
 * The information in the Record activity looks ugly. It needs to be more modern and interactive.
 
