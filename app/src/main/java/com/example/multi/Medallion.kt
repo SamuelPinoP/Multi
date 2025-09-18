@@ -79,12 +79,97 @@ private object Wheel {
 }
 
 /** Textured styles */
+private data class LavaPocket(
+    val angleFraction: Float,
+    val radialFraction: Float,
+    val radiusFraction: Float,
+    val intensity: Float
+)
+
+private data class LavaRift(
+    val startFraction: Float,
+    val endFraction: Float,
+    val startRadiusFraction: Float,
+    val endRadiusFraction: Float,
+    val widthFraction: Float,
+    val wobbleAmplitude: Float,
+    val wobbleCount: Int,
+    val phase: Float
+)
+
+private data class LavaSpark(
+    val angleFraction: Float,
+    val radialFraction: Float,
+    val radiusFraction: Float,
+    val alpha: Float
+)
+
 private object Lava { // EVENTS
-    const val SpeedPxPerSec = 42f
-    const val Scale = 1.15f
     const val GlowStrength = 0.55f
     const val TextOnRimBias = 0.82f
-    @DrawableRes val BitmapRes: Int = R.drawable.lava_tile
+
+    val BaseColors = listOf(
+        Color(0xFF170404),
+        Color(0xFF4A1107),
+        Color(0xFF7F2107),
+        Color(0xFFE55213),
+        Color(0xFFFFB951),
+        Color(0xFFE55213)
+    )
+
+    val InnerGlowColor = Color(0xFFFFA84B)
+    val RiftCore = Color(0xFF1A0403)
+    val RiftHighlight = Color(0xFFFFDAB0)
+    val SurfaceSheen = Color(0xFFFFC97A)
+
+    val Pockets = listOf(
+        LavaPocket(angleFraction = 0.16f, radialFraction = 0.58f, radiusFraction = 0.18f, intensity = 1.05f),
+        LavaPocket(angleFraction = 0.33f, radialFraction = 0.74f, radiusFraction = 0.14f, intensity = 0.9f),
+        LavaPocket(angleFraction = 0.55f, radialFraction = 0.46f, radiusFraction = 0.15f, intensity = 1.1f),
+        LavaPocket(angleFraction = 0.72f, radialFraction = 0.68f, radiusFraction = 0.11f, intensity = 0.85f),
+        LavaPocket(angleFraction = 0.88f, radialFraction = 0.52f, radiusFraction = 0.13f, intensity = 0.95f)
+    )
+
+    val Rifts = listOf(
+        LavaRift(
+            startFraction = 0.05f,
+            endFraction = 0.42f,
+            startRadiusFraction = 0.54f,
+            endRadiusFraction = 0.92f,
+            widthFraction = 0.018f,
+            wobbleAmplitude = 0.055f,
+            wobbleCount = 3,
+            phase = 0.1f
+        ),
+        LavaRift(
+            startFraction = 0.48f,
+            endFraction = 0.82f,
+            startRadiusFraction = 0.38f,
+            endRadiusFraction = 0.74f,
+            widthFraction = 0.015f,
+            wobbleAmplitude = 0.04f,
+            wobbleCount = 4,
+            phase = 0.35f
+        ),
+        LavaRift(
+            startFraction = 0.70f,
+            endFraction = 0.94f,
+            startRadiusFraction = 0.58f,
+            endRadiusFraction = 0.86f,
+            widthFraction = 0.012f,
+            wobbleAmplitude = 0.03f,
+            wobbleCount = 5,
+            phase = 0.7f
+        )
+    )
+
+    val Sparks = listOf(
+        LavaSpark(angleFraction = 0.18f, radialFraction = 0.66f, radiusFraction = 0.012f, alpha = 0.9f),
+        LavaSpark(angleFraction = 0.30f, radialFraction = 0.52f, radiusFraction = 0.010f, alpha = 0.7f),
+        LavaSpark(angleFraction = 0.57f, radialFraction = 0.70f, radiusFraction = 0.009f, alpha = 0.75f),
+        LavaSpark(angleFraction = 0.76f, radialFraction = 0.46f, radiusFraction = 0.011f, alpha = 0.65f),
+        LavaSpark(angleFraction = 0.91f, radialFraction = 0.62f, radiusFraction = 0.010f, alpha = 0.6f)
+    )
 }
 private object Ice { // NOTES
     const val SpeedPxPerSec = 22f
@@ -220,6 +305,205 @@ private fun arcPath(rect: Rect, startDeg: Float, sweepDeg: Float) = Path().apply
     moveTo(rect.center.x, rect.center.y); arcTo(rect, startDeg, sweepDeg, false); close()
 }
 
+private fun degToRad(deg: Float): Double = deg / 180f * PI
+
+private fun lerpFloat(start: Float, stop: Float, fraction: Float): Float = start + (stop - start) * fraction
+
+private fun polarOffset(center: Offset, radius: Float, angleRad: Double): Offset {
+    val r = radius.toDouble()
+    val dx = cos(angleRad) * r
+    val dy = sin(angleRad) * r
+    return Offset(center.x + dx.toFloat(), center.y + dy.toFloat())
+}
+
+/** Procedurally render a molten magma slice without scrolling textures */
+private fun DrawScope.drawMagmaSlice(
+    start: Float,
+    sweep: Float,
+    rect: Rect,
+    center: Offset,
+    rPx: Float
+) {
+    val wedge = arcPath(rect, start, sweep)
+    clipPath(wedge) {
+        drawArc(
+            brush = Brush.sweepGradient(colors = Lava.BaseColors, center = center),
+            startAngle = start,
+            sweepAngle = sweep,
+            useCenter = true,
+            topLeft = rect.topLeft,
+            size = rect.size
+        )
+
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(Lava.InnerGlowColor.copy(alpha = 0.32f), Color.Transparent),
+                center = center,
+                radius = rPx * 0.9f
+            ),
+            center = center,
+            radius = rPx * 0.9f,
+            blendMode = BlendMode.Plus
+        )
+
+        val highlightCenter = polarOffset(center, rPx * 0.42f, degToRad(start + sweep * 0.28f))
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(Lava.SurfaceSheen.copy(alpha = 0.38f), Color.Transparent),
+                center = highlightCenter,
+                radius = rPx * 0.38f
+            ),
+            center = highlightCenter,
+            radius = rPx * 0.38f,
+            blendMode = BlendMode.Plus
+        )
+
+        val cooledCenter = polarOffset(center, rPx * 0.73f, degToRad(start + sweep * 0.65f))
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(Color(0x99100403), Color.Transparent),
+                center = cooledCenter,
+                radius = rPx * 0.26f
+            ),
+            center = cooledCenter,
+            radius = rPx * 0.26f
+        )
+
+        Lava.Pockets.forEach { pocket ->
+            val angleRad = degToRad(start + sweep * pocket.angleFraction)
+            val pocketCenter = polarOffset(center, rPx * pocket.radialFraction, angleRad)
+            val radius = rPx * pocket.radiusFraction
+
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Lava.SurfaceSheen.copy(alpha = 0.55f * pocket.intensity),
+                        Color(0xFFFF7A2F).copy(alpha = 0.55f * pocket.intensity),
+                        Color(0xFFB32609).copy(alpha = 0.4f),
+                        Color.Transparent
+                    ),
+                    center = pocketCenter,
+                    radius = radius
+                ),
+                center = pocketCenter,
+                radius = radius
+            )
+
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.45f * pocket.intensity), Color.Transparent),
+                    center = pocketCenter,
+                    radius = radius * 0.55f
+                ),
+                center = pocketCenter,
+                radius = radius * 0.55f,
+                blendMode = BlendMode.Plus
+            )
+        }
+
+        Lava.Rifts.forEach { rift ->
+            val steps = 28
+            val path = Path()
+            var firstPoint: Offset? = null
+            var lastPoint: Offset? = null
+
+            for (i in 0..steps) {
+                val t = i / steps.toFloat()
+                val fraction = lerpFloat(rift.startFraction, rift.endFraction, t)
+                val angleRad = degToRad(start + sweep * fraction)
+                val baseRadius = rPx * lerpFloat(rift.startRadiusFraction, rift.endRadiusFraction, t)
+                val wobbleAngle = (t.toDouble() + rift.phase) * PI * rift.wobbleCount
+                val wobble = (sin(wobbleAngle) * rift.wobbleAmplitude * rPx).toFloat()
+                val point = polarOffset(center, baseRadius + wobble, angleRad)
+
+                if (i == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
+                if (firstPoint == null) firstPoint = point
+                lastPoint = point
+            }
+
+            drawPath(
+                path,
+                color = Color(0xFF4C1106).copy(alpha = 0.45f),
+                style = Stroke(width = rPx * rift.widthFraction * 1.6f, cap = StrokeCap.Round)
+            )
+
+            drawPath(
+                path,
+                color = Lava.RiftCore.copy(alpha = 0.9f),
+                style = Stroke(width = rPx * rift.widthFraction, cap = StrokeCap.Round)
+            )
+
+            if (firstPoint != null && lastPoint != null) {
+                drawPath(
+                    path,
+                    brush = Brush.linearGradient(
+                        colors = listOf(Lava.RiftHighlight.copy(alpha = 0.75f), Color.Transparent),
+                        start = firstPoint!!,
+                        end = lastPoint!!
+                    ),
+                    style = Stroke(width = rPx * rift.widthFraction * 0.55f, cap = StrokeCap.Round),
+                    blendMode = BlendMode.Plus
+                )
+            }
+        }
+
+        Lava.Sparks.forEach { spark ->
+            val angleRad = degToRad(start + sweep * spark.angleFraction)
+            val sparkCenter = polarOffset(center, rPx * spark.radialFraction, angleRad)
+            val radius = rPx * spark.radiusFraction
+
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.9f * spark.alpha),
+                        Lava.SurfaceSheen.copy(alpha = 0.75f * spark.alpha),
+                        Color.Transparent
+                    ),
+                    center = sparkCenter,
+                    radius = radius
+                ),
+                center = sparkCenter,
+                radius = radius,
+                blendMode = BlendMode.Plus
+            )
+        }
+
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(Color.Black.copy(alpha = 0.15f), Color.Transparent),
+                center = center,
+                radius = rPx * 1.05f
+            ),
+            center = center,
+            radius = rPx * 1.05f
+        )
+    }
+
+    drawArc(
+        brush = Brush.radialGradient(
+            colors = listOf(Lava.InnerGlowColor.copy(alpha = 0.18f * Lava.GlowStrength), Color.Transparent),
+            center = center,
+            radius = rPx * 0.95f
+        ),
+        startAngle = start,
+        sweepAngle = sweep,
+        useCenter = true,
+        topLeft = rect.topLeft,
+        size = rect.size,
+        blendMode = BlendMode.Plus
+    )
+
+    drawArc(
+        brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.08f), Color.Transparent)),
+        startAngle = start,
+        sweepAngle = sweep,
+        useCenter = false,
+        topLeft = rect.topLeft,
+        size = rect.size,
+        style = Stroke(width = rPx * 0.02f)
+    )
+}
+
 /** Draw a scrolling tiled image clipped to wedge; add colored glow */
 private fun DrawScope.drawTexturedSlice(
     bitmap: ImageBitmap,
@@ -296,22 +580,11 @@ fun Medallion(
     val dividerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
 
     // Assets + animation phases
-    val lavaBitmap = ImageBitmap.imageResource(Lava.BitmapRes)
     val iceBitmap = ImageBitmap.imageResource(Ice.BitmapRes)
     val rockBitmap = ImageBitmap.imageResource(Rock.BitmapRes)
     val mossBitmap = ImageBitmap.imageResource(Moss.BitmapRes)
 
     val phases = rememberInfiniteTransition(label = "textures")
-    val lavaPhase by phases.animateFloat(
-        initialValue = 0f, targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = (1000f / Lava.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(6000),
-                easing = LinearEasing
-            )
-        ),
-        label = "lavaPhase"
-    )
     val icePhase by phases.animateFloat(
         initialValue = 0f, targetValue = 1000f,
         animationSpec = infiniteRepeatable(
@@ -416,11 +689,12 @@ fun Medallion(
                             val sweep = 90f + Wheel.ArcEpsilonDeg * 2f
 
                             when (seg) {
-                                MedallionSegment.EVENTS -> drawTexturedSlice(
-                                    bitmap = lavaBitmap, start = start, sweep = sweep, rect = rect,
-                                    scale = Lava.Scale, phasePx = lavaPhase,
-                                    glowColor = Color(0xFFFF7A00), glowStrength = Lava.GlowStrength,
-                                    center = center, rPx = rPx
+                                MedallionSegment.EVENTS -> drawMagmaSlice(
+                                    start = start,
+                                    sweep = sweep,
+                                    rect = rect,
+                                    center = center,
+                                    rPx = rPx
                                 )
                                 MedallionSegment.NOTES -> drawTexturedSlice(
                                     bitmap = iceBitmap, start = start, sweep = sweep, rect = rect,
