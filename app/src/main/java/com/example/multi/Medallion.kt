@@ -80,11 +80,14 @@ private object Wheel {
 
 /** Textured styles */
 private object Lava { // EVENTS
-    const val SpeedPxPerSec = 42f
-    const val Scale = 1.15f
     const val GlowStrength = 0.55f
     const val TextOnRimBias = 0.82f
-    @DrawableRes val BitmapRes: Int = R.drawable.lava_tile
+    val Core = Color(0xFFFF7A1D)
+    val Mid = Color(0xFFD63B00)
+    val Dark = Color(0xFF210000)
+    val Highlight = Color(0xFFFFD27E)
+    val Ember = Color(0xFFFF9E3D)
+    val GlowColor = Color(0xFFFF7A00)
 }
 private object Ice { // NOTES
     const val SpeedPxPerSec = 22f
@@ -116,6 +119,21 @@ private data class SegmentDefinition(
     @StringRes val labelRes: Int,
     val icon: ImageVector,
     val color: Color
+)
+
+private data class MagmaSpot(
+    val radiusFactor: Float,
+    val angleOffset: Float,
+    val radiusScale: Float,
+    val intensity: Float
+)
+
+private data class MagmaVein(
+    val startRadius: Float,
+    val startAngleOffset: Float,
+    val endRadius: Float,
+    val endAngleOffset: Float,
+    val intensity: Float
 )
 
 /** Soft animated backdrop */
@@ -267,6 +285,124 @@ private fun DrawScope.drawTexturedSlice(
     )
 }
 
+private fun DrawScope.drawMagmaSlice(
+    start: Float,
+    sweep: Float,
+    rect: Rect,
+    center: Offset,
+    rPx: Float
+) {
+    val wedge = arcPath(rect, start, sweep)
+    val baseAngle = start + sweep / 2f
+    fun polar(radiusFactor: Float, angleOffset: Float): Offset {
+        val angle = (baseAngle + angleOffset) * (PI / 180f)
+        return Offset(
+            x = center.x + cos(angle) * rPx * radiusFactor,
+            y = center.y + sin(angle) * rPx * radiusFactor
+        )
+    }
+
+    clipPath(wedge) {
+        val baseGradient = Brush.radialGradient(
+            colors = listOf(Lava.Core, Lava.Mid, Lava.Dark),
+            center = Offset(center.x, center.y + rPx * 0.25f),
+            radius = rPx * 1.35f
+        )
+        drawRect(
+            brush = baseGradient,
+            topLeft = rect.topLeft,
+            size = rect.size
+        )
+
+        val brightSpots = listOf(
+            MagmaSpot(radiusFactor = 0.48f, angleOffset = -24f, radiusScale = 0.42f, intensity = 1f),
+            MagmaSpot(radiusFactor = 0.72f, angleOffset = 12f, radiusScale = 0.35f, intensity = 0.85f),
+            MagmaSpot(radiusFactor = 0.58f, angleOffset = 44f, radiusScale = 0.30f, intensity = 0.75f)
+        )
+        brightSpots.forEach { spot ->
+            val spotCenter = polar(spot.radiusFactor, spot.angleOffset)
+            val radius = rPx * spot.radiusScale
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Lava.Highlight.copy(alpha = 0.9f * spot.intensity),
+                        Lava.Ember.copy(alpha = 0.55f * spot.intensity),
+                        Color.Transparent
+                    ),
+                    center = spotCenter,
+                    radius = radius
+                ),
+                center = spotCenter,
+                radius = radius
+            )
+        }
+
+        val crustSpots = listOf(
+            MagmaSpot(radiusFactor = 0.82f, angleOffset = -42f, radiusScale = 0.32f, intensity = 1f),
+            MagmaSpot(radiusFactor = 0.63f, angleOffset = -6f, radiusScale = 0.28f, intensity = 0.8f),
+            MagmaSpot(radiusFactor = 0.9f, angleOffset = 28f, radiusScale = 0.36f, intensity = 0.9f)
+        )
+        crustSpots.forEach { spot ->
+            val spotCenter = polar(spot.radiusFactor, spot.angleOffset)
+            val radius = rPx * spot.radiusScale
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Lava.Dark.copy(alpha = 0.65f * spot.intensity), Color.Transparent),
+                    center = spotCenter,
+                    radius = radius
+                ),
+                center = spotCenter,
+                radius = radius
+            )
+        }
+
+        val veins = listOf(
+            MagmaVein(startRadius = 0.35f, startAngleOffset = -32f, endRadius = 0.94f, endAngleOffset = 8f, intensity = 1f),
+            MagmaVein(startRadius = 0.46f, startAngleOffset = 20f, endRadius = 0.86f, endAngleOffset = 50f, intensity = 0.9f),
+            MagmaVein(startRadius = 0.55f, startAngleOffset = -6f, endRadius = 0.78f, endAngleOffset = -50f, intensity = 0.8f)
+        )
+        veins.forEach { vein ->
+            val startPoint = polar(vein.startRadius, vein.startAngleOffset)
+            val endPoint = polar(vein.endRadius, vein.endAngleOffset)
+            drawLine(
+                color = Lava.Dark.copy(alpha = 0.55f * vein.intensity),
+                start = startPoint,
+                end = endPoint,
+                strokeWidth = rPx * 0.06f,
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = Lava.Highlight.copy(alpha = 0.7f * vein.intensity),
+                start = startPoint,
+                end = endPoint,
+                strokeWidth = rPx * 0.028f,
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = Lava.Ember.copy(alpha = 0.45f * vein.intensity),
+                start = startPoint,
+                end = endPoint,
+                strokeWidth = rPx * 0.015f,
+                cap = StrokeCap.Round
+            )
+        }
+    }
+
+    drawArc(
+        brush = Brush.radialGradient(
+            listOf(Lava.GlowColor.copy(alpha = 0.18f * Lava.GlowStrength), Color.Transparent),
+            center = center, radius = rPx * 0.95f
+        ),
+        startAngle = start, sweepAngle = sweep, useCenter = true,
+        topLeft = rect.topLeft, size = rect.size, blendMode = BlendMode.Plus
+    )
+    drawArc(
+        brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.08f), Color.Transparent)),
+        startAngle = start, sweepAngle = sweep, useCenter = false,
+        topLeft = rect.topLeft, size = rect.size, style = Stroke(width = rPx * 0.02f)
+    )
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Medallion(
@@ -296,22 +432,11 @@ fun Medallion(
     val dividerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
 
     // Assets + animation phases
-    val lavaBitmap = ImageBitmap.imageResource(Lava.BitmapRes)
     val iceBitmap = ImageBitmap.imageResource(Ice.BitmapRes)
     val rockBitmap = ImageBitmap.imageResource(Rock.BitmapRes)
     val mossBitmap = ImageBitmap.imageResource(Moss.BitmapRes)
 
     val phases = rememberInfiniteTransition(label = "textures")
-    val lavaPhase by phases.animateFloat(
-        initialValue = 0f, targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = (1000f / Lava.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(6000),
-                easing = LinearEasing
-            )
-        ),
-        label = "lavaPhase"
-    )
     val icePhase by phases.animateFloat(
         initialValue = 0f, targetValue = 1000f,
         animationSpec = infiniteRepeatable(
@@ -416,10 +541,8 @@ fun Medallion(
                             val sweep = 90f + Wheel.ArcEpsilonDeg * 2f
 
                             when (seg) {
-                                MedallionSegment.EVENTS -> drawTexturedSlice(
-                                    bitmap = lavaBitmap, start = start, sweep = sweep, rect = rect,
-                                    scale = Lava.Scale, phasePx = lavaPhase,
-                                    glowColor = Color(0xFFFF7A00), glowStrength = Lava.GlowStrength,
+                                MedallionSegment.EVENTS -> drawMagmaSlice(
+                                    start = start, sweep = sweep, rect = rect,
                                     center = center, rPx = rPx
                                 )
                                 MedallionSegment.NOTES -> drawTexturedSlice(
