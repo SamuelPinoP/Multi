@@ -4,15 +4,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.content.Intent
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -26,11 +25,9 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Note
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -43,25 +40,26 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.imageResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlin.math.PI
-import kotlin.math.cos
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.min
-import kotlin.math.sin
 import kotlin.math.sqrt
+
+import androidx.compose.runtime.mutableIntStateOf
 
 /** Motion tuning */
 private object Motion {
@@ -73,42 +71,61 @@ private object Motion {
 
 /** Visual tweaks */
 private object Wheel {
-    const val ShowDividers = false
-    const val ArcEpsilonDeg = 0.8f
+    // slight overlap to avoid hairline seams at slice boundaries
+    const val ArcEpsilonDeg = 1.2f
     const val WheelScale = 1.22f
 }
 
-/** Textured styles */
-private object Lava { // EVENTS
-    const val SpeedPxPerSec = 42f
-    const val Scale = 1.15f
+/** Texture sets (put your images in res/drawable as *_tile_1..10.png) */
+private object Lava { // EVENTS (red)
+    const val SpeedPxPerSec = 24f   // slow scroll; raise for faster
+    const val Scale = 1.15f         // tile size scale
     const val GlowStrength = 0.55f
     const val TextOnRimBias = 0.82f
-    @DrawableRes val BitmapRes: Int = R.drawable.red_tile
+    val ResIds = intArrayOf(
+        R.drawable.red_tile_1, R.drawable.red_tile_2, R.drawable.red_tile_3,
+        R.drawable.red_tile_4, R.drawable.red_tile_5, R.drawable.red_tile_6,
+        R.drawable.red_tile_7, R.drawable.red_tile_8, R.drawable.red_tile_9,
+        R.drawable.red_tile_10
+    )
 }
-private object Ice { // NOTES
-    const val SpeedPxPerSec = 22f
+private object Ice { // NOTES (blue)
+    const val SpeedPxPerSec = 14f
     const val Scale = 1.0f
     const val GlowStrength = 0.45f
     const val TextOnRimBias = 0.80f
-    @DrawableRes val BitmapRes: Int = R.drawable.blue_tile
+    val ResIds = intArrayOf(
+        R.drawable.blue_tile_1, R.drawable.blue_tile_2, R.drawable.blue_tile_3,
+        R.drawable.blue_tile_4, R.drawable.blue_tile_5, R.drawable.blue_tile_6,
+        R.drawable.blue_tile_7, R.drawable.blue_tile_8, R.drawable.blue_tile_9,
+        R.drawable.blue_tile_10
+    )
 }
-private object Rock { // CALENDAR
-    const val SpeedPxPerSec = 16f
+private object Rock { // CALENDAR (gray)
+    const val SpeedPxPerSec = 10f
     const val Scale = 1.0f
     const val GlowStrength = 0.35f
     const val TextOnRimBias = 0.80f
-    @DrawableRes val BitmapRes: Int = R.drawable.gray_tile
+    val ResIds = intArrayOf(
+        R.drawable.gray_tile_1, R.drawable.gray_tile_2, R.drawable.gray_tile_3,
+        R.drawable.gray_tile_4, R.drawable.gray_tile_5, R.drawable.gray_tile_6,
+        R.drawable.gray_tile_7, R.drawable.gray_tile_8, R.drawable.gray_tile_9,
+        R.drawable.gray_tile_10
+    )
 }
-private object Moss { // WEEKLY GOALS
-    const val SpeedPxPerSec = 14f     // very calm
-    const val Scale = 1.1f            // slightly enlarged fibers
-    const val GlowStrength = 0.40f    // soft sunlit shimmer
+private object Moss { // WEEKLY GOALS (green)
+    const val SpeedPxPerSec = 8f
+    const val Scale = 1.1f
+    const val GlowStrength = 0.40f
     const val TextOnRimBias = 0.82f
-    @DrawableRes val BitmapRes: Int = R.drawable.green_tile
+    val ResIds = intArrayOf(
+        R.drawable.green_tile_1, R.drawable.green_tile_2, R.drawable.green_tile_3,
+        R.drawable.green_tile_4, R.drawable.green_tile_5, R.drawable.green_tile_6,
+        R.drawable.green_tile_7, R.drawable.green_tile_8, R.drawable.green_tile_9,
+        R.drawable.green_tile_10
+    )
 }
 
-/** Enum describing each clickable slice. */
 enum class MedallionSegment { WEEKLY_GOALS, CALENDAR, EVENTS, NOTES }
 
 private data class SegmentDefinition(
@@ -118,29 +135,27 @@ private data class SegmentDefinition(
     val color: Color
 )
 
-/** Soft animated backdrop */
+/** Animated backdrop (soft blobs) */
 @Composable
 private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
     val c = MaterialTheme.colorScheme
-    val infinite = rememberInfiniteTransition(label = "bg")
+    val infinite = rememberInfiniteTransition()
+
     val shiftA by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
+        initialValue = 0f, targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 9000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
-        ),
-        label = "bgA"
+        )
     )
     val shiftB by infinite.animateFloat(
-        initialValue = 1f,
-        targetValue = 0f,
+        initialValue = 1f, targetValue = 0f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 11000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
-        ),
-        label = "bgB"
+        )
     )
+
     Canvas(modifier.fillMaxSize()) {
         drawRect(color = c.surface)
         val w = size.width; val h = size.height
@@ -171,15 +186,14 @@ private fun MultiWordmark(
         animationSpec = tween(durationMillis = Motion.TapScaleMs, easing = LinearEasing),
         label = "wmScale"
     )
-    val infinite = rememberInfiniteTransition(label = "wm")
+    val infinite = rememberInfiniteTransition()
     val shift by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = 540f,
+        initialValue = 0f, targetValue = 540f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = Motion.WordmarkShiftMs, easing = LinearEasing)
-        ),
-        label = "wmShift"
+        )
     )
+
     val c = MaterialTheme.colorScheme
     val fill = Brush.linearGradient(
         colors = listOf(c.primary, c.secondary, c.tertiary, c.primary),
@@ -199,11 +213,7 @@ private fun MultiWordmark(
             style = MaterialTheme.typography.displaySmall.copy(
                 brush = fill,
                 fontWeight = FontWeight.ExtraBold,
-                shadow = Shadow(
-                    color = c.primary.copy(alpha = 0.35f),
-                    offset = Offset(2f, 3f),
-                    blurRadius = 10f
-                )
+                shadow = Shadow(color = c.primary.copy(alpha = 0.35f), offset = Offset(2f, 3f), blurRadius = 10f)
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -220,8 +230,8 @@ private fun arcPath(rect: Rect, startDeg: Float, sweepDeg: Float) = Path().apply
     moveTo(rect.center.x, rect.center.y); arcTo(rect, startDeg, sweepDeg, false); close()
 }
 
-/** Draw a scrolling tiled image clipped to wedge; add colored glow */
-private fun DrawScope.drawTexturedSlice(
+/** SEAM-FREE manual tiler: tiles an ImageBitmap inside a wedge, with slow scroll + tiny overlap */
+private fun DrawScope.drawTiledSlice(
     bitmap: ImageBitmap,
     start: Float,
     sweep: Float,
@@ -232,24 +242,48 @@ private fun DrawScope.drawTexturedSlice(
     glowStrength: Float,
     center: Offset,
     rPx: Float,
-    dxFactor: Float = 0.55f,
-    dyFactor: Float = 0.35f
+    dxFactor: Float = 0.45f,   // per-slice direction multipliers
+    dyFactor: Float = 0.30f
 ) {
     val wedge = arcPath(rect, start, sweep)
+    val rawW = bitmap.width.toFloat()
+    val rawH = bitmap.height.toFloat()
+
+    // destination tile size
+    val tw = rawW * scale
+    val th = rawH * scale
+
+    // scroll offsets (phasePx comes from animations below)
+    val tx = -phasePx * dxFactor
+    val ty = -phasePx * dyFactor
+
+    // 1px overlap to kill AA gaps at tile edges
+    val pad = 1f
+
     clipPath(wedge) {
-        val rawW = bitmap.width.toFloat()
-        val rawH = bitmap.height.toFloat()
-        withTransform({
-            translate(left = -phasePx * dxFactor, top = -phasePx * dyFactor)
-            scale(scale, scale)
-        }) {
-            val cols = (size.width / (rawW * scale) + 3).toInt()
-            val rows = (size.height / (rawH * scale) + 3).toInt()
-            for (yy in -1..rows) for (xx in -1..cols) {
-                drawImage(bitmap, topLeft = Offset(xx * rawW, yy * rawH))
+        // figure out tile index range that covers the circular rect
+        val kx0 = floor((rect.left  + tx - pad) / tw).toInt()
+        val kx1 = ceil ((rect.right + tx + pad) / tw).toInt()
+        val ky0 = floor((rect.top   + ty - pad) / th).toInt()
+        val ky1 = ceil ((rect.bottom+ ty + pad) / th).toInt()
+
+        val srcSize = IntSize(rawW.toInt(), rawH.toInt())
+
+        for (ky in ky0..ky1) {
+            val top = ky * th - ty - pad
+            for (kx in kx0..kx1) {
+                val left = kx * tw - tx - pad
+                drawImage(
+                    image = bitmap,
+                    srcOffset = IntOffset.Zero,
+                    srcSize = srcSize,
+                    dstOffset = IntOffset(left.toInt(), top.toInt()),
+                    dstSize = IntSize((tw + pad * 2f).toInt(), (th + pad * 2f).toInt())
+                )
             }
         }
-        // additive glow/shimmer
+
+        // Additive inner glow for depth
         drawArc(
             brush = Brush.radialGradient(
                 listOf(glowColor.copy(alpha = 0.18f * glowStrength), Color.Transparent),
@@ -259,7 +293,8 @@ private fun DrawScope.drawTexturedSlice(
             topLeft = rect.topLeft, size = rect.size, blendMode = BlendMode.Plus
         )
     }
-    // subtle rim highlight
+
+    // soft rim highlight around slice
     drawArc(
         brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.08f), Color.Transparent)),
         startAngle = start, sweepAngle = sweep, useCenter = false,
@@ -287,60 +322,48 @@ fun Medallion(
         mutableStateOf(listOf(MedallionSegment.NOTES, MedallionSegment.WEEKLY_GOALS, MedallionSegment.EVENTS, MedallionSegment.CALENDAR))
     }
 
-    // Wheel rotation (deg)
+    // wheel rotation
     var angleDeg by rememberSaveable { mutableStateOf(0f) }
     var spinning by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-
     val outlineRing: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
-    val dividerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
 
-    // Assets + animation phases
-    val lavaBitmap = ImageBitmap.imageResource(Lava.BitmapRes)
-    val iceBitmap = ImageBitmap.imageResource(Ice.BitmapRes)
-    val rockBitmap = ImageBitmap.imageResource(Rock.BitmapRes)
-    val mossBitmap = ImageBitmap.imageResource(Moss.BitmapRes)
+    // random variant per cold launch
+    val lavaResId  by rememberSaveable { mutableIntStateOf(Lava.ResIds.random()) }
+    val iceResId   by rememberSaveable { mutableIntStateOf(Ice.ResIds.random()) }
+    val rockResId  by rememberSaveable { mutableIntStateOf(Rock.ResIds.random()) }
+    val mossResId  by rememberSaveable { mutableIntStateOf(Moss.ResIds.random()) }
 
-    val phases = rememberInfiniteTransition(label = "textures")
+    val lavaBitmap = ImageBitmap.imageResource(lavaResId)
+    val iceBitmap  = ImageBitmap.imageResource(iceResId)
+    val rockBitmap = ImageBitmap.imageResource(rockResId)
+    val mossBitmap = ImageBitmap.imageResource(mossResId)
+
+    // slow texture motion phases (in pixels)
+    val phases = rememberInfiniteTransition(label = "tile_phases")
     val lavaPhase by phases.animateFloat(
         initialValue = 0f, targetValue = 1000f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = (1000f / Lava.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(6000),
-                easing = LinearEasing
-            )
-        ),
-        label = "lavaPhase"
+            animation = tween(durationMillis = (1000f / Lava.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(6000), easing = LinearEasing)
+        ), label = "lavaPhase"
     )
     val icePhase by phases.animateFloat(
         initialValue = 0f, targetValue = 1000f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = (1000f / Ice.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(7000),
-                easing = LinearEasing
-            )
-        ),
-        label = "icePhase"
+            animation = tween(durationMillis = (1000f / Ice.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(7000), easing = LinearEasing)
+        ), label = "icePhase"
     )
     val rockPhase by phases.animateFloat(
         initialValue = 0f, targetValue = 1000f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = (1000f / Rock.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(8000),
-                easing = LinearEasing
-            )
-        ),
-        label = "rockPhase"
+            animation = tween(durationMillis = (1000f / Rock.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(8000), easing = LinearEasing)
+        ), label = "rockPhase"
     )
     val mossPhase by phases.animateFloat(
         initialValue = 0f, targetValue = 1000f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = (1000f / Moss.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(8500),
-                easing = LinearEasing
-            )
-        ),
-        label = "mossPhase"
+            animation = tween(durationMillis = (1000f / Moss.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(8500), easing = LinearEasing)
+        ), label = "mossPhase"
     )
 
     Box(
@@ -405,111 +428,65 @@ fun Medallion(
                         val rectTopLeft = Offset(center.x - rPx, center.y - rPx)
                         val rect = Rect(rectTopLeft, Size(rPx * 2f, rPx * 2f))
 
+                        // outer ring
                         drawCircle(
                             color = outlineRing, radius = rPx, center = center,
                             style = Stroke(width = with(density) { 2.dp.toPx() })
                         )
 
+                        // slices with tiled moving textures
                         repeat(4) { i ->
                             val seg = order[i]
                             val start = mids[i] + angleDeg - 45f - Wheel.ArcEpsilonDeg
                             val sweep = 90f + Wheel.ArcEpsilonDeg * 2f
 
                             when (seg) {
-                                MedallionSegment.EVENTS -> drawTexturedSlice(
-                                    bitmap = lavaBitmap, start = start, sweep = sweep, rect = rect,
+                                MedallionSegment.EVENTS -> drawTiledSlice(
+                                    bitmap = lavaBitmap,
+                                    start = start, sweep = sweep, rect = rect,
                                     scale = Lava.Scale, phasePx = lavaPhase,
                                     glowColor = Color(0xFFFF7A00), glowStrength = Lava.GlowStrength,
-                                    center = center, rPx = rPx
+                                    center = center, rPx = rPx,
+                                    dxFactor = 0.50f, dyFactor = 0.32f
                                 )
-                                MedallionSegment.NOTES -> drawTexturedSlice(
-                                    bitmap = iceBitmap, start = start, sweep = sweep, rect = rect,
+                                MedallionSegment.NOTES -> drawTiledSlice(
+                                    bitmap = iceBitmap,
+                                    start = start, sweep = sweep, rect = rect,
                                     scale = Ice.Scale, phasePx = icePhase,
                                     glowColor = Color(0xFF6AD0FF), glowStrength = Ice.GlowStrength,
-                                    center = center, rPx = rPx
+                                    center = center, rPx = rPx,
+                                    dxFactor = 0.40f, dyFactor = 0.26f
                                 )
-                                MedallionSegment.CALENDAR -> drawTexturedSlice(
-                                    bitmap = rockBitmap, start = start, sweep = sweep, rect = rect,
+                                MedallionSegment.CALENDAR -> drawTiledSlice(
+                                    bitmap = rockBitmap,
+                                    start = start, sweep = sweep, rect = rect,
                                     scale = Rock.Scale, phasePx = rockPhase,
                                     glowColor = Color(0xFF7EC8A6), glowStrength = Rock.GlowStrength,
                                     center = center, rPx = rPx,
-                                    dxFactor = 0.35f, dyFactor = 0.20f
+                                    dxFactor = 0.30f, dyFactor = 0.18f
                                 )
-                                MedallionSegment.WEEKLY_GOALS -> drawTexturedSlice(
-                                    bitmap = mossBitmap, start = start, sweep = sweep, rect = rect,
+                                MedallionSegment.WEEKLY_GOALS -> drawTiledSlice(
+                                    bitmap = mossBitmap,
+                                    start = start, sweep = sweep, rect = rect,
                                     scale = Moss.Scale, phasePx = mossPhase,
-                                    glowColor = Color(0xFF7CFF63), // fresh green highlight
-                                    glowStrength = Moss.GlowStrength,
+                                    glowColor = Color(0xFF7CFF63), glowStrength = Moss.GlowStrength,
                                     center = center, rPx = rPx,
-                                    dxFactor = 0.25f, dyFactor = 0.18f // barely moving
+                                    dxFactor = 0.24f, dyFactor = 0.16f
                                 )
                             }
                         }
 
-                        if (Wheel.ShowDividers) {
-                            repeat(4) { i2 ->
-                                val a = (mids[i2] + angleDeg) * (PI / 180f)
-                                val end = Offset(center.x + rPx * cos(a).toFloat(), center.y + rPx * sin(a).toFloat())
-                                drawLine(
-                                    color = dividerColor, start = center, end = end,
-                                    strokeWidth = with(density) { 1.5.dp.toPx() }
-                                )
-                            }
-                        }
-
+                        // faint rotating light
                         rotate(angleDeg) {
                             drawCircle(
-                                brush = Brush.radialGradient(listOf(Color.White.copy(0.08f), Color.Transparent)),
+                                brush = Brush.radialGradient(listOf(Color.White.copy(alpha = 0.08f), Color.Transparent)),
                                 radius = rPx * 0.7f, center = Offset(center.x, center.y - rPx * 0.15f)
                             )
                         }
                     }
 
-                    // Overlay: icons/labels & tap detection
+                    // Tap detection overlay
                     Box(Modifier.size(diameterDp)) {
-                        repeat(4) { i ->
-                            val seg = order[i]; val def = defs.getValue(seg)
-                            val labelColor =
-                                if (seg == MedallionSegment.EVENTS || seg == MedallionSegment.NOTES
-                                    || seg == MedallionSegment.CALENDAR || seg == MedallionSegment.WEEKLY_GOALS
-                                ) Color.White else contentColorFor(def.color)
-
-                            val theta = (mids[i] + angleDeg) * (PI / 180f)
-                            val radiusBias = when (seg) {
-                                MedallionSegment.EVENTS -> Lava.TextOnRimBias
-                                MedallionSegment.NOTES -> Ice.TextOnRimBias
-                                MedallionSegment.CALENDAR -> Rock.TextOnRimBias
-                                MedallionSegment.WEEKLY_GOALS -> Moss.TextOnRimBias
-                            }
-                            val labelRadius = radiusDp * radiusBias
-                            val dx = labelRadius * cos(theta).toFloat()
-                            val dy = labelRadius * sin(theta).toFloat()
-
-                            Column(
-                                modifier = Modifier.align(Alignment.Center).offset(x = dx, y = dy),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                // textured slices show text only (no icon)
-                                if (seg != MedallionSegment.EVENTS &&
-                                    seg != MedallionSegment.NOTES &&
-                                    seg != MedallionSegment.CALENDAR &&
-                                    seg != MedallionSegment.WEEKLY_GOALS
-                                ) {
-                                    Icon(def.icon, null, tint = labelColor)
-                                    Spacer(Modifier.height(4.dp))
-                                }
-                                Text(
-                                    text = stringResource(def.labelRes),
-                                    color = labelColor,
-                                    style = if (seg == MedallionSegment.EVENTS || seg == MedallionSegment.NOTES
-                                        || seg == MedallionSegment.CALENDAR || seg == MedallionSegment.WEEKLY_GOALS
-                                    ) MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold)
-                                    else MaterialTheme.typography.labelMedium,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-
                         val densityHere = density
                         Box(
                             Modifier.matchParentSize().pointerInput(order, angleDeg, radiusDp) {
