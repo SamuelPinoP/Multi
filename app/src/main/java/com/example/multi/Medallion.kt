@@ -236,19 +236,21 @@ private fun DrawScope.drawTexturedSlice(
     dyFactor: Float = 0.35f
 ) {
     val wedge = arcPath(rect, start, sweep)
+    val shaderMatrix = Matrix().apply {
+        translate(left = -phasePx * dxFactor, top = -phasePx * dyFactor)
+        scale(scale, scale)
+    }
+    val textureBrush = ShaderBrush(
+        ImageShader(
+            image = bitmap,
+            tileModeX = TileMode.Repeated,
+            tileModeY = TileMode.Repeated,
+            filterMode = FilterQuality.Medium,
+            localMatrix = shaderMatrix
+        )
+    )
     clipPath(wedge) {
-        val rawW = bitmap.width.toFloat()
-        val rawH = bitmap.height.toFloat()
-        withTransform({
-            translate(left = -phasePx * dxFactor, top = -phasePx * dyFactor)
-            scale(scale, scale)
-        }) {
-            val cols = (size.width / (rawW * scale) + 3).toInt()
-            val rows = (size.height / (rawH * scale) + 3).toInt()
-            for (yy in -1..rows) for (xx in -1..cols) {
-                drawImage(bitmap, topLeft = Offset(xx * rawW, yy * rawH))
-            }
-        }
+        drawRect(brush = textureBrush, size = size)
         // additive glow/shimmer
         drawArc(
             brush = Brush.radialGradient(
