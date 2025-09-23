@@ -246,7 +246,11 @@ private fun DrawScope.drawTexturedSlice(
             val cols = (size.width / (rawW * scale) + 3).toInt()
             val rows = (size.height / (rawH * scale) + 3).toInt()
             for (yy in -1..rows) for (xx in -1..cols) {
-                drawImage(bitmap, topLeft = Offset(xx * rawW, yy * rawH))
+                drawImage(
+                    bitmap,
+                    topLeft = Offset(xx * rawW, yy * rawH),
+                    filterQuality = FilterQuality.None
+                )
             }
         }
         // additive glow/shimmer
