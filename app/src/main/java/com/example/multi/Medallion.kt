@@ -73,7 +73,6 @@ private object Motion {
 
 /** Visual tweaks */
 private object Wheel {
-    const val ShowDividers = false
     const val ArcEpsilonDeg = 0.8f
     const val WheelScale = 1.22f
 }
@@ -293,8 +292,6 @@ fun Medallion(
     val scope = rememberCoroutineScope()
 
     val outlineRing: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
-    val dividerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-
     // Assets + animation phases
     val lavaBitmap = ImageBitmap.imageResource(Lava.BitmapRes)
     val iceBitmap = ImageBitmap.imageResource(Ice.BitmapRes)
@@ -442,17 +439,6 @@ fun Medallion(
                                     glowStrength = Moss.GlowStrength,
                                     center = center, rPx = rPx,
                                     dxFactor = 0.25f, dyFactor = 0.18f // barely moving
-                                )
-                            }
-                        }
-
-                        if (Wheel.ShowDividers) {
-                            repeat(4) { i2 ->
-                                val a = (mids[i2] + angleDeg) * (PI / 180f)
-                                val end = Offset(center.x + rPx * cos(a).toFloat(), center.y + rPx * sin(a).toFloat())
-                                drawLine(
-                                    color = dividerColor, start = center, end = end,
-                                    strokeWidth = with(density) { 1.5.dp.toPx() }
                                 )
                             }
                         }
