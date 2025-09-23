@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -46,6 +47,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -54,9 +56,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import kotlin.math.PI
 import kotlin.math.ceil
+import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.min
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 import androidx.compose.runtime.mutableIntStateOf
@@ -84,7 +89,7 @@ private object Lava { // EVENTS (red)
     const val TextOnRimBias = 0.82f
     val ResIds = intArrayOf(
         R.drawable.red_tile_1, R.drawable.red_tile_2, R.drawable.red_tile_3,
-        R.drawable.red_tile_4, R.drawable.red_tile_5, R.drawable.red_tile_6,
+        R.drawable.red_tile_4, R.drawable.red_tile_5,
         R.drawable.red_tile_7, R.drawable.red_tile_8, R.drawable.red_tile_9,
         R.drawable.red_tile_10
     )
