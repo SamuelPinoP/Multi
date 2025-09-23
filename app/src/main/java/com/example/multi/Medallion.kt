@@ -84,28 +84,28 @@ private object Lava { // EVENTS
     const val Scale = 1.15f
     const val GlowStrength = 0.55f
     const val TextOnRimBias = 0.82f
-    @DrawableRes val BitmapRes: Int = R.drawable.lava_tile
+    @DrawableRes val BitmapRes: Int = R.drawable.red_tile
 }
 private object Ice { // NOTES
     const val SpeedPxPerSec = 22f
     const val Scale = 1.0f
     const val GlowStrength = 0.45f
     const val TextOnRimBias = 0.80f
-    @DrawableRes val BitmapRes: Int = R.drawable.ice_tile
+    @DrawableRes val BitmapRes: Int = R.drawable.blue_tile
 }
 private object Rock { // CALENDAR
     const val SpeedPxPerSec = 16f
     const val Scale = 1.0f
     const val GlowStrength = 0.35f
     const val TextOnRimBias = 0.80f
-    @DrawableRes val BitmapRes: Int = R.drawable.rock_tile
+    @DrawableRes val BitmapRes: Int = R.drawable.gray_tile
 }
 private object Moss { // WEEKLY GOALS
     const val SpeedPxPerSec = 14f     // very calm
     const val Scale = 1.1f            // slightly enlarged fibers
     const val GlowStrength = 0.40f    // soft sunlit shimmer
     const val TextOnRimBias = 0.82f
-    @DrawableRes val BitmapRes: Int = R.drawable.moss_tile
+    @DrawableRes val BitmapRes: Int = R.drawable.green_tile
 }
 
 /** Enum describing each clickable slice. */
