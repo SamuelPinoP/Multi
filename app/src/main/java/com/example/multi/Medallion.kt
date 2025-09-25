@@ -20,6 +20,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -63,8 +64,11 @@ import kotlin.math.floor
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlin.math.roundToInt
 
 import androidx.compose.runtime.mutableIntStateOf
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /** Motion tuning */
 private object Motion {
@@ -323,6 +327,13 @@ fun Medallion(
         )
     }
 
+    val calendarDef = defs.getValue(MedallionSegment.CALENDAR)
+    val calendarContentColor = contentColorFor(calendarDef.color)
+    val today = LocalDate.now()
+    val dayOfWeekFormatter = DateTimeFormatter.ofPattern("EEE")
+    val monthDayFormatter = DateTimeFormatter.ofPattern("MMM d")
+    val calendarSubtitle = "${today.format(dayOfWeekFormatter)} • ${today.format(monthDayFormatter)}"
+
     var order by rememberSaveable {
         mutableStateOf(listOf(MedallionSegment.NOTES, MedallionSegment.WEEKLY_GOALS, MedallionSegment.EVENTS, MedallionSegment.CALENDAR))
     }
@@ -490,8 +501,45 @@ fun Medallion(
                         }
                     }
 
-                    // Tap detection overlay
+                    // Tap detection overlay & calendar label
                     Box(Modifier.size(diameterDp)) {
+                        val calendarIndex = order.indexOf(MedallionSegment.CALENDAR)
+                        if (calendarIndex >= 0) {
+                            val midAngle = mids[calendarIndex] + angleDeg
+                            val angleRad = Math.toRadians(midAngle.toDouble())
+                            val radiusPx = with(density) { radiusDp.toPx() }
+                            val labelRadiusPx = radiusPx * 0.58f
+                            val offsetX = (cos(angleRad) * labelRadiusPx).roundToInt()
+                            val offsetY = (sin(angleRad) * labelRadiusPx).roundToInt()
+
+                            Surface(
+                                shape = RoundedCornerShape(18.dp),
+                                color = calendarDef.color.copy(alpha = 0.92f),
+                                contentColor = calendarContentColor,
+                                tonalElevation = 6.dp,
+                                shadowElevation = 6.dp,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .offset { IntOffset(offsetX, offsetY) }
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(calendarDef.labelRes),
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+                                    )
+                                    Text(
+                                        text = calendarSubtitle,
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                                        color = calendarContentColor.copy(alpha = 0.9f)
+                                    )
+                                }
+                            }
+                        }
+
                         val densityHere = density
                         Box(
                             Modifier.matchParentSize().pointerInput(order, angleDeg, radiusDp) {
