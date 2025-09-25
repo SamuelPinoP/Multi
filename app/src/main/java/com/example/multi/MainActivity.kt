@@ -18,6 +18,7 @@ import com.example.multi.data.EventDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.example.multi.util.LastVisitedPreferences
 
 /**
  * Main entry point of the application.
@@ -39,7 +40,11 @@ class MainActivity : ComponentActivity() {
         }
         scheduleDailyActivityReminder(this)
         if (savedInstanceState == null) {
-            startActivity(Intent(this, NotesActivity::class.java))
+            val target = LastVisitedPreferences.getLastVisitedActivity(this)
+                ?: NotesActivity::class.java
+            if (target != this::class.java) {
+                startActivity(Intent(this, target))
+            }
         }
         enableEdgeToEdge()
         setContent {

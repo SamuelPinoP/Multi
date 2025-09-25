@@ -2,6 +2,7 @@ package com.example.multi
 
 import android.content.Intent
 import androidx.activity.ComponentActivity
+import com.example.multi.util.LastVisitedPreferences
 
 /**
  * Activity that redirects the user to [MainActivity] when there is no
@@ -22,5 +23,10 @@ open class BaseActivity : ComponentActivity() {
 
     override fun onBackPressed() {
         navigateBackOrFinish()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        LastVisitedPreferences.setLastVisitedActivity(this, this::class.java)
     }
 }
