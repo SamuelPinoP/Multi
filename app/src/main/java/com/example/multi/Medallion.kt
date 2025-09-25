@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -56,6 +57,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.graphics.toArgb
+import android.graphics.Paint
+import android.graphics.Typeface
 import kotlin.math.PI
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -65,6 +69,9 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 import androidx.compose.runtime.mutableIntStateOf
+import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
 
 /** Motion tuning */
 private object Motion {
@@ -423,6 +430,10 @@ fun Medallion(
                 contentAlignment = Alignment.Center
             ) {
                 if (containerDp > 0.dp) {
+                    val calendarLabel = stringResource(R.string.label_calendar)
+                    val today = LocalDate.now()
+                    val monthName = today.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
+                    val calendarDateText = "$monthName ${today.dayOfMonth}"
                     val radiusDp: Dp = containerDp * Wheel.WheelScale / 2f
                     val diameterDp: Dp = radiusDp * 2f
                     val mids = listOf(270f, 0f, 90f, 180f)
@@ -462,14 +473,53 @@ fun Medallion(
                                     center = center, rPx = rPx,
                                     dxFactor = 0.40f, dyFactor = 0.26f
                                 )
-                                MedallionSegment.CALENDAR -> drawTiledSlice(
-                                    bitmap = rockBitmap,
-                                    start = start, sweep = sweep, rect = rect,
-                                    scale = Rock.Scale, phasePx = rockPhase,
-                                    glowColor = Color(0xFF7EC8A6), glowStrength = Rock.GlowStrength,
-                                    center = center, rPx = rPx,
-                                    dxFactor = 0.30f, dyFactor = 0.18f
-                                )
+                                MedallionSegment.CALENDAR -> {
+                                    drawTiledSlice(
+                                        bitmap = rockBitmap,
+                                        start = start, sweep = sweep, rect = rect,
+                                        scale = Rock.Scale, phasePx = rockPhase,
+                                        glowColor = Color(0xFF7EC8A6), glowStrength = Rock.GlowStrength,
+                                        center = center, rPx = rPx,
+                                        dxFactor = 0.30f, dyFactor = 0.18f
+                                    )
+
+                                    val angleDegCenter = start + sweep / 2f
+                                    val angleRad = Math.toRadians(angleDegCenter.toDouble())
+                                    val textRadius = rPx * 0.56f
+                                    val textCenter = Offset(
+                                        x = center.x + cos(angleRad).toFloat() * textRadius,
+                                        y = center.y + sin(angleRad).toFloat() * textRadius
+                                    )
+
+                                    drawIntoCanvas { canvas ->
+                                        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                                            color = Color.White.copy(alpha = 0.95f).toArgb()
+                                            textAlign = Paint.Align.CENTER
+                                            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                                            textSize = rPx * 0.14f
+                                            setShadowLayer(rPx * 0.06f, 0f, rPx * 0.025f, Color.Black.copy(alpha = 0.35f).toArgb())
+                                        }
+                                        val datePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                                            color = Color.White.copy(alpha = 0.88f).toArgb()
+                                            textAlign = Paint.Align.CENTER
+                                            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                                            textSize = rPx * 0.1f
+                                            setShadowLayer(rPx * 0.05f, 0f, rPx * 0.02f, Color.Black.copy(alpha = 0.3f).toArgb())
+                                        }
+
+                                        val lineSpacing = rPx * 0.02f
+                                        val labelHeight = labelPaint.descent() - labelPaint.ascent()
+                                        val dateHeight = datePaint.descent() - datePaint.ascent()
+                                        val totalHeight = labelHeight + lineSpacing + dateHeight
+                                        val topY = textCenter.y - totalHeight / 2f
+                                        val labelBaseline = topY - labelPaint.ascent()
+                                        val dateBaseline = labelBaseline + labelHeight + lineSpacing - datePaint.ascent()
+
+                                        val nativeCanvas = canvas.nativeCanvas
+                                        nativeCanvas.drawText(calendarLabel, textCenter.x, labelBaseline, labelPaint)
+                                        nativeCanvas.drawText(calendarDateText, textCenter.x, dateBaseline, datePaint)
+                                    }
+                                }
                                 MedallionSegment.WEEKLY_GOALS -> drawTiledSlice(
                                     bitmap = mossBitmap,
                                     start = start, sweep = sweep, rect = rect,
