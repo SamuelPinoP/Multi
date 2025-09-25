@@ -1,5 +1,6 @@
 package com.example.multi
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +66,8 @@ const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
 const val EXTRA_NOTE_ATTACHMENT_URI = "extra_note_attachment_uri"
 
 class NoteEditorActivity : SegmentActivity("Note") {
+    override fun getRootActivityClass(): Class<out ComponentActivity> = NotesActivity::class.java
+
     private var noteId: Long = 0L
     private var noteCreated: Long = System.currentTimeMillis()
     private var noteLastOpened: Long = System.currentTimeMillis()
