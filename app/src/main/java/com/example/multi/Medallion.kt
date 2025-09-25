@@ -20,7 +20,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -29,7 +28,6 @@ import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -328,7 +326,7 @@ fun Medallion(
     }
 
     val calendarDef = defs.getValue(MedallionSegment.CALENDAR)
-    val calendarContentColor = contentColorFor(calendarDef.color)
+    val calendarContentColor = MaterialTheme.colorScheme.onSurface
     val today = LocalDate.now()
     val dayOfWeekFormatter = DateTimeFormatter.ofPattern("EEE")
     val monthDayFormatter = DateTimeFormatter.ofPattern("MMM d")
@@ -512,12 +510,7 @@ fun Medallion(
                             val offsetX = (cos(angleRad) * labelRadiusPx).roundToInt()
                             val offsetY = (sin(angleRad) * labelRadiusPx).roundToInt()
 
-                            Surface(
-                                shape = RoundedCornerShape(18.dp),
-                                color = calendarDef.color.copy(alpha = 0.92f),
-                                contentColor = calendarContentColor,
-                                tonalElevation = 6.dp,
-                                shadowElevation = 6.dp,
+                            Box(
                                 modifier = Modifier
                                     .align(Alignment.Center)
                                     .offset { IntOffset(offsetX, offsetY) }
