@@ -37,11 +37,12 @@ import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.ThemePreferences
 
 open class SegmentActivity(
-    private val segmentTitle: String
+    private val defaultSegmentTitle: String
 ) : BaseActivity() {
+    private val segmentTitleState = mutableStateOf(defaultSegmentTitle)
     @Composable
     open fun SegmentContent() {
-        Text(segmentTitle)
+        Text(segmentTitleState.value)
     }
 
     @Composable
@@ -50,6 +51,22 @@ open class SegmentActivity(
     @Composable
     open fun OverflowMenuItems(onDismiss: () -> Unit) {}
 
+    protected open fun handleSegmentBack(): Boolean = false
+
+    protected fun setSegmentTitle(title: String) {
+        segmentTitleState.value = title
+    }
+
+    protected fun resetSegmentTitle() {
+        segmentTitleState.value = defaultSegmentTitle
+    }
+
+    override fun onBackPressed() {
+        if (!handleSegmentBack()) {
+            super.onBackPressed()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -57,8 +74,12 @@ open class SegmentActivity(
             val darkThemeState = remember { mutableStateOf(ThemePreferences.isDarkTheme(this)) }
             MultiTheme(darkTheme = darkThemeState.value) {
                 SegmentScreen(
-                    title = segmentTitle,
-                    onBack = { navigateBackOrFinish() },
+                    title = segmentTitleState.value,
+                    onBack = {
+                        if (!handleSegmentBack()) {
+                            navigateBackOrFinish()
+                        }
+                    },
                     onClose = { finishAffinity() },
                     actions = {
                         ThemeToggleAction(darkThemeState) { OverflowMenuItems(it) }
