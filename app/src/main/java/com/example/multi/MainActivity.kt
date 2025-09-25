@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -38,6 +39,9 @@ class MainActivity : ComponentActivity() {
             }
         }
         scheduleDailyActivityReminder(this)
+        if (savedInstanceState == null) {
+            startActivity(Intent(this, NoteEditorActivity::class.java))
+        }
         enableEdgeToEdge()
         setContent {
             MultiTheme(darkTheme = ThemePreferences.isDarkTheme(this)) {
