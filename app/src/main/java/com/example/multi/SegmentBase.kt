@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +40,8 @@ import com.example.multi.ThemePreferences
 open class SegmentActivity(
     private val segmentTitle: String
 ) : BaseActivity() {
+    private var segmentTitleState: MutableState<String>? = null
+
     @Composable
     open fun SegmentContent() {
         Text(segmentTitle)
@@ -50,15 +53,34 @@ open class SegmentActivity(
     @Composable
     open fun OverflowMenuItems(onDismiss: () -> Unit) {}
 
+    protected open fun onToolbarBack(): Boolean = false
+
+    protected fun setSegmentTitle(title: String) {
+        segmentTitleState?.value = title
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             val darkThemeState = remember { mutableStateOf(ThemePreferences.isDarkTheme(this)) }
+            val titleState = remember { mutableStateOf(segmentTitle) }
+            segmentTitleState = titleState
+            DisposableEffect(Unit) {
+                onDispose {
+                    if (segmentTitleState === titleState) {
+                        segmentTitleState = null
+                    }
+                }
+            }
             MultiTheme(darkTheme = darkThemeState.value) {
                 SegmentScreen(
-                    title = segmentTitle,
-                    onBack = { navigateBackOrFinish() },
+                    title = titleState.value,
+                    onBack = {
+                        if (!onToolbarBack()) {
+                            navigateBackOrFinish()
+                        }
+                    },
                     onClose = { finishAffinity() },
                     actions = {
                         ThemeToggleAction(darkThemeState) { OverflowMenuItems(it) }
@@ -68,6 +90,12 @@ open class SegmentActivity(
                     SegmentContent()
                 }
             }
+        }
+    }
+
+    override fun onBackPressed() {
+        if (!onToolbarBack()) {
+            super.onBackPressed()
         }
     }
 }

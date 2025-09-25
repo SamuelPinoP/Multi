@@ -28,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,11 +61,23 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.toEntity
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+
+private object NotesRoutes {
+    const val LIST = "notes/list"
+    const val TRASH = "trash/notes"
+}
 
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
     private val notesLoaded = mutableStateOf(false)
     private var importRequest: (() -> Unit)? = null
+    private var notesNavController: NavHostController? = null
+    private var currentNotesRoute by mutableStateOf(NotesRoutes.LIST)
 
     override fun onResume() {
         super.onResume()
@@ -81,6 +95,44 @@ class NotesActivity : SegmentActivity("Notes") {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     override fun SegmentContent() {
+        val navController = rememberNavController()
+        DisposableEffect(navController) {
+            notesNavController = navController
+            onDispose {
+                if (notesNavController === navController) {
+                    notesNavController = null
+                }
+            }
+        }
+        val backStackEntry by navController.currentBackStackEntryAsState()
+        val route = backStackEntry?.destination?.route ?: NotesRoutes.LIST
+
+        LaunchedEffect(route) {
+            currentNotesRoute = route
+            val title = if (route == NotesRoutes.TRASH) "Trash" else "Notes"
+            setSegmentTitle(title)
+            if (route != NotesRoutes.LIST) {
+                importRequest = null
+            }
+        }
+
+        NavHost(
+            navController = navController,
+            startDestination = NotesRoutes.LIST,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            composable(NotesRoutes.LIST) {
+                NotesListScreen()
+            }
+            composable(NotesRoutes.TRASH) {
+                NotesTrashScreen()
+            }
+        }
+    }
+
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    private fun NotesListScreen() {
         val context = LocalContext.current
         val notes = remember { this@NotesActivity.notes }
         val notesLoaded = remember { this@NotesActivity.notesLoaded }
@@ -115,7 +167,15 @@ class NotesActivity : SegmentActivity("Notes") {
                 }
             }
         }
-        importRequest = { importLauncher.launch(arrayOf("*/*")) }
+        val currentImportRequest: () -> Unit = { importLauncher.launch(arrayOf("*/*")) }
+        importRequest = currentImportRequest
+        DisposableEffect(Unit) {
+            onDispose {
+                if (importRequest === currentImportRequest) {
+                    importRequest = null
+                }
+            }
+        }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -390,20 +450,50 @@ class NotesActivity : SegmentActivity("Notes") {
 
     @Composable
     override fun OverflowMenuItems(onDismiss: () -> Unit) {
-        val context = LocalContext.current
-        DropdownMenuItem(
-            text = { M3Text("Import") },
-            onClick = {
-                onDismiss()
-                importRequest?.invoke()
-            }
-        )
-        DropdownMenuItem(
-            text = { M3Text("Trash") },
-            onClick = {
-                onDismiss()
-                context.startActivity(Intent(context, TrashbinActivity::class.java))
-            }
-        )
+        if (currentNotesRoute == NotesRoutes.LIST) {
+            DropdownMenuItem(
+                text = { M3Text("Import") },
+                onClick = {
+                    onDismiss()
+                    importRequest?.invoke()
+                }
+            )
+            DropdownMenuItem(
+                text = { M3Text("Trash") },
+                onClick = {
+                    onDismiss()
+                    if (currentNotesRoute != NotesRoutes.TRASH) {
+                        notesNavController?.navigate(NotesRoutes.TRASH)
+                    }
+                }
+            )
+        } else {
+            DropdownMenuItem(
+                text = { M3Text("Notes") },
+                onClick = {
+                    onDismiss()
+                    if (notesNavController?.popBackStack() != true) {
+                        currentNotesRoute = NotesRoutes.LIST
+                    }
+                }
+            )
+        }
+    }
+
+    override fun onToolbarBack(): Boolean {
+        val controller = notesNavController
+        return if (controller != null && currentNotesRoute != NotesRoutes.LIST) {
+            controller.popBackStack()
+        } else {
+            false
+        }
+    }
+
+    override fun onBackPressed() {
+        val controller = notesNavController
+        if (controller != null && currentNotesRoute != NotesRoutes.LIST && controller.popBackStack()) {
+            return
+        }
+        super.onBackPressed()
     }
 }
