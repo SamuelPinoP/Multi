@@ -1,9 +1,8 @@
 /*
 ********************DO LITTLE BY LITTLE********************
 *** Create a single activity and multiple screens***
-*********************PRIORITY*************************
+*********************PRIORITY*********************
 
-1- Improve the design of the text that says Multi it is too simple add beauty and modernity.
 3- Add a description that says: You can create an Event/ Weekly Goal the first time the user opens
 the app. Like a tutorial. After the user has clicked the tutorial then it disappears. Put it in the
 settings.

@@ -522,7 +522,8 @@ fun Medallion(
                             ) {
                                 Text(
                                     text = stringResource(calendarDef.labelRes),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = calendarContentColor.copy(alpha = 0.9f)
                                 )
                                 Text(
                                     text = calendarSubtitle,
