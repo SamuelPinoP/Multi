@@ -39,6 +39,12 @@ import com.example.multi.ThemePreferences
 open class SegmentActivity(
     private val segmentTitle: String
 ) : BaseActivity() {
+    /**
+     * Called when the user presses the back button (system or toolbar).
+     * Return true to consume the event.
+     */
+    open fun handleBackInSegment(): Boolean = false
+
     @Composable
     open fun SegmentContent() {
         Text(segmentTitle)
@@ -58,7 +64,11 @@ open class SegmentActivity(
             MultiTheme(darkTheme = darkThemeState.value) {
                 SegmentScreen(
                     title = segmentTitle,
-                    onBack = { navigateBackOrFinish() },
+                    onBack = {
+                        if (!handleBackInSegment()) {
+                            navigateBackOrFinish()
+                        }
+                    },
                     onClose = { finishAffinity() },
                     actions = {
                         ThemeToggleAction(darkThemeState) { OverflowMenuItems(it) }
@@ -68,6 +78,12 @@ open class SegmentActivity(
                     SegmentContent()
                 }
             }
+        }
+    }
+
+    override fun onBackPressed() {
+        if (!handleBackInSegment()) {
+            super.onBackPressed()
         }
     }
 }

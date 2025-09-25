@@ -97,9 +97,6 @@
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize|stateVisible" />
         <activity
-            android:name=".TrashbinActivity"
-            android:screenOrientation="portrait" />
-        <activity
             android:name=".EventTrashActivity"
             android:screenOrientation="portrait" />
     </application>
