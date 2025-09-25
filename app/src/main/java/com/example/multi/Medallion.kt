@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -328,7 +327,7 @@ fun Medallion(
     }
 
     val calendarDef = defs.getValue(MedallionSegment.CALENDAR)
-    val calendarContentColor = contentColorFor(calendarDef.color)
+    val calendarLabelColor = MaterialTheme.colorScheme.onSurface
     val today = LocalDate.now()
     val dayOfWeekFormatter = DateTimeFormatter.ofPattern("EEE")
     val monthDayFormatter = DateTimeFormatter.ofPattern("MMM d")
@@ -512,31 +511,23 @@ fun Medallion(
                             val offsetX = (cos(angleRad) * labelRadiusPx).roundToInt()
                             val offsetY = (sin(angleRad) * labelRadiusPx).roundToInt()
 
-                            Surface(
-                                shape = RoundedCornerShape(18.dp),
-                                color = calendarDef.color.copy(alpha = 0.92f),
-                                contentColor = calendarContentColor,
-                                tonalElevation = 6.dp,
-                                shadowElevation = 6.dp,
+                            Column(
                                 modifier = Modifier
                                     .align(Alignment.Center)
-                                    .offset { IntOffset(offsetX, offsetY) }
+                                    .offset { IntOffset(offsetX, offsetY) },
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                Column(
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(calendarDef.labelRes),
-                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
-                                    )
-                                    Text(
-                                        text = calendarSubtitle,
-                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                        color = calendarContentColor.copy(alpha = 0.9f)
-                                    )
-                                }
+                                Text(
+                                    text = stringResource(calendarDef.labelRes),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = calendarLabelColor
+                                )
+                                Text(
+                                    text = calendarSubtitle,
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
 
