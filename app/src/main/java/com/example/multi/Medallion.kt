@@ -3,7 +3,6 @@ package com.example.multi
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -44,7 +43,6 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.stringResource
@@ -522,20 +520,14 @@ fun Medallion(
 }
 
 /** Whole screen scaffold */
+/**
+ * Displays the animated medallion and notifies when a segment is selected.
+ */
 @Composable
-fun MedallionScreen() {
-    val context = LocalContext.current
+fun MedallionScreen(onNavigateToSegment: (MedallionSegment) -> Unit) {
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Medallion { segment ->
-                val cls = when (segment) {
-                    MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                    MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                    MedallionSegment.EVENTS -> EventsActivity::class.java
-                    MedallionSegment.NOTES -> NotesActivity::class.java
-                }
-                context.startActivity(Intent(context, cls))
-            }
+            Medallion(onSegmentClick = onNavigateToSegment)
         }
     }
 }
