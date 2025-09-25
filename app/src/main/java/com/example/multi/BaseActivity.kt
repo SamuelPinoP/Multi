@@ -20,6 +20,16 @@ open class BaseActivity : ComponentActivity() {
         finish()
     }
 
+    /** Returns whether this activity should be restored when reopening the app. */
+    protected open fun shouldRememberAsLastVisited(): Boolean = true
+
+    override fun onResume() {
+        super.onResume()
+        if (shouldRememberAsLastVisited()) {
+            LastVisitedActivityPrefs.setLastActivity(this)
+        }
+    }
+
     override fun onBackPressed() {
         navigateBackOrFinish()
     }

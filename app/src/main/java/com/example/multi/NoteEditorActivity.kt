@@ -65,6 +65,8 @@ const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
 const val EXTRA_NOTE_ATTACHMENT_URI = "extra_note_attachment_uri"
 
 class NoteEditorActivity : SegmentActivity("Note") {
+    override fun shouldRememberAsLastVisited(): Boolean = false
+
     private var noteId: Long = 0L
     private var noteCreated: Long = System.currentTimeMillis()
     private var noteLastOpened: Long = System.currentTimeMillis()
