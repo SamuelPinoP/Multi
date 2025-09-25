@@ -62,16 +62,19 @@ import com.example.multi.data.toEntity
 
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
+    private val notesLoaded = mutableStateOf(false)
     private var importRequest: (() -> Unit)? = null
 
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch {
+            notesLoaded.value = false
             val db = EventDatabase.getInstance(this@NotesActivity)
             val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
             withContext(Dispatchers.IO) { db.trashedNoteDao().deleteExpired(threshold) }
             val stored = withContext(Dispatchers.IO) { db.noteDao().getNotes() }
             notes.clear(); notes.addAll(stored.map { it.toModel() })
+            notesLoaded.value = true
         }
     }
 
@@ -80,6 +83,7 @@ class NotesActivity : SegmentActivity("Notes") {
     override fun SegmentContent() {
         val context = LocalContext.current
         val notes = remember { this@NotesActivity.notes }
+        val notesLoaded = remember { this@NotesActivity.notesLoaded }
         var selectionMode by remember { mutableStateOf(false) }
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
@@ -119,7 +123,7 @@ class NotesActivity : SegmentActivity("Notes") {
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            if (notes.isEmpty()) {
+            if (notesLoaded.value && notes.isEmpty()) {
                 val composition by rememberLottieComposition(
                     LottieCompositionSpec.RawRes(R.raw.notebook)
                 )
