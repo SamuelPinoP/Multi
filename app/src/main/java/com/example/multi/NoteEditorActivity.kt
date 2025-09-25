@@ -8,13 +8,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.material3.MaterialTheme
@@ -113,13 +115,21 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
+            val textFocusRequester = remember { FocusRequester() }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
-            
+
             val density = LocalDensity.current
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
+
+            val shouldFocusBody = !readOnly && headerState.value.isEmpty() && textState.value.text.isEmpty()
+            LaunchedEffect(shouldFocusBody) {
+                if (shouldFocusBody) {
+                    textFocusRequester.requestFocus()
+                }
+            }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly) {
@@ -253,7 +263,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     Box(modifier = Modifier.weight(1f)) {
                         if (textState.value.text.isEmpty()) {
                             Text(
-                                text = "Start writing...",
+                                text = "Your note goes here...",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -271,6 +281,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             modifier = Modifier
                                 .fillMaxSize()
                                 .bringIntoViewRequester(textBringIntoView)
+                                .focusRequester(textFocusRequester)
                                 .onFocusEvent {
                                     if (it.isFocused) {
                                         scope.launch {

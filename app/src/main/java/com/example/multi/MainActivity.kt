@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -29,6 +30,9 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) {
+            startActivity(Intent(this, NoteEditorActivity::class.java))
+        }
         lifecycleScope.launch {
             val db = EventDatabase.getInstance(this@MainActivity)
             val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
