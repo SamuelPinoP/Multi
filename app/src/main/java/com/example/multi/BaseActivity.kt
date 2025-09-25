@@ -9,6 +9,9 @@ import androidx.activity.ComponentActivity
  * when opened from a notification or any entry point without history.
  */
 open class BaseActivity : ComponentActivity() {
+    /** Indicates whether this activity should be restored as the last visited. */
+    protected open fun shouldRememberAsLastVisited(): Boolean = true
+
     /**
      * Handles navigation when the user presses back. If this activity is the
      * root of the task, [MainActivity] is launched instead of closing.
@@ -22,5 +25,12 @@ open class BaseActivity : ComponentActivity() {
 
     override fun onBackPressed() {
         navigateBackOrFinish()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (shouldRememberAsLastVisited()) {
+            LastVisitedActivityPreferences.remember(this)
+        }
     }
 }

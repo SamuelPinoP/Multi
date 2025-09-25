@@ -39,7 +39,12 @@ class MainActivity : ComponentActivity() {
         }
         scheduleDailyActivityReminder(this)
         if (savedInstanceState == null) {
-            startActivity(Intent(this, NotesActivity::class.java))
+            val lastVisited = LastVisitedActivityPreferences
+                .getLastActivityClass(this)
+                ?: NotesActivity::class.java
+            if (lastVisited != MainActivity::class.java) {
+                startActivity(Intent(this, lastVisited))
+            }
         }
         enableEdgeToEdge()
         setContent {
