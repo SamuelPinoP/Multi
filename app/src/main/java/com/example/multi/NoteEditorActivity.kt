@@ -1,5 +1,6 @@
 package com.example.multi
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -102,6 +103,8 @@ class NoteEditorActivity : SegmentActivity("Note") {
         }
         super.onCreate(savedInstanceState)
     }
+
+    override fun fallbackActivity(): Class<out ComponentActivity> = NotesActivity::class.java
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable

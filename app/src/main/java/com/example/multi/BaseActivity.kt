@@ -15,10 +15,17 @@ open class BaseActivity : ComponentActivity() {
      */
     protected fun navigateBackOrFinish() {
         if (isTaskRoot) {
-            startActivity(Intent(this, MainActivity::class.java))
+            startActivity(Intent(this, fallbackActivity()))
         }
         finish()
     }
+
+    /**
+     * Provides the fallback activity that should be launched when this
+     * activity is the root of the task and the user navigates back. Subclasses
+     * can override this to customize the back navigation destination.
+     */
+    protected open fun fallbackActivity(): Class<out ComponentActivity> = MainActivity::class.java
 
     override fun onBackPressed() {
         navigateBackOrFinish()
