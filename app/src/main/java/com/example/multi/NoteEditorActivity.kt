@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +36,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -51,7 +53,6 @@ import com.example.multi.util.shareAsTxt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.delay
 
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
@@ -113,6 +114,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
+            val textFocusRequester = remember { FocusRequester() }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
             
@@ -120,6 +122,11 @@ class NoteEditorActivity : SegmentActivity("Note") {
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
+            LaunchedEffect(Unit) {
+                if (!readOnly) {
+                    textFocusRequester.requestFocus()
+                }
+            }
 
             LaunchedEffect(headerState.value, textState.value) {
                 if (!readOnly) {
@@ -253,7 +260,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                     Box(modifier = Modifier.weight(1f)) {
                         if (textState.value.text.isEmpty()) {
                             Text(
-                                text = "Start writing...",
+                                text = "Your Note goes here...",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -270,6 +277,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             enabled = !readOnly,
                             modifier = Modifier
                                 .fillMaxSize()
+                                .focusRequester(textFocusRequester)
                                 .bringIntoViewRequester(textBringIntoView)
                                 .onFocusEvent {
                                     if (it.isFocused) {
