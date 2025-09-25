@@ -20,6 +20,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -63,8 +64,12 @@ import kotlin.math.floor
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlin.math.roundToInt
 
 import androidx.compose.runtime.mutableIntStateOf
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /** Motion tuning */
 private object Motion {
@@ -490,9 +495,58 @@ fun Medallion(
                         }
                     }
 
-                    // Tap detection overlay
+                    // Tap detection overlay + calendar label badge
                     Box(Modifier.size(diameterDp)) {
                         val densityHere = density
+                        val radiusPx = with(densityHere) { radiusDp.toPx() }
+
+                        val calendarIndex = order.indexOf(MedallionSegment.CALENDAR)
+                        if (calendarIndex != -1) {
+                            val calendarDef = defs.getValue(MedallionSegment.CALENDAR)
+                            val angle = (mids[calendarIndex] + angleDeg + 360f) % 360f
+                            val angleRad = Math.toRadians(angle.toDouble())
+                            val badgeRadius = radiusPx * Rock.TextOnRimBias
+                            val offsetX = (cos(angleRad) * badgeRadius).roundToInt()
+                            val offsetY = (sin(angleRad) * badgeRadius).roundToInt()
+
+                            val badgeColor = calendarDef.color.copy(alpha = 0.88f)
+                            val badgeContentColor = contentColorFor(calendarDef.color)
+                            val today = LocalDate.now()
+                            val locale = Locale.getDefault()
+                            val formatter = remember(locale) {
+                                DateTimeFormatter.ofPattern("EEE, MMM d", locale)
+                            }
+                            val formattedDate = today.format(formatter)
+
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .offset { IntOffset(offsetX, offsetY) },
+                                color = badgeColor,
+                                contentColor = badgeContentColor,
+                                shape = RoundedCornerShape(18.dp),
+                                tonalElevation = 6.dp,
+                                shadowElevation = 8.dp
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(calendarDef.labelRes),
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Text(
+                                        text = formattedDate,
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+
                         Box(
                             Modifier.matchParentSize().pointerInput(order, angleDeg, radiusDp) {
                                 detectTapGestures { tap ->
@@ -500,8 +554,7 @@ fun Medallion(
                                     val cx = w / 2f; val cy = h / 2f
                                     val dx = tap.x - cx; val dy = tap.y - cy
                                     val dist = sqrt(dx * dx + dy * dy)
-                                    val rPx = with(densityHere) { radiusDp.toPx() }
-                                    if (dist <= rPx) {
+                                    if (dist <= radiusPx) {
                                         var ang = Math.toDegrees(kotlin.math.atan2(dy.toDouble(), dx.toDouble())).toFloat()
                                         if (ang < 0f) ang += 360f
                                         val local = (ang - angleDeg + 360f) % 360f
