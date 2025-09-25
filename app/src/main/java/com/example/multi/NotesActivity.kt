@@ -23,6 +23,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text as M3Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -63,6 +64,7 @@ import com.example.multi.data.toEntity
 class NotesActivity : SegmentActivity("Notes") {
     private val notes = mutableStateListOf<Note>()
     private var importRequest: (() -> Unit)? = null
+    private var hasLoaded by mutableStateOf(false)
 
     override fun onResume() {
         super.onResume()
@@ -72,6 +74,7 @@ class NotesActivity : SegmentActivity("Notes") {
             withContext(Dispatchers.IO) { db.trashedNoteDao().deleteExpired(threshold) }
             val stored = withContext(Dispatchers.IO) { db.noteDao().getNotes() }
             notes.clear(); notes.addAll(stored.map { it.toModel() })
+            hasLoaded = true
         }
     }
 
@@ -119,24 +122,29 @@ class NotesActivity : SegmentActivity("Notes") {
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
+            val hasLoaded = this@NotesActivity.hasLoaded
             if (notes.isEmpty()) {
-                val composition by rememberLottieComposition(
-                    LottieCompositionSpec.RawRes(R.raw.notebook)
-                )
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    LottieAnimation(
-                        composition = composition,
-                        iterations = LottieConstants.IterateForever,
-                        modifier = Modifier.size(200.dp)
+                if (hasLoaded) {
+                    val composition by rememberLottieComposition(
+                        LottieCompositionSpec.RawRes(R.raw.notebook)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    M3Text(
-                        "No notes yet",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
-                    )
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        LottieAnimation(
+                            composition = composition,
+                            iterations = LottieConstants.IterateForever,
+                            modifier = Modifier.size(200.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        M3Text(
+                            "No notes yet",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp)
+                        )
+                    }
+                } else {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
             } else {
                 LazyColumn(
