@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.Scaffold
 import androidx.compose.ui.Modifier
 import com.example.multi.ui.theme.MultiTheme
-import com.example.multi.ThemePreferences
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.EventDatabase
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +39,7 @@ class MainActivity : ComponentActivity() {
         }
         scheduleDailyActivityReminder(this)
         if (savedInstanceState == null) {
-            startActivity(Intent(this, NoteEditorActivity::class.java))
+            startActivity(Intent(this, NotesActivity::class.java))
         }
         enableEdgeToEdge()
         setContent {
