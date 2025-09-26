@@ -22,7 +22,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -59,7 +58,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import kotlin.math.PI
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
@@ -120,7 +118,7 @@ private object Rock { // CALENDAR (gray)
     const val TextOnRimBias = 0.80f
     val ResIds = intArrayOf(
         R.drawable.gray_tile_1, R.drawable.gray_tile_2, R.drawable.gray_tile_3,
-        R.drawable.gray_tile_4, R.drawable.gray_tile_5, R.drawable.gray_tile_6,
+        R.drawable.gray_tile_5, R.drawable.gray_tile_6,
         R.drawable.gray_tile_7, R.drawable.gray_tile_8, R.drawable.gray_tile_9,
         R.drawable.gray_tile_10
     )
