@@ -69,6 +69,9 @@ import kotlin.math.roundToInt
 import androidx.compose.runtime.mutableIntStateOf
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import com.example.multi.data.EventDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Motion tuning */
 private object Motion {
@@ -317,6 +320,7 @@ fun Medallion(
     modifier: Modifier = Modifier,
     onSegmentClick: (MedallionSegment) -> Unit = {}
 ) {
+    val context = LocalContext.current
     val c = MaterialTheme.colorScheme
     val defs = remember(c) {
         mapOf(
@@ -327,6 +331,15 @@ fun Medallion(
         )
     }
 
+    var noteCount by remember { mutableIntStateOf(0) }
+    LaunchedEffect(context) {
+        val db = EventDatabase.getInstance(context)
+        val total = withContext(Dispatchers.IO) { db.noteDao().getNotes().size }
+        noteCount = total
+    }
+
+    val notesDef = defs.getValue(MedallionSegment.NOTES)
+    val notesContentColor = contentColorFor(notesDef.color)
     val calendarDef = defs.getValue(MedallionSegment.CALENDAR)
     val calendarContentColor = contentColorFor(calendarDef.color)
     val today = LocalDate.now()
@@ -503,6 +516,36 @@ fun Medallion(
 
                     // Tap detection overlay & calendar label
                     Box(Modifier.size(diameterDp)) {
+                        val notesIndex = order.indexOf(MedallionSegment.NOTES)
+                        if (notesIndex >= 0) {
+                            val midAngle = mids[notesIndex] + angleDeg
+                            val angleRad = Math.toRadians(midAngle.toDouble())
+                            val radiusPx = with(density) { radiusDp.toPx() }
+                            val labelRadiusPx = radiusPx * 0.58f
+                            val offsetX = (cos(angleRad) * labelRadiusPx).roundToInt()
+                            val offsetY = (sin(angleRad) * labelRadiusPx).roundToInt()
+
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .offset { IntOffset(offsetX, offsetY) }
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(notesDef.labelRes),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = notesContentColor.copy(alpha = 0.9f)
+                                )
+                                Text(
+                                    text = stringResource(R.string.notes_total, noteCount),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                                    color = notesContentColor.copy(alpha = 0.9f)
+                                )
+                            }
+                        }
+
                         val calendarIndex = order.indexOf(MedallionSegment.CALENDAR)
                         if (calendarIndex >= 0) {
                             val midAngle = mids[calendarIndex] + angleDeg

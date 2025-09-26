@@ -3,6 +3,7 @@
     <string name="label_calendar">Calendar</string>
     <string name="label_events">Events</string>
     <string name="label_notes">Notes</string>
+    <string name="notes_total">Total: %1$d</string>
     <string name="label_weekly_goals">Weekly Goals</string>
     <string name="open_last_note">Open last note</string>
     <plurals name="words_count">
