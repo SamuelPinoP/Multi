@@ -1,8 +1,10 @@
 package com.example.multi
 
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
@@ -67,6 +69,7 @@ import kotlin.math.sqrt
 import kotlin.math.roundToInt
 
 import androidx.compose.runtime.mutableIntStateOf
+import com.example.multi.data.EventDatabase
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -327,6 +330,15 @@ fun Medallion(
         )
     }
 
+    val context = LocalContext.current
+    val notesDef = defs.getValue(MedallionSegment.NOTES)
+    val notesContentColor = contentColorFor(notesDef.color)
+    val noteCount by produceState(initialValue = 0, context) {
+        val db = EventDatabase.getInstance(context)
+        value = withContext(Dispatchers.IO) { db.noteDao().getNotes().size }
+    }
+    val notesSubtitle = "Total: $noteCount"
+
     val calendarDef = defs.getValue(MedallionSegment.CALENDAR)
     val calendarContentColor = contentColorFor(calendarDef.color)
     val today = LocalDate.now()
@@ -501,35 +513,51 @@ fun Medallion(
                         }
                     }
 
-                    // Tap detection overlay & calendar label
+                    // Tap detection overlay & slice labels
                     Box(Modifier.size(diameterDp)) {
-                        val calendarIndex = order.indexOf(MedallionSegment.CALENDAR)
-                        if (calendarIndex >= 0) {
-                            val midAngle = mids[calendarIndex] + angleDeg
-                            val angleRad = Math.toRadians(midAngle.toDouble())
-                            val radiusPx = with(density) { radiusDp.toPx() }
-                            val labelRadiusPx = radiusPx * 0.58f
-                            val offsetX = (cos(angleRad) * labelRadiusPx).roundToInt()
-                            val offsetY = (sin(angleRad) * labelRadiusPx).roundToInt()
+                        val labelConfigs = listOf(
+                            Triple(
+                                MedallionSegment.CALENDAR,
+                                calendarDef to calendarContentColor,
+                                calendarSubtitle
+                            ),
+                            Triple(
+                                MedallionSegment.NOTES,
+                                notesDef to notesContentColor,
+                                notesSubtitle
+                            )
+                        )
 
-                            Column(
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .offset { IntOffset(offsetX, offsetY) }
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(calendarDef.labelRes),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = calendarContentColor.copy(alpha = 0.9f)
-                                )
-                                Text(
-                                    text = calendarSubtitle,
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                    color = calendarContentColor.copy(alpha = 0.9f)
-                                )
+                        labelConfigs.forEach { (segment, defAndColor, subtitle) ->
+                            val (def, contentColor) = defAndColor
+                            val segmentIndex = order.indexOf(segment)
+                            if (segmentIndex >= 0) {
+                                val midAngle = mids[segmentIndex] + angleDeg
+                                val angleRad = Math.toRadians(midAngle.toDouble())
+                                val radiusPx = with(density) { radiusDp.toPx() }
+                                val labelRadiusPx = radiusPx * 0.58f
+                                val offsetX = (cos(angleRad) * labelRadiusPx).roundToInt()
+                                val offsetY = (sin(angleRad) * labelRadiusPx).roundToInt()
+
+                                Column(
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .offset { IntOffset(offsetX, offsetY) }
+                                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(def.labelRes),
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = contentColor.copy(alpha = 0.9f)
+                                    )
+                                    Text(
+                                        text = subtitle,
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                                        color = contentColor.copy(alpha = 0.9f)
+                                    )
+                                }
                             }
                         }
 
