@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.example.multi.data.EventEntity
+import com.example.multi.data.toModel
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
@@ -153,6 +154,14 @@ private data class EventSummary(
     val todayCount: Int = 0,
     val weekCount: Int = 0
 )
+
+private data class WeeklyGoalSliceSummary(
+    val completed: Int = 0,
+    val total: Int = 0
+) {
+    val cappedCompleted: Int = completed.coerceAtMost(total)
+    val percent: Int = if (total <= 0) 0 else (cappedCompleted * 100) / total
+}
 
 private fun summarizeEvents(events: List<EventEntity>): EventSummary {
     val today = LocalDate.now()
@@ -380,6 +389,8 @@ fun Medallion(
     val notesContentColor = contentColorFor(notesDef.color)
     val eventsDef = defs.getValue(MedallionSegment.EVENTS)
     val eventsContentColor = contentColorFor(eventsDef.color)
+    val weeklyGoalsDef = defs.getValue(MedallionSegment.WEEKLY_GOALS)
+    val weeklyGoalsContentColor = contentColorFor(weeklyGoalsDef.color)
     val appContext = remember(context) { context.applicationContext }
     val database = remember(appContext) { EventDatabase.getInstance(appContext) }
     val notesCountFlow = remember(database) { database.noteDao().observeCount() }
@@ -388,6 +399,19 @@ fun Medallion(
         database.eventDao().observeEvents().map(::summarizeEvents)
     }
     val eventSummary by eventSummaryFlow.collectAsState(initial = EventSummary())
+    val weeklyGoalsFlow = remember(database) { database.weeklyGoalDao().observeGoals() }
+    val weeklyGoals by weeklyGoalsFlow.collectAsState(initial = emptyList())
+    val weeklyGoalsSummary = remember(weeklyGoals) {
+        var completed = 0
+        var total = 0
+        weeklyGoals.map { it.toModel() }.forEach { goal ->
+            val frequency = goal.frequency.coerceAtLeast(0)
+            val done = goal.dayStates.count { it == 'C' }.coerceAtMost(frequency)
+            completed += done
+            total += frequency
+        }
+        WeeklyGoalSliceSummary(completed = completed, total = total)
+    }
     val calendarDef = defs.getValue(MedallionSegment.CALENDAR)
     val calendarContentColor = contentColorFor(calendarDef.color)
     val today = LocalDate.now()
@@ -564,11 +588,43 @@ fun Medallion(
 
                     // Tap detection overlay & calendar label
                     Box(Modifier.size(diameterDp)) {
+                        val goalsIndex = order.indexOf(MedallionSegment.WEEKLY_GOALS)
                         val eventsIndex = order.indexOf(MedallionSegment.EVENTS)
                         val calendarIndex = order.indexOf(MedallionSegment.CALENDAR)
                         val notesIndex = order.indexOf(MedallionSegment.NOTES)
                         val radiusPx = with(density) { radiusDp.toPx() }
                         val labelRadiusPx = radiusPx * 0.58f
+                        if (goalsIndex >= 0) {
+                            val midAngle = mids[goalsIndex] + angleDeg
+                            val angleRad = Math.toRadians(midAngle.toDouble())
+                            val offsetX = (cos(angleRad) * labelRadiusPx).roundToInt()
+                            val offsetY = (sin(angleRad) * labelRadiusPx).roundToInt()
+
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .offset { IntOffset(offsetX, offsetY) }
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(weeklyGoalsDef.labelRes),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = weeklyGoalsContentColor.copy(alpha = 0.9f)
+                                )
+                                Text(
+                                    text = "${weeklyGoalsSummary.percent}%",
+                                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = weeklyGoalsContentColor.copy(alpha = 0.95f)
+                                )
+                                Text(
+                                    text = "This week: ${weeklyGoalsSummary.cappedCompleted}/${weeklyGoalsSummary.total}",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                                    color = weeklyGoalsContentColor.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
                         if (eventsIndex >= 0) {
                             val midAngle = mids[eventsIndex] + angleDeg
                             val angleRad = Math.toRadians(midAngle.toDouble())

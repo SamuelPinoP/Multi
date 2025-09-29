@@ -39,7 +39,11 @@ class MainActivity : ComponentActivity() {
             }
         }
         scheduleDailyActivityReminder(this)
-        if (savedInstanceState == null) {
+        val skipLastVisited = intent?.getBooleanExtra(EXTRA_SKIP_LAST_VISITED, false) ?: false
+        if (skipLastVisited) {
+            intent?.removeExtra(EXTRA_SKIP_LAST_VISITED)
+        }
+        if (!skipLastVisited && savedInstanceState == null) {
             val target = LastVisitedPreferences.getLastVisitedActivity(this)
                 ?: NotesActivity::class.java
             if (target != this::class.java) {
@@ -59,5 +63,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_SKIP_LAST_VISITED = "extra_skip_last_visited"
     }
 }
