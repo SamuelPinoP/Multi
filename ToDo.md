@@ -3,6 +3,24 @@
 *** Create a single activity and multiple screens***
 *********************PRIORITY*********************
 
+* Whatever event has a remainder must be different from events without. I must be able to edit the
+remainder.
+
+* Clicking the event remainder or the weekly goals notification creates two activities because of
+clicking the notification and because of opening multi I need it to create only one activity.
+
+* Multi stands for multiple things that is why the homepage has multiple images.
+
+* Add an overall description for all the Goals.
+
+* Sorting notes by alphabetical order or date or access.
+
+* Pressing Multi will change the images on the screen for others.
+
+* Add a sideways button that displays Notes Calendar Events Goals on click. It must be beautiful.
+
+* Add remainders to the Notes. The notes must send a notification.
+
 3- Add a description that says: You can create an Event/ Weekly Goal the first time the user opens
 the app. Like a tutorial. After the user has clicked the tutorial then it disappears. Put it in the
 settings.

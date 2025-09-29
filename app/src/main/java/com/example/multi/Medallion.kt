@@ -644,12 +644,12 @@ fun Medallion(
                                 Text(
                                     text = stringResource(notesDef.labelRes),
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = notesContentColor.copy(alpha = 0.9f)
+                                    color = eventsContentColor.copy(alpha = 0.9f)
                                 )
                                 Text(
                                     text = "Total: $notesCount",
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                    color = notesContentColor.copy(alpha = 0.9f)
+                                    color = eventsContentColor.copy(alpha = 0.9f)
                                 )
                             }
                         }
