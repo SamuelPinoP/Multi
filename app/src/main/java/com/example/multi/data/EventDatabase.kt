@@ -113,6 +113,9 @@ interface WeeklyGoalDao {
     @Query("SELECT * FROM weekly_goals")
     suspend fun getGoals(): List<WeeklyGoalEntity>
 
+    @Query("SELECT * FROM weekly_goals")
+    fun observeGoals(): Flow<List<WeeklyGoalEntity>>
+
     @Insert
     suspend fun insert(goal: WeeklyGoalEntity): Long
 

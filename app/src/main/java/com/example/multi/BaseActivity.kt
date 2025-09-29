@@ -16,7 +16,12 @@ open class BaseActivity : ComponentActivity() {
      */
     protected fun navigateBackOrFinish() {
         if (isTaskRoot) {
-            startActivity(Intent(this, MainActivity::class.java))
+            startActivity(
+                Intent(this, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    putExtra(MainActivity.EXTRA_SKIP_LAST_VISITED, true)
+                }
+            )
         }
         finish()
     }
