@@ -1,10 +1,9 @@
 package com.example.multi
 
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
@@ -58,6 +57,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import com.example.multi.data.EventEntity
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
@@ -68,8 +68,12 @@ import kotlin.math.roundToInt
 
 import androidx.compose.runtime.mutableIntStateOf
 import com.example.multi.data.EventDatabase
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.time.temporal.TemporalAdjusters
+import java.util.Locale
 
 /** Motion tuning */
 private object Motion {
@@ -144,6 +148,49 @@ private data class SegmentDefinition(
     val icon: ImageVector,
     val color: Color
 )
+
+private data class EventSummary(
+    val todayCount: Int = 0,
+    val weekCount: Int = 0
+)
+
+private fun summarizeEvents(events: List<EventEntity>): EventSummary {
+    val today = LocalDate.now()
+    val todayDay = today.dayOfWeek
+    val startOfWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    val endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+    var todayCount = 0
+    var weekCount = 0
+
+    events.forEach { entity ->
+        val rawDate = entity.date?.trim().orEmpty()
+        if (rawDate.isEmpty()) return@forEach
+
+        if (rawDate.startsWith("Every", ignoreCase = true)) {
+            val normalized = rawDate.lowercase(Locale.ENGLISH)
+            val matchingDays = DayOfWeek.values().filter { day ->
+                val name = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH).lowercase(Locale.ENGLISH)
+                normalized.contains(name)
+            }
+            if (matchingDays.contains(todayDay)) {
+                todayCount += 1
+            }
+            weekCount += matchingDays.size
+        } else {
+            val parsed = runCatching { LocalDate.parse(rawDate) }.getOrNull()
+            if (parsed != null) {
+                if (parsed == today) {
+                    todayCount += 1
+                }
+                if (!parsed.isBefore(startOfWeek) && !parsed.isAfter(endOfWeek)) {
+                    weekCount += 1
+                }
+            }
+        }
+    }
+
+    return EventSummary(todayCount = todayCount, weekCount = weekCount)
+}
 
 /** Animated backdrop (soft blobs) */
 @Composable
@@ -331,11 +378,16 @@ fun Medallion(
     val context = LocalContext.current
     val notesDef = defs.getValue(MedallionSegment.NOTES)
     val notesContentColor = contentColorFor(notesDef.color)
+    val eventsDef = defs.getValue(MedallionSegment.EVENTS)
+    val eventsContentColor = contentColorFor(eventsDef.color)
     val appContext = remember(context) { context.applicationContext }
-    val notesCount by produceState(initialValue = 0, key1 = appContext) {
-        val db = EventDatabase.getInstance(appContext)
-        value = withContext(Dispatchers.IO) { db.noteDao().getNotes().size }
+    val database = remember(appContext) { EventDatabase.getInstance(appContext) }
+    val notesCountFlow = remember(database) { database.noteDao().observeCount() }
+    val notesCount by notesCountFlow.collectAsState(initial = 0)
+    val eventSummaryFlow = remember(database) {
+        database.eventDao().observeEvents().map(::summarizeEvents)
     }
+    val eventSummary by eventSummaryFlow.collectAsState(initial = EventSummary())
     val calendarDef = defs.getValue(MedallionSegment.CALENDAR)
     val calendarContentColor = contentColorFor(calendarDef.color)
     val today = LocalDate.now()
@@ -512,10 +564,42 @@ fun Medallion(
 
                     // Tap detection overlay & calendar label
                     Box(Modifier.size(diameterDp)) {
+                        val eventsIndex = order.indexOf(MedallionSegment.EVENTS)
                         val calendarIndex = order.indexOf(MedallionSegment.CALENDAR)
                         val notesIndex = order.indexOf(MedallionSegment.NOTES)
                         val radiusPx = with(density) { radiusDp.toPx() }
                         val labelRadiusPx = radiusPx * 0.58f
+                        if (eventsIndex >= 0) {
+                            val midAngle = mids[eventsIndex] + angleDeg
+                            val angleRad = Math.toRadians(midAngle.toDouble())
+                            val offsetX = (cos(angleRad) * labelRadiusPx).roundToInt()
+                            val offsetY = (sin(angleRad) * labelRadiusPx).roundToInt()
+
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .offset { IntOffset(offsetX, offsetY) }
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(eventsDef.labelRes),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = eventsContentColor.copy(alpha = 0.9f)
+                                )
+                                Text(
+                                    text = "Today: ${eventSummary.todayCount}",
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                                    color = eventsContentColor.copy(alpha = 0.9f)
+                                )
+                                Text(
+                                    text = "This week: ${eventSummary.weekCount}",
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                                    color = eventsContentColor.copy(alpha = 0.9f)
+                                )
+                            }
+                        }
                         if (calendarIndex >= 0) {
                             val midAngle = mids[calendarIndex] + angleDeg
                             val angleRad = Math.toRadians(midAngle.toDouble())
@@ -560,12 +644,12 @@ fun Medallion(
                                 Text(
                                     text = stringResource(notesDef.labelRes),
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = calendarContentColor.copy(alpha = 0.9f)
+                                    color = notesContentColor.copy(alpha = 0.9f)
                                 )
                                 Text(
                                     text = "Total: $notesCount",
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                    color = calendarContentColor.copy(alpha = 0.9f)
+                                    color = notesContentColor.copy(alpha = 0.9f)
                                 )
                             }
                         }
