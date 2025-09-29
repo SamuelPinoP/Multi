@@ -21,6 +21,7 @@ import com.example.multi.TrashedNote
 import com.example.multi.TrashedEvent
 import com.example.multi.WeeklyGoal
 import com.example.multi.WeeklyGoalRecord
+import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "events")
 data class EventEntity(
@@ -94,6 +95,9 @@ interface EventDao {
     @Query("SELECT * FROM events")
     suspend fun getEvents(): List<EventEntity>
 
+    @Query("SELECT * FROM events")
+    fun observeEvents(): Flow<List<EventEntity>>
+
     @Insert
     suspend fun insert(event: EventEntity): Long
 
@@ -135,6 +139,9 @@ interface WeeklyGoalRecordDao {
 interface NoteDao {
     @Query("SELECT * FROM notes ORDER BY lastOpened DESC")
     suspend fun getNotes(): List<NoteEntity>
+
+    @Query("SELECT COUNT(*) FROM notes")
+    fun observeCount(): Flow<Int>
 
     @Query("UPDATE notes SET lastOpened = :time WHERE id = :id")
     suspend fun touch(id: Long, time: Long)
