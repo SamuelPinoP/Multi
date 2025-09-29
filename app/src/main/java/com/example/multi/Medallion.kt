@@ -1,10 +1,8 @@
 package com.example.multi
 
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
@@ -58,6 +56,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import kotlinx.coroutines.flow.collectAsState
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
@@ -70,6 +69,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import com.example.multi.data.EventDatabase
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 /** Motion tuning */
 private object Motion {
@@ -331,17 +332,39 @@ fun Medallion(
     val context = LocalContext.current
     val notesDef = defs.getValue(MedallionSegment.NOTES)
     val notesContentColor = contentColorFor(notesDef.color)
-    val appContext = remember(context) { context.applicationContext }
-    val notesCount by produceState(initialValue = 0, key1 = appContext) {
-        val db = EventDatabase.getInstance(appContext)
-        value = withContext(Dispatchers.IO) { db.noteDao().getNotes().size }
-    }
+    val eventsDef = defs.getValue(MedallionSegment.EVENTS)
+    val eventsContentColor = contentColorFor(eventsDef.color)
     val calendarDef = defs.getValue(MedallionSegment.CALENDAR)
     val calendarContentColor = contentColorFor(calendarDef.color)
+    val appContext = remember(context) { context.applicationContext }
+    val database = remember(appContext) { EventDatabase.getInstance(appContext) }
+    val noteCountFlow = remember(database) { database.noteDao().observeNoteCount() }
+    val notesCount by noteCountFlow.collectAsState(initial = 0)
+    val eventFlow = remember(database) { database.eventDao().observeEvents() }
+    val events by eventFlow.collectAsState(initial = emptyList())
+    val weekFields = remember { WeekFields.of(Locale.getDefault()) }
     val today = LocalDate.now()
     val dayOfWeekFormatter = DateTimeFormatter.ofPattern("EEE")
     val monthDayFormatter = DateTimeFormatter.ofPattern("MMM d")
     val calendarSubtitle = "${today.format(dayOfWeekFormatter)} • ${today.format(monthDayFormatter)}"
+    val todayWeek = today.get(weekFields.weekOfWeekBasedYear())
+    val todayWeekYear = today.get(weekFields.weekBasedYear())
+    var eventsTodayCount = 0
+    var eventsWeekCount = 0
+    for (event in events) {
+        val dateStr = event.date
+        if (!dateStr.isNullOrBlank()) {
+            val eventDate = runCatching { LocalDate.parse(dateStr) }.getOrNull()
+            if (eventDate != null) {
+                if (eventDate == today) eventsTodayCount++
+                val eventWeek = eventDate.get(weekFields.weekOfWeekBasedYear())
+                val eventWeekYear = eventDate.get(weekFields.weekBasedYear())
+                if (eventWeek == todayWeek && eventWeekYear == todayWeekYear) {
+                    eventsWeekCount++
+                }
+            }
+        }
+    }
 
     var order by rememberSaveable {
         mutableStateOf(listOf(MedallionSegment.NOTES, MedallionSegment.WEEKLY_GOALS, MedallionSegment.EVENTS, MedallionSegment.CALENDAR))
@@ -513,6 +536,7 @@ fun Medallion(
                     // Tap detection overlay & calendar label
                     Box(Modifier.size(diameterDp)) {
                         val calendarIndex = order.indexOf(MedallionSegment.CALENDAR)
+                        val eventsIndex = order.indexOf(MedallionSegment.EVENTS)
                         val notesIndex = order.indexOf(MedallionSegment.NOTES)
                         val radiusPx = with(density) { radiusDp.toPx() }
                         val labelRadiusPx = radiusPx * 0.58f
@@ -539,6 +563,38 @@ fun Medallion(
                                     text = calendarSubtitle,
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
                                     color = calendarContentColor.copy(alpha = 0.9f)
+                                )
+                            }
+                        }
+
+                        if (eventsIndex >= 0) {
+                            val midAngle = mids[eventsIndex] + angleDeg
+                            val angleRad = Math.toRadians(midAngle.toDouble())
+                            val offsetX = (cos(angleRad) * labelRadiusPx).roundToInt()
+                            val offsetY = (sin(angleRad) * labelRadiusPx).roundToInt()
+
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .offset { IntOffset(offsetX, offsetY) }
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(eventsDef.labelRes),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = eventsContentColor.copy(alpha = 0.9f)
+                                )
+                                Text(
+                                    text = "Today: $eventsTodayCount",
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                                    color = eventsContentColor.copy(alpha = 0.9f)
+                                )
+                                Text(
+                                    text = "This week: $eventsWeekCount",
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                                    color = eventsContentColor.copy(alpha = 0.9f)
                                 )
                             }
                         }
