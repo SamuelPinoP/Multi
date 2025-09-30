@@ -86,6 +86,8 @@ Make it look beautiful.
 
 5- Allow Voice Notes as notes in multi.
 
+// Try UI without moving tiles and reduce size of wheel. Maybe create branch as it is before.
+
 *************************************Later**********************************************************
 * Improving the design of the Calendar.
  The data the Calendar stores in each day could look better or be more interactive and fun. It 
