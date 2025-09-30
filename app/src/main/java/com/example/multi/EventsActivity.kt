@@ -1,6 +1,8 @@
 package com.example.multi
 
 import android.content.Intent
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,6 +10,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -31,8 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.CircleShape
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
@@ -156,17 +162,61 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(events) { index, event ->
+                val hasNotification = event.hasValidNotificationTime()
+                val accentColor = MaterialTheme.colorScheme.primary
+                val borderStroke = if (hasNotification) {
+                    BorderStroke(1.dp, accentColor.copy(alpha = 0.4f))
+                } else {
+                    null
+                }
+                val cardColors = if (hasNotification) {
+                    CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                    )
+                } else {
+                    CardDefaults.elevatedCardColors()
+                }
+
                 ElevatedCard(
                     elevation = CardDefaults.elevatedCardElevation(),
+                    border = borderStroke,
+                    colors = cardColors,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { editingIndex = index }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "${index + 1}. ${event.title}",
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${index + 1}. ${event.title}",
+                                style = if (hasNotification) {
+                                    MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                                } else {
+                                    MaterialTheme.typography.titleMedium
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                if (hasNotification) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(accentColor.copy(alpha = 0.9f), CircleShape)
+                                    )
+                                }
+                                Icon(
+                                    imageVector = if (hasNotification) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
+                                    contentDescription = if (hasNotification) "Notification enabled" else "Notification disabled",
+                                    tint = if (hasNotification) accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
                         if (event.description.isNotBlank()) {
                             Text(
                                 text = event.description,
@@ -192,6 +242,14 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                                         val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
                                         context.startActivity(mapIntent)
                                     }
+                            )
+                        }
+                        event.getFormattedNotificationTime()?.let { time ->
+                            Text(
+                                text = "Reminder at $time",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = accentColor,
+                                modifier = Modifier.padding(top = 6.dp)
                             )
                         }
                         notes[event.id]?.let { note ->
