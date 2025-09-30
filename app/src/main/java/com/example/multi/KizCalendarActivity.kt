@@ -1,5 +1,11 @@
 package com.example.multi
 
+import android.app.AlarmManager
+import android.app.TimePickerDialog
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -37,12 +43,15 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.NotificationsNone
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import java.time.DayOfWeek
 import java.time.format.TextStyle
+import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -57,6 +66,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
 import com.example.multi.util.occursOn
+import com.example.multi.util.showModernToast
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
@@ -65,6 +75,12 @@ class KizCalendarActivity : SegmentActivity("Events Calendar") {
         KizCalendarScreen()
     }
 }
+
+private data class CalendarNotificationRequest(
+    val eventIndex: Int,
+    val event: Event,
+    val isEditing: Boolean
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,6 +120,7 @@ private fun KizCalendarScreen() {
     var editingEvent by remember { mutableStateOf<Event?>(null) }
     val scope = rememberCoroutineScope()
     var showCreateDialog by remember { mutableStateOf(false) }
+    var pendingNotificationRequest by remember { mutableStateOf<CalendarNotificationRequest?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -260,6 +277,68 @@ private fun KizCalendarScreen() {
             )
         }
 
+        pendingNotificationRequest?.let { request ->
+            LaunchedEffect(request) {
+                val calendar = Calendar.getInstance()
+                val initialHour = request.event.notificationHour ?: calendar.get(Calendar.HOUR_OF_DAY)
+                val initialMinute = request.event.notificationMinute ?: calendar.get(Calendar.MINUTE)
+                val dialog = TimePickerDialog(
+                    context,
+                    { _, selectedHour, selectedMinute ->
+                        scope.launch {
+                            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                                context.startActivity(intent)
+                                context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
+                            } else {
+                                val success = scheduleEventNotification(
+                                    context,
+                                    request.event.title,
+                                    request.event.description,
+                                    selectedHour,
+                                    selectedMinute,
+                                    request.event.date
+                                )
+                                if (success) {
+                                    val updated = request.event.copy(
+                                        notificationHour = selectedHour,
+                                        notificationMinute = selectedMinute,
+                                        notificationEnabled = true
+                                    )
+                                    val dao = EventDatabase.getInstance(context).eventDao()
+                                    withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                    if (request.eventIndex >= 0) {
+                                        events[request.eventIndex] = updated
+                                    }
+                                    selectedEvents = selectedEvents.map { current ->
+                                        if (current.id == updated.id) updated else current
+                                    }
+                                    if (editingEvent?.id == updated.id) {
+                                        editingEvent = updated
+                                    }
+                                    context.showModernToast(
+                                        if (request.isEditing) {
+                                            "Notification time updated"
+                                        } else {
+                                            "Notification scheduled"
+                                        }
+                                    )
+                                } else {
+                                    context.showModernToast("Failed to schedule notification")
+                                }
+                            }
+                        }
+                    },
+                    initialHour,
+                    initialMinute,
+                    true
+                )
+                dialog.setOnDismissListener { pendingNotificationRequest = null }
+                dialog.show()
+            }
+        }
+
         if (showDialog) {
             ModalBottomSheet(
                 onDismissRequest = { showDialog = false },
@@ -274,6 +353,7 @@ private fun KizCalendarScreen() {
                     selectedEvents.forEach { event ->
                         val hasNotification = event.notificationEnabled && event.getFormattedNotificationTime() != null
                         val accentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                        val eventIndex = events.indexOfFirst { it.id == event.id }
                         ElevatedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -296,6 +376,7 @@ private fun KizCalendarScreen() {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 val titleStyle = MaterialTheme.typography.titleMedium
                                 val formattedTime = event.getFormattedNotificationTime()
+                                var notificationMenuExpanded by remember(event.id) { mutableStateOf(false) }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically
@@ -321,24 +402,91 @@ private fun KizCalendarScreen() {
                                                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
                                             )
                                         }
-                                        Icon(
-                                            imageVector = if (hasNotification) {
-                                                Icons.Filled.Notifications
-                                            } else {
-                                                Icons.Outlined.NotificationsNone
-                                            },
-                                            contentDescription = if (hasNotification) {
-                                                "Notification enabled"
-                                            } else {
-                                                "Notification disabled"
-                                            },
-                                            tint = if (hasNotification) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            },
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                                        Box {
+                                            Icon(
+                                                imageVector = if (hasNotification) {
+                                                    Icons.Filled.Notifications
+                                                } else {
+                                                    Icons.Outlined.NotificationsNone
+                                                },
+                                                contentDescription = if (hasNotification) {
+                                                    "Notification enabled"
+                                                } else {
+                                                    "Notification disabled"
+                                                },
+                                                tint = if (hasNotification) {
+                                                    MaterialTheme.colorScheme.primary
+                                                } else {
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                                },
+                                                modifier = Modifier
+                                                    .size(20.dp)
+                                                    .clickable { notificationMenuExpanded = true }
+                                            )
+                                            DropdownMenu(
+                                                expanded = notificationMenuExpanded,
+                                                onDismissRequest = { notificationMenuExpanded = false }
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text("Add notification") },
+                                                    enabled = !hasNotification,
+                                                    onClick = {
+                                                        notificationMenuExpanded = false
+                                                        if (!hasNotification) {
+                                                            pendingNotificationRequest = CalendarNotificationRequest(
+                                                                eventIndex = eventIndex,
+                                                                event = event,
+                                                                isEditing = false
+                                                            )
+                                                        }
+                                                    }
+                                                )
+                                                DropdownMenuItem(
+                                                    text = { Text("Edit notification time") },
+                                                    enabled = hasNotification,
+                                                    onClick = {
+                                                        notificationMenuExpanded = false
+                                                        if (hasNotification) {
+                                                            pendingNotificationRequest = CalendarNotificationRequest(
+                                                                eventIndex = eventIndex,
+                                                                event = event,
+                                                                isEditing = true
+                                                            )
+                                                        }
+                                                    }
+                                                )
+                                                DropdownMenuItem(
+                                                    text = { Text("Remove notification") },
+                                                    enabled = hasNotification,
+                                                    onClick = {
+                                                        notificationMenuExpanded = false
+                                                        if (hasNotification) {
+                                                            scope.launch {
+                                                                val dao = EventDatabase.getInstance(context).eventDao()
+                                                                val updated = event.copy(
+                                                                    notificationHour = null,
+                                                                    notificationMinute = null,
+                                                                    notificationEnabled = false
+                                                                )
+                                                                withContext(Dispatchers.IO) {
+                                                                    dao.update(updated.toEntity())
+                                                                }
+                                                                if (eventIndex >= 0) {
+                                                                    events[eventIndex] = updated
+                                                                }
+                                                                selectedEvents = selectedEvents.map { current ->
+                                                                    if (current.id == updated.id) updated else current
+                                                                }
+                                                                if (editingEvent?.id == updated.id) {
+                                                                    editingEvent = updated
+                                                                }
+                                                                context.showModernToast("Notification removed")
+                                                            }
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        }
                                         formattedTime?.let {
                                             Text(
                                                 text = it,

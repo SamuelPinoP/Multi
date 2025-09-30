@@ -1,6 +1,11 @@
 package com.example.multi
 
+import android.app.AlarmManager
+import android.app.TimePickerDialog
+import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +20,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -40,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.multi.util.showModernToast
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
@@ -51,6 +58,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import java.util.Calendar
 
 const val EXTRA_DATE = "extra_date"
 const val EXTRA_EVENT_ID = "extra_event_id"
@@ -146,6 +154,7 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
     var showCreateDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var pendingOpenEventId by remember { mutableStateOf(openEventId) }
+    var pendingNotificationRequest by remember { mutableStateOf<NotificationRequest?>(null) }
     LaunchedEffect(events.size, pendingOpenEventId) {
         val id = pendingOpenEventId
         if (id != null) {
@@ -185,6 +194,7 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                     Column(modifier = Modifier.padding(16.dp)) {
                         val titleStyle = MaterialTheme.typography.titleMedium
                         val formattedTime = event.getFormattedNotificationTime()
+                        var notificationMenuExpanded by remember(event.id) { mutableStateOf(false) }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -210,24 +220,83 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
                                     )
                                 }
-                                Icon(
-                                    imageVector = if (hasNotification) {
-                                        Icons.Filled.Notifications
-                                    } else {
-                                        Icons.Outlined.NotificationsNone
-                                    },
-                                    contentDescription = if (hasNotification) {
-                                        "Notification enabled"
-                                    } else {
-                                        "Notification disabled"
-                                    },
-                                    tint = if (hasNotification) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                Box {
+                                    Icon(
+                                        imageVector = if (hasNotification) {
+                                            Icons.Filled.Notifications
+                                        } else {
+                                            Icons.Outlined.NotificationsNone
+                                        },
+                                        contentDescription = if (hasNotification) {
+                                            "Notification enabled"
+                                        } else {
+                                            "Notification disabled"
+                                        },
+                                        tint = if (hasNotification) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clickable { notificationMenuExpanded = true }
+                                    )
+                                    DropdownMenu(
+                                        expanded = notificationMenuExpanded,
+                                        onDismissRequest = { notificationMenuExpanded = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Add notification") },
+                                            enabled = !hasNotification,
+                                            onClick = {
+                                                notificationMenuExpanded = false
+                                                if (!hasNotification) {
+                                                    pendingNotificationRequest = NotificationRequest(
+                                                        index = index,
+                                                        event = event,
+                                                        isEditing = false
+                                                    )
+                                                }
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Edit notification time") },
+                                            enabled = hasNotification,
+                                            onClick = {
+                                                notificationMenuExpanded = false
+                                                if (hasNotification) {
+                                                    pendingNotificationRequest = NotificationRequest(
+                                                        index = index,
+                                                        event = event,
+                                                        isEditing = true
+                                                    )
+                                                }
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Remove notification") },
+                                            enabled = hasNotification,
+                                            onClick = {
+                                                notificationMenuExpanded = false
+                                                if (hasNotification) {
+                                                    scope.launch {
+                                                        val dao = EventDatabase.getInstance(context).eventDao()
+                                                        val updated = event.copy(
+                                                            notificationHour = null,
+                                                            notificationMinute = null,
+                                                            notificationEnabled = false
+                                                        )
+                                                        withContext(Dispatchers.IO) {
+                                                            dao.update(updated.toEntity())
+                                                        }
+                                                        events[index] = updated
+                                                        context.showModernToast("Notification removed")
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
                                 formattedTime?.let {
                                     Text(
                                         text = it,
@@ -286,6 +355,60 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                         }
                     }
                 }
+            }
+        }
+
+        pendingNotificationRequest?.let { request ->
+            LaunchedEffect(request) {
+                val calendar = Calendar.getInstance()
+                val initialHour = request.event.notificationHour ?: calendar.get(Calendar.HOUR_OF_DAY)
+                val initialMinute = request.event.notificationMinute ?: calendar.get(Calendar.MINUTE)
+                val dialog = TimePickerDialog(
+                    context,
+                    { _, selectedHour, selectedMinute ->
+                        scope.launch {
+                            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                                context.startActivity(intent)
+                                context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
+                            } else {
+                                val success = scheduleEventNotification(
+                                    context,
+                                    request.event.title,
+                                    request.event.description,
+                                    selectedHour,
+                                    selectedMinute,
+                                    request.event.date
+                                )
+                                if (success) {
+                                    val updated = request.event.copy(
+                                        notificationHour = selectedHour,
+                                        notificationMinute = selectedMinute,
+                                        notificationEnabled = true
+                                    )
+                                    val dao = EventDatabase.getInstance(context).eventDao()
+                                    withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                    events[request.index] = updated
+                                    context.showModernToast(
+                                        if (request.isEditing) {
+                                            "Notification time updated"
+                                        } else {
+                                            "Notification scheduled"
+                                        }
+                                    )
+                                } else {
+                                    context.showModernToast("Failed to schedule notification")
+                                }
+                            }
+                        }
+                    },
+                    initialHour,
+                    initialMinute,
+                    true
+                )
+                dialog.setOnDismissListener { pendingNotificationRequest = null }
+                dialog.show()
             }
         }
 
@@ -433,3 +556,9 @@ private fun AttachNoteDialog(
         title = { Text("Attach Note") }
     )
 }
+
+private data class NotificationRequest(
+    val index: Int,
+    val event: Event,
+    val isEditing: Boolean
+)
