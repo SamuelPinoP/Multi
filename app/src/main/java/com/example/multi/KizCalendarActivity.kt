@@ -35,8 +35,12 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
@@ -268,16 +272,82 @@ private fun KizCalendarScreen() {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     selectedEvents.forEach { event ->
+                        val hasNotification = event.notificationEnabled && event.getFormattedNotificationTime() != null
+                        val accentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
                         ElevatedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .then(
+                                    if (hasNotification) {
+                                        Modifier.border(
+                                            width = 1.dp,
+                                            color = accentColor,
+                                            shape = MaterialTheme.shapes.medium
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                )
                                 .clickable {
                                     editingEvent = event
                                     showDialog = false
                                 }
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(event.title, style = MaterialTheme.typography.titleMedium)
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                val titleStyle = MaterialTheme.typography.titleMedium
+                                val formattedTime = event.getFormattedNotificationTime()
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        event.title,
+                                        style = if (hasNotification) {
+                                            titleStyle.copy(fontWeight = FontWeight.SemiBold)
+                                        } else {
+                                            titleStyle
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        if (hasNotification) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .clip(CircleShape)
+                                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = if (hasNotification) {
+                                                Icons.Filled.Notifications
+                                            } else {
+                                                Icons.Outlined.NotificationsNone
+                                            },
+                                            contentDescription = if (hasNotification) {
+                                                "Notification enabled"
+                                            } else {
+                                                "Notification disabled"
+                                            },
+                                            tint = if (hasNotification) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            },
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        formattedTime?.let {
+                                            Text(
+                                                text = it,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
                                 if (event.description.isNotBlank()) {
                                     Text(event.description, style = MaterialTheme.typography.bodyMedium)
                                 }
