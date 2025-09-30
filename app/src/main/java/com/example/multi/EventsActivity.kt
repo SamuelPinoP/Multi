@@ -1,6 +1,10 @@
 package com.example.multi
 
+import android.app.AlarmManager
+import android.app.TimePickerDialog
 import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,8 +15,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -34,23 +36,26 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.ui.components.NotificationBellMenu
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.multi.util.showModernToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import java.util.Calendar
 
 const val EXTRA_DATE = "extra_date"
 const val EXTRA_EVENT_ID = "extra_event_id"
@@ -162,7 +167,7 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            itemsIndexed(events) { index, event ->
+            itemsIndexed(events, key = { _, event -> event.id }) { index, event ->
                 val hasNotification = event.notificationEnabled && event.getFormattedNotificationTime() != null
                 val accentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
                 ElevatedCard(
@@ -210,23 +215,99 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
                                     )
                                 }
-                                Icon(
-                                    imageVector = if (hasNotification) {
-                                        Icons.Filled.Notifications
-                                    } else {
-                                        Icons.Outlined.NotificationsNone
+                                NotificationBellMenu(
+                                    hasNotification = hasNotification,
+                                    onAddNotification = {
+                                        val alarmManager = context.getSystemService(android.content.Context.ALARM_SERVICE) as AlarmManager
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                                            context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+                                            context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
+                                        } else {
+                                            val calendar = Calendar.getInstance()
+                                            val initialHour = calendar.get(Calendar.HOUR_OF_DAY)
+                                            val initialMinute = calendar.get(Calendar.MINUTE)
+                                            TimePickerDialog(
+                                                context,
+                                                { _, selectedHour, selectedMinute ->
+                                                    scope.launch {
+                                                        val updated = event.copy()
+                                                        updated.setNotificationTime(selectedHour, selectedMinute)
+                                                        val success = scheduleEventNotification(
+                                                            context,
+                                                            updated.title,
+                                                            updated.description,
+                                                            selectedHour,
+                                                            selectedMinute,
+                                                            updated.date
+                                                        )
+                                                        if (success) {
+                                                            val dao = EventDatabase.getInstance(context).eventDao()
+                                                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                                            events[index] = updated
+                                                            context.showModernToast(
+                                                                "Notification scheduled for ${String.format("%02d:%02d", selectedHour, selectedMinute)}"
+                                                            )
+                                                        } else {
+                                                            context.showModernToast("Failed to schedule notification")
+                                                        }
+                                                    }
+                                                },
+                                                initialHour,
+                                                initialMinute,
+                                                true
+                                            ).show()
+                                        }
                                     },
-                                    contentDescription = if (hasNotification) {
-                                        "Notification enabled"
-                                    } else {
-                                        "Notification disabled"
+                                    onRemoveNotification = {
+                                        scope.launch {
+                                            val updated = event.copy().apply { disableNotification() }
+                                            val dao = EventDatabase.getInstance(context).eventDao()
+                                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                            events[index] = updated
+                                            context.showModernToast("Notification removed")
+                                        }
                                     },
-                                    tint = if (hasNotification) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                                    modifier = Modifier.size(20.dp)
+                                    onEditNotification = {
+                                        val alarmManager = context.getSystemService(android.content.Context.ALARM_SERVICE) as AlarmManager
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                                            context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+                                            context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
+                                        } else {
+                                            val calendar = Calendar.getInstance()
+                                            val initialHour = event.notificationHour ?: calendar.get(Calendar.HOUR_OF_DAY)
+                                            val initialMinute = event.notificationMinute ?: calendar.get(Calendar.MINUTE)
+                                            TimePickerDialog(
+                                                context,
+                                                { _, selectedHour, selectedMinute ->
+                                                    scope.launch {
+                                                        val updated = event.copy()
+                                                        updated.setNotificationTime(selectedHour, selectedMinute)
+                                                        val success = scheduleEventNotification(
+                                                            context,
+                                                            updated.title,
+                                                            updated.description,
+                                                            selectedHour,
+                                                            selectedMinute,
+                                                            updated.date
+                                                        )
+                                                        if (success) {
+                                                            val dao = EventDatabase.getInstance(context).eventDao()
+                                                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                                            events[index] = updated
+                                                            context.showModernToast(
+                                                                "Notification updated for ${String.format("%02d:%02d", selectedHour, selectedMinute)}"
+                                                            )
+                                                        } else {
+                                                            context.showModernToast("Failed to schedule notification")
+                                                        }
+                                                    }
+                                                },
+                                                initialHour,
+                                                initialMinute,
+                                                true
+                                            ).show()
+                                        }
+                                    }
                                 )
                                 formattedTime?.let {
                                     Text(
@@ -349,7 +430,12 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                     editingIndex = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = event.copy(
+                            title = title,
+                            description = desc,
+                            date = date,
+                            address = addr
+                        )
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         events[index] = updated
                     }
