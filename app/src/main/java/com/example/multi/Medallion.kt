@@ -641,7 +641,7 @@ fun Medallion(
                             ) {
                                 Text(
                                     text = stringResource(eventsDef.labelRes),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                     color = eventsContentColor.copy(alpha = 0.9f)
                                 )
                                 Text(
@@ -672,7 +672,7 @@ fun Medallion(
                             ) {
                                 Text(
                                     text = stringResource(calendarDef.labelRes),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                     color = calendarContentColor.copy(alpha = 0.9f)
                                 )
                                 Text(
@@ -699,7 +699,7 @@ fun Medallion(
                             ) {
                                 Text(
                                     text = stringResource(notesDef.labelRes),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                     color = eventsContentColor.copy(alpha = 0.9f)
                                 )
                                 Text(
