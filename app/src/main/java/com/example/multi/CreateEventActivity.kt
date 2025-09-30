@@ -57,7 +57,6 @@ import com.example.multi.data.toEntity
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.showModernToast
-import com.example.multi.ThemePreferences
 import java.util.Calendar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

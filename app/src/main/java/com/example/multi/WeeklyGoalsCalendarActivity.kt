@@ -31,8 +31,6 @@ import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
-import com.example.multi.EXTRA_GOAL_ID
-import com.example.multi.overageCount
 import com.example.multi.util.capitalizeSentences
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState

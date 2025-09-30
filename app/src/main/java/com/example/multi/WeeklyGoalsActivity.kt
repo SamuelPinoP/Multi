@@ -42,7 +42,6 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
-import com.example.multi.overageCount
 import com.example.multi.util.capitalizeSentences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

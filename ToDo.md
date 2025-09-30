@@ -3,11 +3,17 @@
 *** Create a single activity and multiple screens***
 *********************PRIORITY*********************
 
+* The purple pop up that displays when adding an event looks supper ugly and colorless so I need to create
+a better UI with more beauty **
+
+* Icon:
+  Multi and Tic Tac Toe need icons. I bet that is easy to do.
+
+* The Record says No record yet. I want to put an animation here whenever it is empty from loties.
+  Also improve the separation from weeks so I see how they look better.
+
 * Whatever event has a remainder must be different from events without. I must be able to edit the
 remainder.
-
-* Clicking the event remainder or the weekly goals notification creates two activities because of
-clicking the notification and because of opening multi I need it to create only one activity.
 
 * Multi stands for multiple things that is why the homepage has multiple images.
 
@@ -24,6 +30,7 @@ clicking the notification and because of opening multi I need it to create only 
 3- Add a description that says: You can create an Event/ Weekly Goal the first time the user opens
 the app. Like a tutorial. After the user has clicked the tutorial then it disappears. Put it in the
 settings.
+
 4- Make two different widgets for the Calendar (says when is the next event Date above and days
 remaining under).
 
@@ -33,19 +40,10 @@ remaining under).
 
 * Make it so that people can add links to the notes and the events. Also they can display the site.
 
-* Make sure the Note Widget has an Icon and a name Multi Notes could be the name. 
-
-* Allow to overdue the weekly Goals and show 4/3 and +1 in green next to it. The app will store the
-overdue too. 
-
-* The Four buttons in the UI homepage need to improve their looks a lot. Maybe use ChatGPT instead
-of Codex.
+* Make sure the Note Widget has an Icon and a name Multi Notes could be the name.
 
 * Consider adding a description for the Goals.
  Adding a Note to the Goals that will be a description.
-
-* Consider audio where you hear a page turning.
- Consider where to put it.
 
 * Mindset to learn:
  Establish a Mindset: My mindset can be to endure with God in Holynes and Righteousness until he 
@@ -65,7 +63,7 @@ color. One goal can belong in two different mindsets. Whenever I make progress i
 update in both.
 
 * Adding initial Goal suggestions.
- Suggest to work out as a Goal to whoever opens the app. Suggest an spiritual and intelectual Goal 
+ Suggest to work out as a Goal to whoever opens the app. Suggest an spiritual and intellectual Goal 
 to the user.
 
  If the user chooses spiritual then the app will suggest prayer, reading the scripture. If he clicks 
@@ -74,18 +72,21 @@ intellectual then I will suggest reading or studying.
  Ask which mindset shift does he want the Goals to unlock.
 
  Possibly have separate mindsets for each goal. Completeness must be satisfying. It has to feel up 
-the meditor. I was thinking a water filling system.
+the mediator. I was thinking a water filling system or bottom completion bar.
 
 * I am adding UI interactiveness.
  A battery should have 0/9 and be filled each time we complete a weekly task all the way to the top.
 Make it look beautiful.
 
-* The Record says No record yet. I want to put an animation here whenever it is empty from loties.
- Also improve the separation from weeks so I see how they look better.
+* Focus needs to update below the keyboard.
+  It is possible and it will make a lot of difference.
 
-* Icon:
- Multi and Tic Tac Toe need icons. I bet that is easy to do.
+* Post both apps.
+  Post Multi. Post Tic Tac Toe in the Play Store.
 
+5- Allow Voice Notes as notes in multi.
+
+*************************************Later**********************************************************
 * Improving the design of the Calendar.
  The data the Calendar stores in each day could look better or be more interactive and fun. It 
 definitely needs to be more beautiful than it is and have more modernity.
@@ -95,8 +96,7 @@ definitely needs to be more beautiful than it is and have more modernity.
 the user will have to create the notes again and will lose a lot of work and all the info. I need to
 be respectful of the user.
 
-* The pop up that displays when adding an event looks supper ugly and colorless so I need to create
-a better UI with more beauty maybe separate the notification from the rest also in a second screen
+* Maybe separate the notification from the rest also in a second screen
 together with the notification add an alarm. It should be cool. Give the option to have an alarm on 
 its own as a Widget too. It will allow the user to play any chosen song from the phone as an alarm 
 or they can use one of the default songs.
@@ -113,13 +113,6 @@ Communicate that to the user.
 
 * Security and no data leaks when posting the app.
   I will not ask for your personal data. I will give you real private use of technology.
-
-* Post both apps.
-  Post Multi. Post Tic Tac Toe in the Play Store.
-
-* Focus needs to update below the keyboard.
-  It is possible and it will make a lot of difference.
-
   
 - Add Attach button in the events activity to attach notes to an specific event. It could be a new
 note or an existing one or even multiple of them. I must select the event first and then the note.
@@ -152,8 +145,6 @@ the cursor there.
 4- Create a system that receives an intelligent command such as: Create event on Saturday 12. It
 will be camping with my friends Josh and Mara. Then it will add camping trip as header. Description
 given and the date given.
-
-5- Allow Voice Notes as notes in multi.
 
 6- I want Mental Notes or Mind Notes.
 By clicking a button that will look like a thought on a cloud, white or green cloud, the user

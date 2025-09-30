@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.example.multi.ui.theme.MultiTheme
-import com.example.multi.ThemePreferences
 
 open class SegmentActivity(
     private val segmentTitle: String
