@@ -1,10 +1,7 @@
 /*
 ********************DO LITTLE BY LITTLE********************
 *** Create a single activity and multiple screens***
-*********************PRIORITY*********************
-
-* The purple pop up that displays when adding an event looks supper ugly and colorless so I need to create
-a better UI with more beauty **
+*********************PRIORITY********************* 
 
 * Icon:
   Multi and Tic Tac Toe need icons. I bet that is easy to do.
@@ -89,6 +86,9 @@ Make it look beautiful.
 // Try UI without moving tiles and reduce size of wheel. Maybe create branch as it is before.
 
 *************************************Later**********************************************************
+* The purple pop up that displays when adding an event looks supper ugly and colorless so I need to
+  create a better UI with more beauty.
+
 * Improving the design of the Calendar.
  The data the Calendar stores in each day could look better or be more interactive and fun. It 
 definitely needs to be more beautiful than it is and have more modernity.
