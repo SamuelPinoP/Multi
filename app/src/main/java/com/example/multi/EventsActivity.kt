@@ -1,5 +1,8 @@
 package com.example.multi
 
+import android.app.AlarmManager
+import android.app.TimePickerDialog
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,6 +18,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -40,6 +44,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.os.Build
+import android.provider.Settings
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
@@ -51,6 +57,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
+import com.example.multi.util.showModernToast
 
 const val EXTRA_DATE = "extra_date"
 const val EXTRA_EVENT_ID = "extra_event_id"
@@ -146,6 +153,53 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
     var showCreateDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var pendingOpenEventId by remember { mutableStateOf(openEventId) }
+    var expandedNotificationIndex by remember { mutableStateOf<Int?>(null) }
+
+    fun openNotificationTimePicker(event: Event, index: Int) {
+        val initialHour = event.notificationHour ?: 9
+        val initialMinute = event.notificationMinute ?: 0
+        TimePickerDialog(
+            context,
+            { _, hour, minute ->
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                    context.startActivity(intent)
+                    context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
+                    return@TimePickerDialog
+                }
+                scope.launch {
+                    val success = scheduleEventNotification(
+                        context = context,
+                        title = event.title,
+                        description = event.description,
+                        hour = hour,
+                        minute = minute,
+                        date = event.date
+                    )
+                    if (success) {
+                        val updated = event.copy(
+                            notificationHour = hour,
+                            notificationMinute = minute,
+                            notificationEnabled = true
+                        )
+                        val dao = EventDatabase.getInstance(context).eventDao()
+                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                        events[index] = updated
+                        context.showModernToast(
+                            "Notification scheduled for ${updated.getFormattedNotificationTime()}"
+                        )
+                    } else {
+                        context.showModernToast("Failed to schedule notification")
+                    }
+                }
+            },
+            initialHour,
+            initialMinute,
+            false
+        ).show()
+    }
+
     LaunchedEffect(events.size, pendingOpenEventId) {
         val id = pendingOpenEventId
         if (id != null) {
@@ -210,24 +264,67 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
                                     )
                                 }
-                                Icon(
-                                    imageVector = if (hasNotification) {
-                                        Icons.Filled.Notifications
-                                    } else {
-                                        Icons.Outlined.NotificationsNone
-                                    },
-                                    contentDescription = if (hasNotification) {
-                                        "Notification enabled"
-                                    } else {
-                                        "Notification disabled"
-                                    },
-                                    tint = if (hasNotification) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                Box {
+                                    Icon(
+                                        imageVector = if (hasNotification) {
+                                            Icons.Filled.Notifications
+                                        } else {
+                                            Icons.Outlined.NotificationsNone
+                                        },
+                                        contentDescription = if (hasNotification) {
+                                            "Notification enabled"
+                                        } else {
+                                            "Notification disabled"
+                                        },
+                                        tint = if (hasNotification) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clickable { expandedNotificationIndex = index }
+                                    )
+                                    DropdownMenu(
+                                        expanded = expandedNotificationIndex == index,
+                                        onDismissRequest = { expandedNotificationIndex = null }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Add notification") },
+                                            enabled = !hasNotification,
+                                            onClick = {
+                                                expandedNotificationIndex = null
+                                                openNotificationTimePicker(event, index)
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Remove notification") },
+                                            enabled = hasNotification,
+                                            onClick = {
+                                                expandedNotificationIndex = null
+                                                scope.launch {
+                                                    val updated = event.copy(
+                                                        notificationHour = null,
+                                                        notificationMinute = null,
+                                                        notificationEnabled = false
+                                                    )
+                                                    val dao = EventDatabase.getInstance(context).eventDao()
+                                                    withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                                    events[index] = updated
+                                                    context.showModernToast("Notification removed")
+                                                }
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Edit notification time") },
+                                            enabled = hasNotification,
+                                            onClick = {
+                                                expandedNotificationIndex = null
+                                                openNotificationTimePicker(event, index)
+                                            }
+                                        )
+                                    }
+                                }
                                 formattedTime?.let {
                                     Text(
                                         text = it,
