@@ -3,6 +3,10 @@
 *** Create a single activity and multiple screens***
 *********************PRIORITY********************* 
 
+
+* If a date is chosen for an event make the notification happen only that date. If I choose tuesday,
+then the notifications can happen on tuesday only not every day at that time or the same day.
+
 * Icon:
   Multi and Tic Tac Toe need icons. I bet that is easy to do.
 
