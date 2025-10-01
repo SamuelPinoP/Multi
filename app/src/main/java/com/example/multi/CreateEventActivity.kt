@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -33,6 +35,8 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -56,6 +60,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.util.openAddressInMaps
 import com.example.multi.util.showModernToast
 import java.util.Calendar
 import kotlinx.coroutines.Dispatchers
@@ -195,6 +200,14 @@ private fun CreateEventScreen(activity: ComponentActivity) {
                 onValueChange = { address = it },
                 label = { Text("Address") },
                 modifier = Modifier.fillMaxWidth(),
+                trailingIcon = {
+                    IconButton(onClick = { context.openAddressInMaps(address) }) {
+                        Icon(
+                            imageVector = Icons.Filled.Map,
+                            contentDescription = "Open in Maps"
+                        )
+                    }
+                },
                 keyboardOptions = KeyboardOptions.Default.copy(
                     capitalization = KeyboardCapitalization.Sentences
                 )

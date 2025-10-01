@@ -16,6 +16,7 @@ import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.ui.components.GradientDangerButton
 import com.example.multi.ui.components.PrettyConfirmDialog
+import com.example.multi.util.openAddressInMaps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -113,11 +114,7 @@ class EventTrashActivity : SegmentActivity("Trash") {
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier
                                 .padding(top = 4.dp)
-                                .clickable {
-                                    val uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(addr))
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
-                                    context.startActivity(intent)
-                                }
+                                .clickable { context.openAddressInMaps(addr) }
                         )
                     }
                 }

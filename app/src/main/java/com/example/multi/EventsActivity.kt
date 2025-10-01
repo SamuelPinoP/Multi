@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.multi.util.openAddressInMaps
 import com.example.multi.util.showModernToast
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
@@ -326,11 +327,7 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier
                                     .padding(top = 4.dp)
-                                    .clickable {
-                                        val uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(addr))
-                                        val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
-                                        context.startActivity(mapIntent)
-                                    }
+                                    .clickable { context.openAddressInMaps(addr) }
                             )
                         }
                         notes[event.id]?.let { note ->
