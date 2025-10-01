@@ -51,6 +51,7 @@ import androidx.core.content.ContextCompat
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.util.nextDateForSelectedDays
 import com.example.multi.util.showModernToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -72,7 +73,7 @@ fun CreateEventDialog(
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember { mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } } }
-    val previewDate by remember {
+    val repeatSummary by remember {
         derivedStateOf {
             val daysFull = listOf(
                 "Sunday",
@@ -97,8 +98,13 @@ fun CreateEventDialog(
                 }
                 if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
             } else {
-                selectedDate
+                null
             }
+        }
+    }
+    val previewDate by remember {
+        derivedStateOf {
+            selectedDate ?: repeatSummary
         }
     }
     var notificationTime by remember { mutableStateOf<Pair<Int, Int>?>(null) }
@@ -216,7 +222,16 @@ fun CreateEventDialog(
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
-                    previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                    Column(modifier = Modifier.padding(start = 8.dp)) {
+                        previewDate?.let { Text(it) }
+                        if (repeatSummary != null && repeatSummary != previewDate) {
+                            Text(
+                                text = "Repeats: $repeatSummary",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -248,7 +263,10 @@ fun CreateEventDialog(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Checkbox(
                                 checked = dayChecks[i],
-                                onCheckedChange = { dayChecks[i] = it }
+                                onCheckedChange = { checked ->
+                                    dayChecks[i] = checked
+                                    selectedDate = nextDateForSelectedDays(dayChecks)
+                                }
                             )
                             Text(letters[i])
                         }
@@ -298,6 +316,7 @@ fun CreateEventDialog(
                             val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
                             fmt.format(java.util.Date(millis))
                         }
+                        dayChecks.indices.forEach { index -> dayChecks[index] = false }
                     }
                 }) { Text("OK") }
             },

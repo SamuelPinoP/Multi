@@ -8,8 +8,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,6 +21,8 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -34,15 +40,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.util.nextDateForSelectedDays
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-/** Dialog used for editing existing events without notification support. */
+/** Dialog used for editing existing events with inline notification controls. */
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
     onSave: (String, String, String?, String?) -> Unit,
     onDelete: (() -> Unit)? = null,
+    onNotificationClick: ((String, String, String?, String?) -> Unit)? = null,
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
@@ -54,7 +62,7 @@ fun EventDialog(
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
-    val previewDate by remember {
+    val repeatSummary by remember {
         derivedStateOf {
             val daysFull = listOf(
                 "Sunday",
@@ -79,8 +87,13 @@ fun EventDialog(
                 }
                 if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
             } else {
-                selectedDate
+                null
             }
+        }
+    }
+    val previewDate by remember {
+        derivedStateOf {
+            selectedDate ?: repeatSummary
         }
     }
 
@@ -89,32 +102,7 @@ fun EventDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val daysFull = listOf(
-                        "Sunday",
-                        "Monday",
-                        "Tuesday",
-                        "Wednesday",
-                        "Thursday",
-                        "Friday",
-                        "Saturday"
-                    )
-                    val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-                    val finalDate = if (selectedNames.isNotEmpty()) {
-                        val prefix = when (repeatOption) {
-                            "Every" -> "Every"
-                            "Every other" -> "Every other"
-                            else -> ""
-                        }
-                        val dayString = when (selectedNames.size) {
-                            1 -> selectedNames.first()
-                            2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                            else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
-                        }
-                        if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
-                    } else {
-                        selectedDate
-                    }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    onSave(title, description, previewDate, address.ifBlank { null })
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -161,7 +149,42 @@ fun EventDialog(
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
-                    previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                    Column(modifier = Modifier.padding(start = 8.dp)) {
+                        previewDate?.let { Text(it) }
+                        if (repeatSummary != null && repeatSummary != previewDate) {
+                            Text(
+                                text = "Repeats: $repeatSummary",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.weight(1f, fill = true))
+                    IconButton(
+                        onClick = {
+                            onNotificationClick?.invoke(
+                                title,
+                                description,
+                                previewDate,
+                                address.ifBlank { null }
+                            )
+                        },
+                        enabled = onNotificationClick != null
+                    ) {
+                        val hasNotification = initial.notificationEnabled && initial.getFormattedNotificationTime() != null
+                        Icon(
+                            imageVector = if (hasNotification) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
+                            contentDescription = if (hasNotification) "Edit notification" else "Add notification"
+                        )
+                    }
+                }
+                initial.getFormattedNotificationTime()?.let { time ->
+                    Text(
+                        text = "Notification: $time",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -193,7 +216,10 @@ fun EventDialog(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Checkbox(
                                 checked = dayChecks[i],
-                                onCheckedChange = { dayChecks[i] = it }
+                                onCheckedChange = { checked ->
+                                    dayChecks[i] = checked
+                                    selectedDate = nextDateForSelectedDays(dayChecks)
+                                }
                             )
                             Text(letters[i])
                         }
@@ -219,6 +245,7 @@ fun EventDialog(
                             val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
                             fmt.format(java.util.Date(millis))
                         }
+                        dayChecks.indices.forEach { index -> dayChecks[index] = false }
                     }
                 }) { Text("OK") }
             },
