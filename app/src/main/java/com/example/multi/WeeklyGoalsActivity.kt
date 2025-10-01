@@ -1,8 +1,12 @@
 package com.example.multi
 
-import com.example.multi.util.GoalCelebrationPrefs
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,8 +19,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,6 +49,8 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.util.GoalCelebrationPrefs
+import com.example.multi.util.MindsetPreferences
 import com.example.multi.util.capitalizeSentences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,6 +69,7 @@ import nl.dionsegijn.konfetti.core.models.Shape
 import nl.dionsegijn.konfetti.core.models.Size
 
 const val EXTRA_GOAL_ID = "extra_goal_id"
+private const val DEFAULT_MINDSET_FOCUS = "Loving Jesus"
 
 class WeeklyGoalsActivity : SegmentActivity("Weekly Goals") {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -101,6 +111,127 @@ private fun DayChoiceDialog(
     )
 }
 
+@Composable
+private fun MindsetAccordionCard(
+    expanded: Boolean,
+    goals: List<WeeklyGoal>,
+    focusText: String,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggle)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Mindset",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = if (expanded) "Tap to tuck your focus away" else "Tap to see this week's focus",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (!expanded && goals.isNotEmpty()) {
+                        Spacer(Modifier.height(12.dp))
+                        val previewItems = goals.take(3).map { it.header }
+                        val preview = previewItems.joinToString(separator = "   •   ")
+                        val overflow = goals.size - previewItems.size
+                        Text(
+                            text = if (overflow > 0) "$preview   •   +$overflow more" else preview,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse mindset" else "Expand mindset",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.96f),
+                                    MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.88f)
+                                )
+                            )
+                        )
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                ) {
+                    Text(
+                        text = focusText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = "Weekly Goals",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    if (goals.isEmpty()) {
+                        Text(
+                            text = "Add goals below to fill your mindset.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                        )
+                    } else {
+                        goals.forEach { goal ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = goal.header,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
@@ -114,6 +245,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     var showConfetti by remember { mutableStateOf(false) }
     var showAllDialog by remember { mutableStateOf(false) }
     var edgeCelebration by remember { mutableStateOf(false) }
+    var isMindsetExpanded by remember { mutableStateOf(MindsetPreferences.isExpanded(context)) }
 
     LaunchedEffect(Unit) { edgeCelebration = GoalCelebrationPrefs.isActive(context) }
 
@@ -182,6 +314,19 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 .align(Alignment.TopCenter)
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
+            MindsetAccordionCard(
+                expanded = isMindsetExpanded,
+                goals = goals,
+                focusText = DEFAULT_MINDSET_FOCUS,
+                onToggle = {
+                    val newValue = !isMindsetExpanded
+                    isMindsetExpanded = newValue
+                    MindsetPreferences.setExpanded(context, newValue)
+                }
+            )
+
+            Spacer(Modifier.height(16.dp))
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
