@@ -297,19 +297,23 @@ private fun CreateEventScreen(activity: ComponentActivity) {
                                 context.startActivity(intent)
                                 context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
                             } else {
-                                val success = scheduleEventNotification(context, title, description, hour, minute, previewDate)
+                                val dao = EventDatabase.getInstance(context).eventDao()
+                                val event = Event(
+                                    title = title,
+                                    description = description,
+                                    date = previewDate,
+                                    address = address
+                                ).apply { setNotificationTime(hour, minute) }
+
+                                val eventId = withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
+                                val savedEvent = event.copy(id = eventId)
+                                val success = scheduleEventNotification(context, savedEvent)
                                 if (success) {
-                                    val dao = EventDatabase.getInstance(context).eventDao()
-                                    val event = Event(
-                                        title = title,
-                                        description = description,
-                                        date = previewDate,
-                                        address = address
-                                    ).apply { setNotificationTime(hour, minute) }
-                                    withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
                                     context.showModernToast("Event created with notification scheduled!")
                                     activity.finish()
                                 } else {
+                                    cancelEventNotification(context, savedEvent)
+                                    withContext(Dispatchers.IO) { dao.delete(savedEvent.toEntity()) }
                                     context.showModernToast("Failed to schedule notification")
                                 }
                             }

@@ -293,20 +293,13 @@ private fun KizCalendarScreen() {
                                 context.startActivity(intent)
                                 context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
                             } else {
-                                val success = scheduleEventNotification(
-                                    context,
-                                    request.event.title,
-                                    request.event.description,
-                                    selectedHour,
-                                    selectedMinute,
-                                    request.event.date
+                                val updated = request.event.copy(
+                                    notificationHour = selectedHour,
+                                    notificationMinute = selectedMinute,
+                                    notificationEnabled = true
                                 )
+                                val success = scheduleEventNotification(context, updated)
                                 if (success) {
-                                    val updated = request.event.copy(
-                                        notificationHour = selectedHour,
-                                        notificationMinute = selectedMinute,
-                                        notificationEnabled = true
-                                    )
                                     val dao = EventDatabase.getInstance(context).eventDao()
                                     withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                                     if (request.eventIndex >= 0) {
@@ -462,6 +455,7 @@ private fun KizCalendarScreen() {
                                                     onClick = {
                                                         notificationMenuExpanded = false
                                                         if (hasNotification) {
+                                                            cancelEventNotification(context, event)
                                                             scope.launch {
                                                                 val dao = EventDatabase.getInstance(context).eventDao()
                                                                 val updated = event.copy(
@@ -545,7 +539,12 @@ private fun KizCalendarScreen() {
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = event.copy(
+                            title = title,
+                            description = desc,
+                            date = date,
+                            address = addr
+                        )
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
@@ -556,6 +555,7 @@ private fun KizCalendarScreen() {
                 onDelete = {
                     editingEvent = null
                     scope.launch {
+                        cancelEventNotification(context, event)
                         val db = EventDatabase.getInstance(context)
                         withContext(Dispatchers.IO) {
                             db.trashedEventDao().insert(

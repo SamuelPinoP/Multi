@@ -280,6 +280,7 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                                             onClick = {
                                                 notificationMenuExpanded = false
                                                 if (hasNotification) {
+                                                    cancelEventNotification(context, event)
                                                     scope.launch {
                                                         val dao = EventDatabase.getInstance(context).eventDao()
                                                         val updated = event.copy(
@@ -370,20 +371,13 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                                 context.startActivity(intent)
                                 context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
                             } else {
-                                val success = scheduleEventNotification(
-                                    context,
-                                    request.event.title,
-                                    request.event.description,
-                                    selectedHour,
-                                    selectedMinute,
-                                    request.event.date
+                                val updated = request.event.copy(
+                                    notificationHour = selectedHour,
+                                    notificationMinute = selectedMinute,
+                                    notificationEnabled = true
                                 )
+                                val success = scheduleEventNotification(context, updated)
                                 if (success) {
-                                    val updated = request.event.copy(
-                                        notificationHour = selectedHour,
-                                        notificationMinute = selectedMinute,
-                                        notificationEnabled = true
-                                    )
                                     val dao = EventDatabase.getInstance(context).eventDao()
                                     withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                                     events[request.index] = updated
@@ -469,13 +463,19 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                     editingIndex = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        val updated = event.copy(
+                            title = title,
+                            description = desc,
+                            date = date,
+                            address = addr
+                        )
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         events[index] = updated
                     }
                 },
                 onDelete = {
                     scope.launch {
+                        cancelEventNotification(context, event)
                         val db = EventDatabase.getInstance(context)
                         withContext(Dispatchers.IO) {
                             db.trashedEventDao().insert(
