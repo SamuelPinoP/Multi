@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,6 +50,7 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.util.GoalCelebrationPrefs
+import com.example.multi.util.MindsetNotesPrefs
 import com.example.multi.util.MindsetPrefs
 import com.example.multi.util.capitalizeSentences
 import kotlinx.coroutines.Dispatchers
@@ -123,9 +125,16 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     var showAllDialog by remember { mutableStateOf(false) }
     var edgeCelebration by remember { mutableStateOf(false) }
     var isMindsetExpanded by remember { mutableStateOf(false) }
+    val mindsetNotes = remember { mutableStateListOf<String>() }
+    var showMindsetDialog by remember { mutableStateOf(false) }
+    var pendingMindsetText by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) { edgeCelebration = GoalCelebrationPrefs.isActive(context) }
     LaunchedEffect(Unit) { isMindsetExpanded = MindsetPrefs.isExpanded(context) }
+    LaunchedEffect(Unit) {
+        mindsetNotes.clear()
+        mindsetNotes.addAll(MindsetNotesPrefs.getNotes(context))
+    }
 
     // Auto stop confetti after 3s
     LaunchedEffect(showConfetti) {
@@ -236,11 +245,6 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            val newState = !isMindsetExpanded
-                            isMindsetExpanded = newState
-                            MindsetPrefs.setExpanded(context, newState)
-                        }
                         .padding(horizontal = 20.dp, vertical = 18.dp)
                 ) {
                     Row(
@@ -248,7 +252,15 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    val newState = !isMindsetExpanded
+                                    isMindsetExpanded = newState
+                                    MindsetPrefs.setExpanded(context, newState)
+                                }
+                        ) {
                             Text(
                                 text = "Mindset",
                                 style = MaterialTheme.typography.titleMedium,
@@ -265,10 +277,31 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
                         }
-                        Icon(
-                            imageVector = if (isMindsetExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = if (isMindsetExpanded) "Collapse mindset" else "Expand mindset"
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {
+                                    pendingMindsetText = ""
+                                    showMindsetDialog = true
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add mindset note"
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    val newState = !isMindsetExpanded
+                                    isMindsetExpanded = newState
+                                    MindsetPrefs.setExpanded(context, newState)
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (isMindsetExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = if (isMindsetExpanded) "Collapse mindset" else "Expand mindset"
+                                )
+                            }
+                        }
                     }
 
                     AnimatedVisibility(
@@ -282,39 +315,26 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 .padding(top = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text(
-                                text = "Loving Jesus",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                listOf("Workout", "Study", "Read").forEach { focus ->
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (mindsetNotes.isEmpty()) {
+                                Text(
+                                    text = "Add a mindset focus for this week.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                )
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    mindsetNotes.forEach { note ->
                                         Surface(
-                                            modifier = Modifier
-                                                .size(32.dp),
-                                            shape = MaterialTheme.shapes.small,
-                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                            contentColor = MaterialTheme.colorScheme.primary
+                                            color = MaterialTheme.colorScheme.surfaceVariant,
+                                            tonalElevation = 2.dp,
+                                            shape = MaterialTheme.shapes.medium,
+                                            modifier = Modifier.fillMaxWidth()
                                         ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null
-                                                )
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
                                             Text(
-                                                text = focus,
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Text(
-                                                text = "Weekly goal",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                                text = note,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                modifier = Modifier
+                                                    .padding(horizontal = 16.dp, vertical = 12.dp)
                                             )
                                         }
                                     }
@@ -323,6 +343,42 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         }
                     }
                 }
+            }
+
+            if (showMindsetDialog) {
+                AlertDialog(
+                    onDismissRequest = { showMindsetDialog = false },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val trimmed = pendingMindsetText.trim()
+                                if (trimmed.isNotEmpty()) {
+                                    mindsetNotes.add(0, trimmed)
+                                    MindsetNotesPrefs.saveNotes(context, mindsetNotes.toList())
+                                    scope.launch { snackbarHostState.showSnackbar("Mindset note added") }
+                                    pendingMindsetText = ""
+                                }
+                                showMindsetDialog = false
+                            },
+                            enabled = pendingMindsetText.isNotBlank()
+                        ) {
+                            Text("Save")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showMindsetDialog = false }) { Text("Cancel") }
+                    },
+                    title = { Text("Add Mindset Note") },
+                    text = {
+                        OutlinedTextField(
+                            value = pendingMindsetText,
+                            onValueChange = { pendingMindsetText = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("What's inspiring you this week?") },
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                        )
+                    }
+                )
             }
 
             LazyColumn(
