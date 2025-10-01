@@ -556,6 +556,27 @@ private fun KizCalendarScreen() {
                         }
                     }
                 },
+                onNotificationClick = { title, desc, date, addr ->
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).eventDao()
+                        val updated = event.copy(
+                            title = title,
+                            description = desc,
+                            date = date,
+                            address = addr
+                        )
+                        withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                        val idx = events.indexOfFirst { it.id == event.id }
+                        if (idx >= 0) {
+                            events[idx] = updated
+                            pendingNotificationRequest = CalendarNotificationRequest(
+                                eventIndex = idx,
+                                event = updated,
+                                isEditing = updated.notificationEnabled
+                            )
+                        }
+                    }
+                },
                 onDelete = {
                     editingEvent = null
                     scope.launch {

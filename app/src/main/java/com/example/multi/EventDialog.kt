@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,6 +20,8 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -34,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.util.nextDateForSelectedDays
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,78 +49,27 @@ fun EventDialog(
     onDismiss: () -> Unit,
     onSave: (String, String, String?, String?) -> Unit,
     onDelete: (() -> Unit)? = null,
+    onNotificationClick: ((String, String, String?, String?) -> Unit)? = null,
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
     var address by remember { mutableStateOf(initial.address ?: "") }
-    var selectedDate by remember { mutableStateOf(initial.date) }
+    var manualDate by remember { mutableStateOf(initial.date) }
+    var autoDate by remember { mutableStateOf<String?>(null) }
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
-    val previewDate by remember {
-        derivedStateOf {
-            val daysFull = listOf(
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday"
-            )
-            val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-            if (selectedNames.isNotEmpty()) {
-                val prefix = when (repeatOption) {
-                    "Every" -> "Every"
-                    "Every other" -> "Every other"
-                    else -> ""
-                }
-                val dayString = when (selectedNames.size) {
-                    1 -> selectedNames.first()
-                    2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                    else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
-                }
-                if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
-            } else {
-                selectedDate
-            }
-        }
-    }
+    val selectedDate by remember { derivedStateOf { autoDate ?: manualDate } }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             Button(
                 onClick = {
-                    val daysFull = listOf(
-                        "Sunday",
-                        "Monday",
-                        "Tuesday",
-                        "Wednesday",
-                        "Thursday",
-                        "Friday",
-                        "Saturday"
-                    )
-                    val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-                    val finalDate = if (selectedNames.isNotEmpty()) {
-                        val prefix = when (repeatOption) {
-                            "Every" -> "Every"
-                            "Every other" -> "Every other"
-                            else -> ""
-                        }
-                        val dayString = when (selectedNames.size) {
-                            1 -> selectedNames.first()
-                            2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                            else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
-                        }
-                        if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
-                    } else {
-                        selectedDate
-                    }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    onSave(title, description, selectedDate, address.ifBlank { null })
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -159,9 +114,36 @@ fun EventDialog(
                     )
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
-                    previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                    selectedDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                    Spacer(modifier = Modifier.weight(1f, fill = true))
+                    IconButton(
+                        onClick = {
+                            onNotificationClick?.invoke(
+                                title,
+                                description,
+                                selectedDate,
+                                address.ifBlank { null }
+                            )
+                        },
+                        enabled = onNotificationClick != null
+                    ) {
+                        val icon = if (initial.notificationEnabled) {
+                            Icons.Filled.Notifications
+                        } else {
+                            Icons.Outlined.NotificationsNone
+                        }
+                        val descriptionText = if (initial.notificationEnabled) {
+                            "Edit notification"
+                        } else {
+                            "Add notification"
+                        }
+                        Icon(imageVector = icon, contentDescription = descriptionText)
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -193,7 +175,10 @@ fun EventDialog(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Checkbox(
                                 checked = dayChecks[i],
-                                onCheckedChange = { dayChecks[i] = it }
+                                onCheckedChange = {
+                                    dayChecks[i] = it
+                                    autoDate = nextDateForSelectedDays(dayChecks)
+                                }
                             )
                             Text(letters[i])
                         }
@@ -210,7 +195,8 @@ fun EventDialog(
                 TextButton(onClick = {
                     showPicker = false
                     pickerState.selectedDateMillis?.let { millis ->
-                        selectedDate = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        autoDate = null
+                        manualDate = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                             java.time.Instant.ofEpochMilli(millis)
                                 .atZone(java.time.ZoneOffset.UTC)
                                 .toLocalDate()

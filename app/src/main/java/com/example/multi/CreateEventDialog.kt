@@ -51,6 +51,7 @@ import androidx.core.content.ContextCompat
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.util.nextDateForSelectedDays
 import com.example.multi.util.showModernToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -67,40 +68,13 @@ fun CreateEventDialog(
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
-    var selectedDate by remember { mutableStateOf(initialDate) }
+    var manualDate by remember { mutableStateOf(initialDate) }
+    var autoDate by remember { mutableStateOf<String?>(null) }
     var showPicker by remember { mutableStateOf(false) }
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember { mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } } }
-    val previewDate by remember {
-        derivedStateOf {
-            val daysFull = listOf(
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday"
-            )
-            val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-            if (selectedNames.isNotEmpty()) {
-                val prefix = when (repeatOption) {
-                    "Every" -> "Every"
-                    "Every other" -> "Every other"
-                    else -> ""
-                }
-                val dayString = when (selectedNames.size) {
-                    1 -> selectedNames.first()
-                    2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                    else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
-                }
-                if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
-            } else {
-                selectedDate
-            }
-        }
-    }
+    val selectedDate by remember { derivedStateOf { autoDate ?: manualDate } }
     var notificationTime by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -132,13 +106,13 @@ fun CreateEventDialog(
                                     context.startActivity(intent)
                                     context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
                                 } else {
-                                    val success = scheduleEventNotification(context, title, description, hour, minute, previewDate)
+                                    val success = scheduleEventNotification(context, title, description, hour, minute, selectedDate)
                                     if (success) {
                                         val dao = EventDatabase.getInstance(context).eventDao()
                                         val event = Event(
                                             title = title,
                                             description = description,
-                                            date = previewDate,
+                                            date = selectedDate,
                                             address = address
                                         ).apply { setNotificationTime(hour, minute) }
                                         val id = withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
@@ -163,7 +137,7 @@ fun CreateEventDialog(
                                 val event = Event(
                                     title = title,
                                     description = description,
-                                    date = previewDate,
+                                    date = selectedDate,
                                     address = address
                                 )
                                 val id = withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
@@ -216,7 +190,7 @@ fun CreateEventDialog(
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
-                    previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                    selectedDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -248,7 +222,10 @@ fun CreateEventDialog(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Checkbox(
                                 checked = dayChecks[i],
-                                onCheckedChange = { dayChecks[i] = it }
+                                onCheckedChange = {
+                                    dayChecks[i] = it
+                                    autoDate = nextDateForSelectedDays(dayChecks)
+                                }
                             )
                             Text(letters[i])
                         }
@@ -289,7 +266,8 @@ fun CreateEventDialog(
                 TextButton(onClick = {
                     showPicker = false
                     pickerState.selectedDateMillis?.let { millis ->
-                        selectedDate = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        autoDate = null
+                        manualDate = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             java.time.Instant.ofEpochMilli(millis)
                                 .atZone(java.time.ZoneOffset.UTC)
                                 .toLocalDate()
