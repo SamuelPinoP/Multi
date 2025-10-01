@@ -22,6 +22,7 @@ class BootReceiver : BroadcastReceiver() {
                 events.filter { it.notificationEnabled && it.notificationHour != null && it.notificationMinute != null }.forEach {
                     scheduleEventNotification(
                         context,
+                        it.id,
                         it.title,
                         it.description,
                         it.notificationHour!!,

@@ -281,6 +281,11 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                                                 notificationMenuExpanded = false
                                                 if (hasNotification) {
                                                     scope.launch {
+                                                        cancelEventNotifications(
+                                                            context,
+                                                            event.id,
+                                                            event.date
+                                                        )
                                                         val dao = EventDatabase.getInstance(context).eventDao()
                                                         val updated = event.copy(
                                                             notificationHour = null,
@@ -372,6 +377,7 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                             } else {
                                 val success = scheduleEventNotification(
                                     context,
+                                    request.event.id,
                                     request.event.title,
                                     request.event.description,
                                     selectedHour,
@@ -477,6 +483,7 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                 onDelete = {
                     scope.launch {
                         val db = EventDatabase.getInstance(context)
+                        cancelEventNotifications(context, event.id, event.date)
                         withContext(Dispatchers.IO) {
                             db.trashedEventDao().insert(
                                 TrashedEvent(

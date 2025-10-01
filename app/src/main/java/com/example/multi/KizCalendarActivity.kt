@@ -295,6 +295,7 @@ private fun KizCalendarScreen() {
                             } else {
                                 val success = scheduleEventNotification(
                                     context,
+                                    request.event.id,
                                     request.event.title,
                                     request.event.description,
                                     selectedHour,
@@ -463,6 +464,11 @@ private fun KizCalendarScreen() {
                                                         notificationMenuExpanded = false
                                                         if (hasNotification) {
                                                             scope.launch {
+                                                                cancelEventNotifications(
+                                                                    context,
+                                                                    event.id,
+                                                                    event.date
+                                                                )
                                                                 val dao = EventDatabase.getInstance(context).eventDao()
                                                                 val updated = event.copy(
                                                                     notificationHour = null,
@@ -557,6 +563,7 @@ private fun KizCalendarScreen() {
                     editingEvent = null
                     scope.launch {
                         val db = EventDatabase.getInstance(context)
+                        cancelEventNotifications(context, event.id, event.date)
                         withContext(Dispatchers.IO) {
                             db.trashedEventDao().insert(
                                 TrashedEvent(
