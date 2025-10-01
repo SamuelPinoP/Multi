@@ -494,6 +494,18 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                         events.removeAt(index)
                         editingIndex = null
                     }
+                },
+                onNotificationClick = { updatedEvent ->
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).eventDao()
+                        withContext(Dispatchers.IO) { dao.update(updatedEvent.toEntity()) }
+                        events[index] = updatedEvent
+                        pendingNotificationRequest = NotificationRequest(
+                            index = index,
+                            event = updatedEvent,
+                            isEditing = updatedEvent.hasValidNotificationTime()
+                        )
+                    }
                 }
             )
         }

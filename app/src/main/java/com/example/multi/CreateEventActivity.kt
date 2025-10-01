@@ -56,6 +56,8 @@ import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.util.formatSelectedDays
+import com.example.multi.util.getNextDateForSelections
 import com.example.multi.util.showModernToast
 import java.util.Calendar
 import kotlinx.coroutines.Dispatchers
@@ -111,32 +113,17 @@ private fun CreateEventScreen(activity: ComponentActivity) {
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember { mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } } }
-    val previewDate by remember {
+    val repeatSummary by remember {
+        derivedStateOf { formatSelectedDays(dayChecks, repeatOption) }
+    }
+    val dateDisplay by remember {
         derivedStateOf {
-            val daysFull = listOf(
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday"
-            )
-            val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-            if (selectedNames.isNotEmpty()) {
-                val prefix = when (repeatOption) {
-                    "Every" -> "Every"
-                    "Every other" -> "Every other"
-                    else -> ""
-                }
-                val dayString = when (selectedNames.size) {
-                    1 -> selectedNames.first()
-                    2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                    else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
-                }
-                if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
-            } else {
-                selectedDate
+            val date = selectedDate?.takeIf { it.isNotBlank() }
+            val summary = repeatSummary
+            when {
+                date != null && summary != null -> "$date ($summary)"
+                date != null -> date
+                else -> summary
             }
         }
     }
@@ -202,7 +189,7 @@ private fun CreateEventScreen(activity: ComponentActivity) {
             Spacer(modifier = Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { showPicker = true }) { Text("Date") }
-                previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                dateDisplay?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -230,15 +217,20 @@ private fun CreateEventScreen(activity: ComponentActivity) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val letters = listOf("S", "M", "T", "W", "T", "F", "S")
-                for (i in 0..6) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Checkbox(
-                            checked = dayChecks[i],
-                            onCheckedChange = { dayChecks[i] = it }
-                        )
-                        Text(letters[i])
+                    for (i in 0..6) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Checkbox(
+                                checked = dayChecks[i],
+                                onCheckedChange = {
+                                    dayChecks[i] = it
+                                    getNextDateForSelections(dayChecks)?.let { nextDate ->
+                                        selectedDate = nextDate
+                                    }
+                                }
+                            )
+                            Text(letters[i])
+                        }
                     }
-                }
             }
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -280,13 +272,14 @@ private fun CreateEventScreen(activity: ComponentActivity) {
                                 context.startActivity(intent)
                                 context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
                             } else {
-                                val success = scheduleEventNotification(context, title, description, hour, minute, previewDate)
+                                val eventDate = selectedDate?.takeIf { it.isNotBlank() }
+                                val success = scheduleEventNotification(context, title, description, hour, minute, eventDate)
                                 if (success) {
                                     val dao = EventDatabase.getInstance(context).eventDao()
                                     val event = Event(
                                         title = title,
                                         description = description,
-                                        date = previewDate,
+                                        date = eventDate,
                                         address = address
                                     ).apply { setNotificationTime(hour, minute) }
                                     withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
@@ -314,7 +307,7 @@ private fun CreateEventScreen(activity: ComponentActivity) {
                             val event = Event(
                                 title = title,
                                 description = description,
-                                date = previewDate,
+                                date = selectedDate?.takeIf { it.isNotBlank() },
                                 address = address
                             )
                             withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }

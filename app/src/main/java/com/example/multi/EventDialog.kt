@@ -8,8 +8,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,6 +21,8 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -34,15 +40,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.util.formatSelectedDays
+import com.example.multi.util.getNextDateForSelections
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-/** Dialog used for editing existing events without notification support. */
+/** Dialog used for editing existing events with optional notification controls. */
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
     onSave: (String, String, String?, String?) -> Unit,
     onDelete: (() -> Unit)? = null,
+    onNotificationClick: ((Event) -> Unit)? = null,
 ) {
     var title by remember { mutableStateOf(initial.title) }
     var description by remember { mutableStateOf(initial.description) }
@@ -54,32 +63,17 @@ fun EventDialog(
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
-    val previewDate by remember {
+    val repeatSummary by remember {
+        derivedStateOf { formatSelectedDays(dayChecks, repeatOption) }
+    }
+    val dateDisplay by remember {
         derivedStateOf {
-            val daysFull = listOf(
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday"
-            )
-            val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-            if (selectedNames.isNotEmpty()) {
-                val prefix = when (repeatOption) {
-                    "Every" -> "Every"
-                    "Every other" -> "Every other"
-                    else -> ""
-                }
-                val dayString = when (selectedNames.size) {
-                    1 -> selectedNames.first()
-                    2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                    else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
-                }
-                if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
-            } else {
-                selectedDate
+            val date = selectedDate?.takeIf { it.isNotBlank() }
+            val summary = repeatSummary
+            when {
+                date != null && summary != null -> "$date ($summary)"
+                date != null -> date
+                else -> summary
             }
         }
     }
@@ -89,32 +83,7 @@ fun EventDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val daysFull = listOf(
-                        "Sunday",
-                        "Monday",
-                        "Tuesday",
-                        "Wednesday",
-                        "Thursday",
-                        "Friday",
-                        "Saturday"
-                    )
-                    val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-                    val finalDate = if (selectedNames.isNotEmpty()) {
-                        val prefix = when (repeatOption) {
-                            "Every" -> "Every"
-                            "Every other" -> "Every other"
-                            else -> ""
-                        }
-                        val dayString = when (selectedNames.size) {
-                            1 -> selectedNames.first()
-                            2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                            else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
-                        }
-                        if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
-                    } else {
-                        selectedDate
-                    }
-                    onSave(title, description, finalDate, address.ifBlank { null })
+                    onSave(title, description, selectedDate?.takeIf { it.isNotBlank() }, address.ifBlank { null })
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -159,9 +128,45 @@ fun EventDialog(
                     )
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
-                    previewDate?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                    dateDisplay?.let { Text(it, modifier = Modifier.padding(start = 8.dp)) }
+                    Spacer(modifier = Modifier.weight(1f))
+                    onNotificationClick?.let { callback ->
+                        val hasNotification = initial.hasValidNotificationTime()
+                        IconButton(
+                            onClick = {
+                                val currentEvent = initial.copy(
+                                    title = title,
+                                    description = description,
+                                    date = selectedDate?.takeIf { it.isNotBlank() },
+                                    address = address.ifBlank { null }
+                                )
+                                callback(currentEvent)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (hasNotification) {
+                                    Icons.Filled.Notifications
+                                } else {
+                                    Icons.Outlined.NotificationsNone
+                                },
+                                contentDescription = if (hasNotification) {
+                                    "Edit notification"
+                                } else {
+                                    "Add notification"
+                                },
+                                tint = if (hasNotification) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -193,7 +198,12 @@ fun EventDialog(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Checkbox(
                                 checked = dayChecks[i],
-                                onCheckedChange = { dayChecks[i] = it }
+                                onCheckedChange = {
+                                    dayChecks[i] = it
+                                    getNextDateForSelections(dayChecks)?.let { nextDate ->
+                                        selectedDate = nextDate
+                                    }
+                                }
                             )
                             Text(letters[i])
                         }
