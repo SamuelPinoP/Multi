@@ -1,5 +1,6 @@
 package com.example.multi
 
+import android.app.TimePickerDialog
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,6 +21,8 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -31,9 +37,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.multi.util.capitalizeSentences
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +49,7 @@ import com.example.multi.util.capitalizeSentences
 fun EventDialog(
     initial: Event,
     onDismiss: () -> Unit,
-    onSave: (String, String, String?, String?) -> Unit,
+    onSave: (String, String, String?, String?, Pair<Int, Int>?, Boolean) -> Unit,
     onDelete: (() -> Unit)? = null,
 ) {
     var title by remember { mutableStateOf(initial.title) }
@@ -54,34 +62,65 @@ fun EventDialog(
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
+    val repeatDescription by remember {
+        derivedStateOf { EventDateUtils.buildRepeatDescription(repeatOption, dayChecks.toList()) }
+    }
+    val nextOccurrence by remember {
+        derivedStateOf { EventDateUtils.computeNextOccurrence(dayChecks.toList()) }
+    }
     val previewDate by remember {
         derivedStateOf {
-            val daysFull = listOf(
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday"
+            EventDateUtils.formatPreview(
+                selectedDate,
+                repeatDescription,
+                if (repeatDescription != null) nextOccurrence else null
             )
-            val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-            if (selectedNames.isNotEmpty()) {
-                val prefix = when (repeatOption) {
-                    "Every" -> "Every"
-                    "Every other" -> "Every other"
-                    else -> ""
-                }
-                val dayString = when (selectedNames.size) {
-                    1 -> selectedNames.first()
-                    2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                    else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
-                }
-                if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
-            } else {
+        }
+    }
+    val storedDate by remember {
+        derivedStateOf {
+            EventDateUtils.buildStoredDate(
+                repeatDescription,
+                if (repeatDescription != null) nextOccurrence else null,
                 selectedDate
+            )
+        }
+    }
+    var notificationTime by remember {
+        mutableStateOf(
+            if (initial.notificationEnabled &&
+                initial.notificationHour != null &&
+                initial.notificationMinute != null
+            ) {
+                Pair(initial.notificationHour!!, initial.notificationMinute!!)
+            } else {
+                null
+            }
+        )
+    }
+    var notificationEnabled by remember { mutableStateOf(notificationTime != null) }
+    val context = LocalContext.current
+
+    fun launchTimePicker() {
+        val calendar = Calendar.getInstance()
+        val initialHour = notificationTime?.first ?: calendar.get(Calendar.HOUR_OF_DAY)
+        val initialMinute = notificationTime?.second ?: calendar.get(Calendar.MINUTE)
+        val dialog = TimePickerDialog(
+            context,
+            { _, hour, minute ->
+                notificationTime = Pair(hour, minute)
+                notificationEnabled = true
+            },
+            initialHour,
+            initialMinute,
+            true
+        )
+        dialog.setOnDismissListener {
+            if (notificationEnabled && notificationTime == null) {
+                notificationEnabled = false
             }
         }
+        dialog.show()
     }
 
     AlertDialog(
@@ -89,32 +128,14 @@ fun EventDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val daysFull = listOf(
-                        "Sunday",
-                        "Monday",
-                        "Tuesday",
-                        "Wednesday",
-                        "Thursday",
-                        "Friday",
-                        "Saturday"
+                    onSave(
+                        title,
+                        description,
+                        storedDate,
+                        address.ifBlank { null },
+                        notificationTime,
+                        notificationEnabled && notificationTime != null
                     )
-                    val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-                    val finalDate = if (selectedNames.isNotEmpty()) {
-                        val prefix = when (repeatOption) {
-                            "Every" -> "Every"
-                            "Every other" -> "Every other"
-                            else -> ""
-                        }
-                        val dayString = when (selectedNames.size) {
-                            1 -> selectedNames.first()
-                            2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                            else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
-                        }
-                        if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
-                    } else {
-                        selectedDate
-                    }
-                    onSave(title, description, finalDate, address.ifBlank { null })
                 },
                 enabled = title.isNotBlank(),
             ) { Text("Save") }
@@ -193,10 +214,64 @@ fun EventDialog(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Checkbox(
                                 checked = dayChecks[i],
-                                onCheckedChange = { dayChecks[i] = it }
+                                onCheckedChange = {
+                                    dayChecks[i] = it
+                                    val computedDate = EventDateUtils.computeNextOccurrence(dayChecks.toList())
+                                    if (!computedDate.isNullOrBlank()) {
+                                        selectedDate = computedDate
+                                    }
+                                }
                             )
                             Text(letters[i])
                         }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconToggleButton(
+                        checked = notificationEnabled,
+                        onCheckedChange = { enabled ->
+                            if (enabled) {
+                                notificationEnabled = true
+                                if (notificationTime == null) {
+                                    launchTimePicker()
+                                }
+                            } else {
+                                notificationEnabled = false
+                                notificationTime = null
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (notificationEnabled) {
+                                Icons.Filled.Notifications
+                            } else {
+                                Icons.Outlined.NotificationsNone
+                            },
+                            contentDescription = if (notificationEnabled) {
+                                "Notification enabled"
+                            } else {
+                                "Notification disabled"
+                            }
+                        )
+                    }
+                    if (notificationEnabled) {
+                        TextButton(onClick = { launchTimePicker() }) {
+                            Text(
+                                text = notificationTime?.let { (hour, minute) ->
+                                    "Notification Time: ${String.format("%02d:%02d", hour, minute)}"
+                                } ?: "Set Notification Time"
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "Notification off",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }

@@ -46,10 +46,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.multi.util.showModernToast
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.util.showModernToast
+import com.example.multi.EventDateUtils
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -379,7 +380,8 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
                                     request.event.description,
                                     selectedHour,
                                     selectedMinute,
-                                    request.event.date
+                                    request.event.date,
+                                    EventDateUtils.resolveNextNotificationDate(request.event.date)
                                 )
                                 if (success) {
                                     val updated = request.event.copy(
@@ -468,13 +470,42 @@ private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Not
             EventDialog(
                 initial = event,
                 onDismiss = { editingIndex = null },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, notificationTime, enableNotification ->
                     editingIndex = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        var updated = Event(event.id, title, desc, date, addr).apply {
+                            if (enableNotification && notificationTime != null) {
+                                setNotificationTime(notificationTime.first, notificationTime.second)
+                            } else {
+                                disableNotification()
+                            }
+                        }
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         events[index] = updated
+
+                        if (enableNotification && notificationTime != null) {
+                            val nextDate = EventDateUtils.resolveNextNotificationDate(updated.date)
+                            val success = scheduleEventNotification(
+                                context,
+                                updated.title,
+                                updated.description,
+                                notificationTime.first,
+                                notificationTime.second,
+                                updated.date,
+                                nextDate
+                            )
+                            if (success) {
+                                context.showModernToast("Notification scheduled")
+                            } else {
+                                updated = updated.copy().apply { disableNotification() }
+                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                events[index] = updated
+                                context.showModernToast("Failed to schedule notification")
+                            }
+                        } else if (!enableNotification && event.notificationEnabled) {
+                            context.showModernToast("Notification disabled")
+                        }
                     }
                 },
                 onDelete = {

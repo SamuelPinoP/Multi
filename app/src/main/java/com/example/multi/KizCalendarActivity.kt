@@ -16,6 +16,7 @@ import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
+import com.example.multi.EventDateUtils
 import java.time.YearMonth
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
@@ -298,7 +299,8 @@ private fun KizCalendarScreen() {
                                     request.event.description,
                                     selectedHour,
                                     selectedMinute,
-                                    request.event.date
+                                    request.event.date,
+                                    EventDateUtils.resolveNextNotificationDate(request.event.date)
                                 )
                                 if (success) {
                                     val updated = request.event.copy(
@@ -544,15 +546,51 @@ private fun KizCalendarScreen() {
             EventDialog(
                 initial = event,
                 onDismiss = { editingEvent = null },
-                onSave = { title, desc, date, addr ->
+                onSave = { title, desc, date, addr, notificationTime, enableNotification ->
                     editingEvent = null
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).eventDao()
-                        val updated = Event(event.id, title, desc, date, addr)
+                        var updated = Event(event.id, title, desc, date, addr).apply {
+                            if (enableNotification && notificationTime != null) {
+                                setNotificationTime(notificationTime.first, notificationTime.second)
+                            } else {
+                                disableNotification()
+                            }
+                        }
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
                         val idx = events.indexOfFirst { it.id == event.id }
                         if (idx >= 0) {
                             events[idx] = updated
+                        }
+                        selectedEvents = selectedEvents.map { current ->
+                            if (current.id == updated.id) updated else current
+                        }
+                        if (enableNotification && notificationTime != null) {
+                            val nextDate = EventDateUtils.resolveNextNotificationDate(updated.date)
+                            val success = scheduleEventNotification(
+                                context,
+                                updated.title,
+                                updated.description,
+                                notificationTime.first,
+                                notificationTime.second,
+                                updated.date,
+                                nextDate
+                            )
+                            if (success) {
+                                context.showModernToast("Notification scheduled")
+                            } else {
+                                updated = updated.copy().apply { disableNotification() }
+                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                if (idx >= 0) {
+                                    events[idx] = updated
+                                }
+                                selectedEvents = selectedEvents.map { current ->
+                                    if (current.id == updated.id) updated else current
+                                }
+                                context.showModernToast("Failed to schedule notification")
+                            }
+                        } else if (!enableNotification && event.notificationEnabled) {
+                            context.showModernToast("Notification disabled")
                         }
                     }
                 },

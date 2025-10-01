@@ -26,7 +26,8 @@ class BootReceiver : BroadcastReceiver() {
                         it.description,
                         it.notificationHour!!,
                         it.notificationMinute!!,
-                        it.date
+                        it.date,
+                        EventDateUtils.resolveNextNotificationDate(it.date)
                     )
                 }
             }

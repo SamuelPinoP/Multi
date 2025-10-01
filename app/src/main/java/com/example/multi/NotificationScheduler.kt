@@ -19,7 +19,8 @@ fun scheduleEventNotification(
     description: String,
     hour: Int,
     minute: Int,
-    date: String?
+    date: String?,
+    firstTriggerOverride: String? = null
 ): Boolean {
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
@@ -28,21 +29,37 @@ fun scheduleEventNotification(
 
     return try {
         var scheduled = false
-        val days = listOf("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday")
-        if (!date.isNullOrBlank() && date.startsWith("Every")) {
-            val intervalDays = if (date.startsWith("Every other")) 14 else 7
-            days.forEachIndexed { index, day ->
-                if (date.contains(day)) {
-                    val calendar = Calendar.getInstance().apply {
-                        set(Calendar.DAY_OF_WEEK, index + 1)
-                        set(Calendar.HOUR_OF_DAY, hour)
-                        set(Calendar.MINUTE, minute)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                        if (timeInMillis <= System.currentTimeMillis()) {
-                            add(Calendar.DAY_OF_MONTH, intervalDays)
-                        }
+        val parsedDate = EventDateUtils.parseStoredDate(date)
+        val repeatDescription = parsedDate.repeatDescription
+        val explicitDate = parsedDate.explicitDate
+        val storedNextDate = parsedDate.nextOccurrence
+        val days = EventDateUtils.dayNames()
+        if (!repeatDescription.isNullOrBlank() && repeatDescription.startsWith("Every")) {
+            val intervalDays = if (repeatDescription.startsWith("Every other", ignoreCase = true)) 14 else 7
+            val selectedDays = days.mapIndexedNotNull { index, day ->
+                if (repeatDescription.contains(day, ignoreCase = true)) index else null
+            }
+            val overrideCalendar = EventDateUtils.parseDateToCalendar(firstTriggerOverride ?: storedNextDate)
+            selectedDays.forEach { index ->
+                val calendar = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                    val matchedOverride = overrideCalendar?.takeIf {
+                        it.get(Calendar.DAY_OF_WEEK) == index + 1
                     }
+                    if (matchedOverride != null) {
+                        set(Calendar.YEAR, matchedOverride.get(Calendar.YEAR))
+                        set(Calendar.MONTH, matchedOverride.get(Calendar.MONTH))
+                        set(Calendar.DAY_OF_MONTH, matchedOverride.get(Calendar.DAY_OF_MONTH))
+                    } else {
+                        set(Calendar.DAY_OF_WEEK, index + 1)
+                    }
+                    if (timeInMillis <= System.currentTimeMillis()) {
+                        add(Calendar.DAY_OF_MONTH, intervalDays)
+                    }
+                }
                     val intent = Intent(context, NotificationReceiver::class.java).apply {
                         putExtra("title", title)
                         putExtra("description", description)
@@ -78,14 +95,21 @@ fun scheduleEventNotification(
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             val calendar = Calendar.getInstance().apply {
-                if (!date.isNullOrBlank()) {
-                    val parts = date.split("-")
-                    if (parts.size == 3) {
-                        try {
-                            set(Calendar.YEAR, parts[0].toInt())
-                            set(Calendar.MONTH, parts[1].toInt() - 1)
-                            set(Calendar.DAY_OF_MONTH, parts[2].toInt())
-                        } catch (_: NumberFormatException) {}
+                val targetDate = firstTriggerOverride ?: storedNextDate ?: explicitDate ?: date
+                if (!targetDate.isNullOrBlank()) {
+                    EventDateUtils.parseDateToCalendar(targetDate)?.let { parsed ->
+                        set(Calendar.YEAR, parsed.get(Calendar.YEAR))
+                        set(Calendar.MONTH, parsed.get(Calendar.MONTH))
+                        set(Calendar.DAY_OF_MONTH, parsed.get(Calendar.DAY_OF_MONTH))
+                    } ?: run {
+                        val parts = targetDate.split("-")
+                        if (parts.size == 3) {
+                            try {
+                                set(Calendar.YEAR, parts[0].toInt())
+                                set(Calendar.MONTH, parts[1].toInt() - 1)
+                                set(Calendar.DAY_OF_MONTH, parts[2].toInt())
+                            } catch (_: NumberFormatException) {}
+                        }
                     }
                 }
                 set(Calendar.HOUR_OF_DAY, hour)

@@ -72,32 +72,36 @@ fun CreateEventDialog(
     val pickerState = rememberDatePickerState()
     var repeatOption by remember { mutableStateOf<String?>(null) }
     val dayChecks = remember { mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } } }
+    val repeatDescription by remember {
+        derivedStateOf { EventDateUtils.buildRepeatDescription(repeatOption, dayChecks.toList()) }
+    }
+    val nextOccurrence by remember {
+        derivedStateOf { EventDateUtils.computeNextOccurrence(dayChecks.toList()) }
+    }
     val previewDate by remember {
         derivedStateOf {
-            val daysFull = listOf(
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday"
+            EventDateUtils.formatPreview(
+                selectedDate,
+                repeatDescription,
+                if (repeatDescription != null) nextOccurrence else null
             )
-            val selectedNames = daysFull.filterIndexed { index, _ -> dayChecks[index] }
-            if (selectedNames.isNotEmpty()) {
-                val prefix = when (repeatOption) {
-                    "Every" -> "Every"
-                    "Every other" -> "Every other"
-                    else -> ""
-                }
-                val dayString = when (selectedNames.size) {
-                    1 -> selectedNames.first()
-                    2 -> "${selectedNames[0]} and ${selectedNames[1]}"
-                    else -> selectedNames.dropLast(1).joinToString(", ") + " and " + selectedNames.last()
-                }
-                if (prefix.isNotEmpty()) "$prefix $dayString" else dayString
-            } else {
+        }
+    }
+    val storedDate by remember {
+        derivedStateOf {
+            EventDateUtils.buildStoredDate(
+                repeatDescription,
+                if (repeatDescription != null) nextOccurrence else null,
                 selectedDate
+            )
+        }
+    }
+    val notificationDate by remember {
+        derivedStateOf {
+            when {
+                !repeatDescription.isNullOrBlank() -> nextOccurrence
+                !selectedDate.isNullOrBlank() -> selectedDate
+                else -> null
             }
         }
     }
@@ -132,13 +136,22 @@ fun CreateEventDialog(
                                     context.startActivity(intent)
                                     context.showModernToast("Please grant 'Alarms & reminders' permission to schedule exact notifications.")
                                 } else {
-                                    val success = scheduleEventNotification(context, title, description, hour, minute, previewDate)
+                                    val storedDateValue = storedDate
+                                    val success = scheduleEventNotification(
+                                        context,
+                                        title,
+                                        description,
+                                        hour,
+                                        minute,
+                                        storedDateValue,
+                                        notificationDate
+                                    )
                                     if (success) {
                                         val dao = EventDatabase.getInstance(context).eventDao()
                                         val event = Event(
                                             title = title,
                                             description = description,
-                                            date = previewDate,
+                                            date = storedDateValue,
                                             address = address
                                         ).apply { setNotificationTime(hour, minute) }
                                         val id = withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
@@ -160,10 +173,11 @@ fun CreateEventDialog(
                         if (title.isNotBlank()) {
                             scope.launch {
                                 val dao = EventDatabase.getInstance(context).eventDao()
+                                val storedDateValue = storedDate
                                 val event = Event(
                                     title = title,
                                     description = description,
-                                    date = previewDate,
+                                    date = storedDateValue,
                                     address = address
                                 )
                                 val id = withContext(Dispatchers.IO) { dao.insert(event.toEntity()) }
@@ -248,7 +262,13 @@ fun CreateEventDialog(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Checkbox(
                                 checked = dayChecks[i],
-                                onCheckedChange = { dayChecks[i] = it }
+                                onCheckedChange = {
+                                    dayChecks[i] = it
+                                    val computedDate = EventDateUtils.computeNextOccurrence(dayChecks.toList())
+                                    if (!computedDate.isNullOrBlank()) {
+                                        selectedDate = computedDate
+                                    }
+                                }
                             )
                             Text(letters[i])
                         }
