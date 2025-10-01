@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -110,12 +112,15 @@ private fun DayChoiceDialog(
     )
 }
 
+/** Simple model for a mindset card (id is runtime-only, not persisted). */
+private data class MindsetItem(val id: Long, var text: String)
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     val context = LocalContext.current
     val goals = remember { mutableStateListOf<WeeklyGoal>() }
-    var editingIndex by remember { mutableStateOf<Int?>(null) }
+    var editingIndex by remember { mutableStateOf<Int?>(null) } // goals editor index
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedGoalIndex by remember { mutableStateOf<Int?>(null) }
@@ -124,13 +129,25 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     var showAllDialog by remember { mutableStateOf(false) }
     var edgeCelebration by remember { mutableStateOf(false) }
 
-    var isMindsetExpanded by remember { mutableStateOf(false) }
-    var mindsetText by remember { mutableStateOf("") }
+    // --- Mindset state (multi-card) ---
+    val mindsetItems = remember { mutableStateListOf<MindsetItem>() }
+    val expandedState = remember { mutableStateMapOf<Long, Boolean>() } // per-card expand state
     var showMindsetDialog by remember { mutableStateOf(false) }
+    var mindsetDialogText by remember { mutableStateOf("") }
+    var mindsetDialogIndex by remember { mutableStateOf<Int?>(null) } // null = none, -1 = add, >=0 = edit
 
-    LaunchedEffect(Unit) { edgeCelebration = GoalCelebrationPrefs.isActive(context) }
-    LaunchedEffect(Unit) { isMindsetExpanded = MindsetPrefs.isExpanded(context) }
-    LaunchedEffect(Unit) { mindsetText = MindsetPrefs.getText(context) }
+    LaunchedEffect(Unit) {
+        edgeCelebration = GoalCelebrationPrefs.isActive(context)
+        // Load persisted mindsets (list of strings)
+        val saved = MindsetPrefs.getMindsets(context)
+        mindsetItems.clear()
+        val base = System.currentTimeMillis()
+        saved.forEachIndexed { i, txt ->
+            val item = MindsetItem(id = base + i, text = txt)
+            mindsetItems.add(item)
+            expandedState.putIfAbsent(item.id, false)
+        }
+    }
 
     // Auto stop confetti after 3s
     LaunchedEffect(showConfetti) {
@@ -229,122 +246,179 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(16.dp))
-
-            // -------- Mindset Card (fixed header behavior + chevron rotation) ----------
-            val chevronRotation by animateFloatAsState(
-                targetValue = if (isMindsetExpanded) 180f else 0f,
-                label = "mindset-chevron"
-            )
-
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            ) {
-                Column(
+            // Tiny + button when there are NO mindset cards
+            if (mindsetItems.isEmpty()) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 18.dp)
+                        .padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
-
-                    // Header row: WHOLE ROW toggles expand (except the + button)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                val newState = !isMindsetExpanded
-                                isMindsetExpanded = newState
-                                MindsetPrefs.setExpanded(context, newState)
-                            }
-                            .padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    IconButton(
+                        onClick = {
+                            mindsetDialogIndex = -1
+                            mindsetDialogText = ""
+                            showMindsetDialog = true
+                        },
+                        modifier = Modifier.size(36.dp)
                     ) {
-                        // Title + subtitle
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Mindset",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = when {
-                                    isMindsetExpanded -> "Your focus is:"
-                                    mindsetText.isBlank() -> "Tap to view"
-                                    else -> "Tap to view"
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                            )
-                        }
-
-                        // + button — opens dialog; click doesn't propagate to row
-                        IconButton(onClick = { showMindsetDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add mindset text"
-                            )
-                        }
-
-                        // Chevron (visual; row handles the click)
-                        Icon(
-                            imageVector = Icons.Filled.ExpandMore,
-                            contentDescription = if (isMindsetExpanded) "Collapse mindset" else "Expand mindset",
-                            modifier = Modifier.rotate(chevronRotation)
-                        )
+                        Icon(Icons.Default.Add, contentDescription = "Add mindset")
                     }
+                }
+            }
 
-                    AnimatedVisibility(
-                        visible = isMindsetExpanded,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
+            Spacer(Modifier.height(8.dp))
+
+            // -------- Mindset Cards (multi-card) ----------
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                mindsetItems.forEachIndexed { idx, item ->
+                    val expanded = expandedState[item.id] ?: false
+                    val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "mindset-${item.id}")
+
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                                .padding(horizontal = 20.dp, vertical = 16.dp)
                         ) {
-                            // The editable mindset text, shown ABOVE the goals
-                            if (mindsetText.isNotBlank()) {
-                                Text(
-                                    text = mindsetText,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        expandedState[item.id] = !expanded
+                                    }
+                                    .padding(vertical = 2.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Mindset",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        text = if (expanded) "Your focus is:" else "Tap to view",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                    )
+                                }
+
+                                // Add (new card)
+                                IconButton(
+                                    onClick = {
+                                        mindsetDialogIndex = -1
+                                        mindsetDialogText = ""
+                                        showMindsetDialog = true
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = "Add another mindset")
+                                }
+
+                                // Edit (this card)
+                                IconButton(
+                                    onClick = {
+                                        mindsetDialogIndex = idx
+                                        mindsetDialogText = item.text
+                                        showMindsetDialog = true
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Edit mindset")
+                                }
+
+                                // Delete (this card)
+                                IconButton(
+                                    onClick = {
+                                        mindsetItems.removeAt(idx)
+                                        MindsetPrefs.setMindsets(context, mindsetItems.map { it.text })
+                                        snackbarHostState.currentSnackbarData?.dismiss()
+                                        scope.launch { snackbarHostState.showSnackbar("Mindset deleted") }
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete mindset")
+                                }
+
+                                // Chevron (visual)
+                                Icon(
+                                    imageVector = Icons.Filled.ExpandMore,
+                                    contentDescription = if (expanded) "Collapse mindset" else "Expand mindset",
+                                    modifier = Modifier.rotate(rotation)
                                 )
-                            } else {
-                                Text(
-                                    text = "Tap + to add your mindset for this week",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
-                                )
+                            }
+
+                            AnimatedVisibility(
+                                visible = expanded,
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    if (item.text.isNotBlank()) {
+                                        Text(
+                                            text = item.text,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "No text yet. Tap the pencil to edit.",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
+            // -------- End Mindset Cards ----------
 
-            // Mindset popup
+            // -------- Mindset Dialog (add / edit) ----------
             if (showMindsetDialog) {
                 MindsetInputDialog(
-                    initial = mindsetText,
+                    initial = mindsetDialogText,
                     onDismiss = { showMindsetDialog = false },
                     onSave = { newText ->
-                        mindsetText = newText
-                        MindsetPrefs.setText(context, newText)
-                        isMindsetExpanded = true
-                        MindsetPrefs.setExpanded(context, true)
+                        val text = newText.trim()
+                        if (text.isNotEmpty()) {
+                            when (val i = mindsetDialogIndex) {
+                                null -> Unit
+                                -1 -> { // add new card
+                                    val item = MindsetItem(
+                                        id = System.currentTimeMillis() + mindsetItems.size,
+                                        text = text
+                                    )
+                                    mindsetItems.add(item)
+                                    expandedState[item.id] = true
+                                }
+                                else -> { // edit existing
+                                    if (i in mindsetItems.indices) {
+                                        mindsetItems[i] = mindsetItems[i].copy(text = text)
+                                    }
+                                }
+                            }
+                            MindsetPrefs.setMindsets(context, mindsetItems.map { it.text })
+                            scope.launch { snackbarHostState.showSnackbar("Mindset saved") }
+                        }
                         showMindsetDialog = false
-                        scope.launch { snackbarHostState.showSnackbar("Mindset updated") }
                     }
                 )
             }
-            // -------- End Mindset Card ----------
+            // -------- End Mindset Dialog ----------
 
+            // ---- Goals list (unchanged) ----
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -946,7 +1020,7 @@ private fun EdgeCelebrationOverlay(modifier: Modifier = Modifier) {
     }
 }
 
-// ---------- Added: Mindset input dialog ----------
+// ---------- Mindset input dialog ----------
 @Composable
 private fun MindsetInputDialog(
     initial: String,
