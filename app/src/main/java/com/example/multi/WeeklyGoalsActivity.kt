@@ -114,6 +114,9 @@ private fun DayChoiceDialog(
 private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     val context = LocalContext.current
     val goals = remember { mutableStateListOf<WeeklyGoal>() }
+    val mindsetItems = remember {
+        mutableStateListOf("Workout", "Study", "Read")
+    }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -121,6 +124,8 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
     var showConfetti by remember { mutableStateOf(false) }
     var showAllDialog by remember { mutableStateOf(false) }
+    var showMindsetDialog by remember { mutableStateOf(false) }
+    var newMindsetText by remember { mutableStateOf("") }
     var edgeCelebration by remember { mutableStateOf(false) }
     var isMindsetExpanded by remember { mutableStateOf(false) }
 
@@ -265,10 +270,18 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
                         }
-                        Icon(
-                            imageVector = if (isMindsetExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = if (isMindsetExpanded) "Collapse mindset" else "Expand mindset"
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { showMindsetDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add mindset focus"
+                                )
+                            }
+                            Icon(
+                                imageVector = if (isMindsetExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (isMindsetExpanded) "Collapse mindset" else "Expand mindset"
+                            )
+                        }
                     }
 
                     AnimatedVisibility(
@@ -288,34 +301,42 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 fontWeight = FontWeight.SemiBold
                             )
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                listOf("Workout", "Study", "Read").forEach { focus ->
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Surface(
-                                            modifier = Modifier
-                                                .size(32.dp),
-                                            shape = MaterialTheme.shapes.small,
-                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                            contentColor = MaterialTheme.colorScheme.primary
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null
+                                if (mindsetItems.isEmpty()) {
+                                    Text(
+                                        text = "Add a focus to keep your mindset fresh.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    )
+                                } else {
+                                    mindsetItems.forEach { focus ->
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Surface(
+                                                modifier = Modifier
+                                                    .size(32.dp),
+                                                shape = MaterialTheme.shapes.small,
+                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                                contentColor = MaterialTheme.colorScheme.primary
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = null
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column {
+                                                Text(
+                                                    text = focus,
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Text(
+                                                    text = "Weekly goal",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                                                 )
                                             }
-                                        }
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
-                                            Text(
-                                                text = focus,
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Text(
-                                                text = "Weekly goal",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                            )
                                         }
                                     }
                                 }
@@ -620,6 +641,51 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         }
                         val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                    }
+                }
+            )
+        }
+
+        if (showMindsetDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showMindsetDialog = false
+                    newMindsetText = ""
+                },
+                title = { Text("Add Mindset Focus") },
+                text = {
+                    OutlinedTextField(
+                        value = newMindsetText,
+                        onValueChange = { newMindsetText = it },
+                        singleLine = true,
+                        placeholder = { Text("What will you focus on?") },
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val trimmed = newMindsetText.trim()
+                            if (trimmed.isNotEmpty()) {
+                                mindsetItems.add(trimmed)
+                                newMindsetText = ""
+                                showMindsetDialog = false
+                            }
+                        },
+                        enabled = newMindsetText.isNotBlank()
+                    ) {
+                        Text("Add")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showMindsetDialog = false
+                            newMindsetText = ""
+                        }
+                    ) {
+                        Text("Cancel")
                     }
                 }
             )
