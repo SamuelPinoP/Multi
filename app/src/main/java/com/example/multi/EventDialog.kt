@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -17,6 +18,10 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -33,7 +38,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.util.openAddressInMaps
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +61,7 @@ fun EventDialog(
     val dayChecks = remember {
         mutableStateListOf<Boolean>().apply { repeat(7) { add(false) } }
     }
+    val context = LocalContext.current
     val previewDate by remember {
         derivedStateOf {
             val daysFull = listOf(
@@ -149,15 +157,26 @@ fun EventDialog(
                     )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = address,
-                    onValueChange = { address = it },
-                    label = { Text("Address") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions.Default.copy(
-                        capitalization = KeyboardCapitalization.Sentences
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = address,
+                        onValueChange = { address = it },
+                        label = { Text("Address") },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions.Default.copy(
+                            capitalization = KeyboardCapitalization.Sentences
+                        )
                     )
-                )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(onClick = { openAddressInMaps(context, address) }) {
+                        Icon(
+                            imageVector = Icons.Filled.Map,
+                            contentDescription = "Open in Maps"
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { showPicker = true }) { Text("Date") }
