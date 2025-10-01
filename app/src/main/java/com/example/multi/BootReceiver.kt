@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.multi.data.EventDatabase
+import com.example.multi.data.toModel
 
 /**
  * Reschedules event notifications after device reboot.
@@ -19,16 +20,9 @@ class BootReceiver : BroadcastReceiver() {
             CoroutineScope(Dispatchers.Default).launch {
                 val dao = EventDatabase.getInstance(context).eventDao()
                 val events = withContext(Dispatchers.IO) { dao.getEvents() }
-                events.filter { it.notificationEnabled && it.notificationHour != null && it.notificationMinute != null }.forEach {
-                    scheduleEventNotification(
-                        context,
-                        it.title,
-                        it.description,
-                        it.notificationHour!!,
-                        it.notificationMinute!!,
-                        it.date
-                    )
-                }
+                events.map { it.toModel() }
+                    .filter { it.hasValidNotificationTime() }
+                    .forEach { scheduleEventNotification(context, it) }
             }
         }
     }
