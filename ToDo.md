@@ -1,22 +1,7 @@
 /*
-********************DO LITTLE BY LITTLE********************
-*** Create a single activity and multiple screens***
-*********************PRIORITY********************* 
-
-
-* If a date is chosen for an event make the notification happen only that date. If I choose tuesday,
-then the notifications can happen on tuesday only not every day at that time or the same day.
-
-* Icon:
-  Multi and Tic Tac Toe need icons. I bet that is easy to do.
-
-* The Record says No record yet. I want to put an animation here whenever it is empty from loties.
-  Also improve the separation from weeks so I see how they look better.
-
-* Whatever event has a remainder must be different from events without. I must be able to edit the
-remainder.
-
-* Multi stands for multiple things that is why the homepage has multiple images.
+*****************DO LITTLE BY LITTLE*****************
+*** Create a single activity and multiple screens ***
+    ******************PRIORITY*******************
 
 * Add an overall description for all the Goals.
 
@@ -89,6 +74,11 @@ Make it look beautiful.
 
 // Try UI without moving tiles and reduce size of wheel. Maybe create branch as it is before.
 
+* Icon:
+  Multi and Tic Tac Toe need icons. I bet that is easy to do.
+
+* The Record says No record yet. I want to put an animation here whenever it is empty from loties.
+  Also improve the separation from weeks so I see how they look better.
 *************************************Later**********************************************************
 * The purple pop up that displays when adding an event looks supper ugly and colorless so I need to
   create a better UI with more beauty.
