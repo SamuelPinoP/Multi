@@ -66,6 +66,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
 import com.example.multi.util.occursOn
+import com.example.multi.util.openMaps
 import com.example.multi.util.showModernToast
 
 /** Activity showing the Kizitonwose calendar. */
@@ -509,11 +510,7 @@ private fun KizCalendarScreen() {
                                         style = MaterialTheme.typography.labelSmall,
                                         modifier = Modifier
                                             .padding(top = 4.dp)
-                                            .clickable {
-                                                val uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(addr))
-                                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
-                                                context.startActivity(intent)
-                                            }
+                                            .clickable { context.openMaps(addr) }
                                     )
                                 }
                             }
