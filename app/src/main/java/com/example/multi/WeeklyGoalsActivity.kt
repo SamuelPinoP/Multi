@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -274,9 +273,9 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = when {
-                                    isMindsetExpanded -> "Keep your focus front and center."
-                                    mindsetText.isBlank() -> "Tap + to add this week's inspiration."
-                                    else -> "Tap to view this week's inspiration."
+                                    isMindsetExpanded -> "Your focus is:"
+                                    mindsetText.isBlank() -> "Tap to view"
+                                    else -> "Tap to view"
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
@@ -307,14 +306,14 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 16.dp),
+                                .padding(top = 4.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             // The editable mindset text, shown ABOVE the goals
                             if (mindsetText.isNotBlank()) {
                                 Text(
                                     text = mindsetText,
-                                    style = MaterialTheme.typography.titleLarge,
+                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             } else {
@@ -323,40 +322,6 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
                                 )
-                            }
-
-                            // Goals list (unchanged)
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                listOf("Workout", "Study", "Read").forEach { focus ->
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Surface(
-                                            modifier = Modifier.size(32.dp),
-                                            shape = MaterialTheme.shapes.small,
-                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                            contentColor = MaterialTheme.colorScheme.primary
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null
-                                                )
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
-                                            Text(
-                                                text = focus,
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Text(
-                                                text = "Weekly goal",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                            )
-                                        }
-                                    }
-                                }
                             }
                         }
                     }
