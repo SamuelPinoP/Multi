@@ -2,6 +2,18 @@
 *****************DO LITTLE BY LITTLE*****************
 *** Create a single activity and multiple screens ***
     ******************PRIORITY*******************
+* Mindset to learn:
+
+It will be the same mindset to all my Goals. The mindset will
+be initially centered but it will give the option of being note centered.
+
+* Mindset and color of goals
+  Whenever I change the mindset of my goal I can choose which goals will develop that mindset.
+
+I can also change the color of them that will create a border with that color. I need to ask chat
+GPT to build it beautifully. I can drag and drop a Goal into a Mindset and it will change it's
+color. One goal can belong in two different mindsets. Whenever I make progress in it it will
+update in both.
 
 * Add an overall description for all the Goals.
 
@@ -30,23 +42,6 @@ remaining under).
 
 * Consider adding a description for the Goals.
  Adding a Note to the Goals that will be a description.
-
-* Mindset to learn:
- Establish a Mindset: My mindset can be to endure with God in Holynes and Righteousness until he 
-answers. Asking my christian life to become a marriage with Jesus where everything I want is what he
-speaks to my mind. I need to submit myself to God completely. In this submission I must persist in 
-courage and strength.
-
- The mindset will be above the Goals.  It will be the same mindset to all my Goals. The mindset will 
-be initially centered but it will give the option of being note centered.
-
-* Mindset and color of goals
- Whenever I change the mindset of my goal I can choose which goals will develop that mindset.
-
- I can also change the color of them that will create a border with that color. I need to ask chat 
-GPT to build it beautifully. I can drag and drop a Goal into a Mindset and it will change it's 
-color. One goal can belong in two different mindsets. Whenever I make progress in it it will 
-update in both.
 
 * Adding initial Goal suggestions.
  Suggest to work out as a Goal to whoever opens the app. Suggest an spiritual and intellectual Goal 
