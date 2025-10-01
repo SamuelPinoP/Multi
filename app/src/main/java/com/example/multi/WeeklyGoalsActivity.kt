@@ -109,6 +109,41 @@ private fun DayChoiceDialog(
     )
 }
 
+@Composable
+private fun MindsetEntryDialog(
+    text: String,
+    onTextChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Mindset Focus") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("What focus would you like to highlight this week?")
+                TextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    placeholder = { Text("Focus name") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = text.isNotBlank()) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
@@ -123,6 +158,11 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     var showAllDialog by remember { mutableStateOf(false) }
     var edgeCelebration by remember { mutableStateOf(false) }
     var isMindsetExpanded by remember { mutableStateOf(false) }
+    var showMindsetDialog by remember { mutableStateOf(false) }
+    var newMindsetText by remember { mutableStateOf("") }
+    val mindsetFocuses = remember {
+        mutableStateListOf("Workout", "Study", "Read")
+    }
 
     LaunchedEffect(Unit) { edgeCelebration = GoalCelebrationPrefs.isActive(context) }
     LaunchedEffect(Unit) { isMindsetExpanded = MindsetPrefs.isExpanded(context) }
@@ -226,6 +266,25 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
             Spacer(Modifier.height(16.dp))
 
+            if (showMindsetDialog) {
+                MindsetEntryDialog(
+                    text = newMindsetText,
+                    onTextChange = { newMindsetText = it },
+                    onDismiss = {
+                        showMindsetDialog = false
+                        newMindsetText = ""
+                    },
+                    onConfirm = {
+                        val formatted = newMindsetText.trim()
+                        if (formatted.isNotEmpty()) {
+                            mindsetFocuses.add(formatted.capitalizeSentences())
+                        }
+                        showMindsetDialog = false
+                        newMindsetText = ""
+                    }
+                )
+            }
+
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.elevatedCardColors(
@@ -236,19 +295,21 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            val newState = !isMindsetExpanded
-                            isMindsetExpanded = newState
-                            MindsetPrefs.setExpanded(context, newState)
-                        }
                         .padding(horizontal = 20.dp, vertical = 18.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    val newState = !isMindsetExpanded
+                                    isMindsetExpanded = newState
+                                    MindsetPrefs.setExpanded(context, newState)
+                                }
+                        ) {
                             Text(
                                 text = "Mindset",
                                 style = MaterialTheme.typography.titleMedium,
@@ -265,10 +326,24 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
                         }
-                        Icon(
-                            imageVector = if (isMindsetExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = if (isMindsetExpanded) "Collapse mindset" else "Expand mindset"
-                        )
+                        IconButton(onClick = { showMindsetDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add mindset focus"
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                val newState = !isMindsetExpanded
+                                isMindsetExpanded = newState
+                                MindsetPrefs.setExpanded(context, newState)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (isMindsetExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (isMindsetExpanded) "Collapse mindset" else "Expand mindset"
+                            )
+                        }
                     }
 
                     AnimatedVisibility(
@@ -288,7 +363,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 fontWeight = FontWeight.SemiBold
                             )
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                listOf("Workout", "Study", "Read").forEach { focus ->
+                                mindsetFocuses.forEach { focus ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Surface(
                                             modifier = Modifier
