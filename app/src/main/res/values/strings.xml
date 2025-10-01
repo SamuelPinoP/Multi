@@ -5,6 +5,10 @@
     <string name="label_notes">Notes</string>
     <string name="label_weekly_goals">Weekly Goals</string>
     <string name="open_last_note">Open last note</string>
+    <string name="mindset_title">Mindset</string>
+    <string name="mindset_hint">Tap to add a guiding focus for your week.</string>
+    <string name="mindset_placeholder">Loving Jesus</string>
+    <string name="mindset_input_label">Weekly mindset</string>
     <plurals name="words_count">
         <item quantity="one">%d word</item>
         <item quantity="other">%d words</item>

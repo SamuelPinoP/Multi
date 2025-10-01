@@ -1,8 +1,13 @@
 package com.example.multi
 
-import com.example.multi.util.GoalCelebrationPrefs
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +22,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,14 +34,17 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -42,6 +52,8 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.util.GoalCelebrationPrefs
+import com.example.multi.util.MindsetPreferences
 import com.example.multi.util.capitalizeSentences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -114,6 +126,8 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     var showConfetti by remember { mutableStateOf(false) }
     var showAllDialog by remember { mutableStateOf(false) }
     var edgeCelebration by remember { mutableStateOf(false) }
+    var isMindsetExpanded by remember { mutableStateOf(MindsetPreferences.isExpanded(context)) }
+    var mindsetMessage by remember { mutableStateOf(MindsetPreferences.getMessage(context)) }
 
     LaunchedEffect(Unit) { edgeCelebration = GoalCelebrationPrefs.isActive(context) }
 
@@ -212,6 +226,21 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            MindsetAccordionCard(
+                expanded = isMindsetExpanded,
+                onExpandedChange = { expanded ->
+                    isMindsetExpanded = expanded
+                    MindsetPreferences.setExpanded(context, expanded)
+                },
+                message = mindsetMessage,
+                onMessageChange = { newMessage ->
+                    mindsetMessage = newMessage
+                    MindsetPreferences.setMessage(context, newMessage)
+                }
             )
 
             Spacer(Modifier.height(16.dp))
@@ -611,6 +640,90 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 64.dp)
         )
+    }
+}
+
+@Composable
+private fun MindsetAccordionCard(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    message: String,
+    onMessageChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ElevatedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize(),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(role = Role.Button) { onExpandedChange(!expanded) }
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.mindset_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = if (message.isNotBlank()) message else stringResource(R.string.mindset_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = if (expanded) Int.MAX_VALUE else 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Surface(
+                        tonalElevation = 2.dp,
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                    ) {
+                        Text(
+                            text = if (message.isNotBlank()) message else stringResource(R.string.mindset_placeholder),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                    OutlinedTextField(
+                        value = message,
+                        onValueChange = onMessageChange,
+                        label = { Text(stringResource(R.string.mindset_input_label)) },
+                        placeholder = { Text(stringResource(R.string.mindset_placeholder)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions.Default.copy(
+                            capitalization = KeyboardCapitalization.Sentences
+                        ),
+                        minLines = 2
+                    )
+                }
+            }
+        }
     }
 }
 
