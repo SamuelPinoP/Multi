@@ -7,6 +7,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +29,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -122,10 +124,14 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     var showConfetti by remember { mutableStateOf(false) }
     var showAllDialog by remember { mutableStateOf(false) }
     var edgeCelebration by remember { mutableStateOf(false) }
+
     var isMindsetExpanded by remember { mutableStateOf(false) }
+    var mindsetText by remember { mutableStateOf("") }
+    var showMindsetDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { edgeCelebration = GoalCelebrationPrefs.isActive(context) }
     LaunchedEffect(Unit) { isMindsetExpanded = MindsetPrefs.isExpanded(context) }
+    LaunchedEffect(Unit) { mindsetText = MindsetPrefs.getText(context) }
 
     // Auto stop confetti after 3s
     LaunchedEffect(showConfetti) {
@@ -226,6 +232,12 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
             Spacer(Modifier.height(16.dp))
 
+            // -------- Mindset Card (fixed header behavior + chevron rotation) ----------
+            val chevronRotation by animateFloatAsState(
+                targetValue = if (isMindsetExpanded) 180f else 0f,
+                label = "mindset-chevron"
+            )
+
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.elevatedCardColors(
@@ -236,18 +248,23 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            val newState = !isMindsetExpanded
-                            isMindsetExpanded = newState
-                            MindsetPrefs.setExpanded(context, newState)
-                        }
                         .padding(horizontal = 20.dp, vertical = 18.dp)
                 ) {
+
+                    // Header row: WHOLE ROW toggles expand (except the + button)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val newState = !isMindsetExpanded
+                                isMindsetExpanded = newState
+                                MindsetPrefs.setExpanded(context, newState)
+                            }
+                            .padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Title + subtitle
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Mindset",
@@ -256,18 +273,29 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = if (isMindsetExpanded) {
-                                    "Keep your focus front and center."
-                                } else {
-                                    "Tap to view this week's inspiration."
+                                text = when {
+                                    isMindsetExpanded -> "Keep your focus front and center."
+                                    mindsetText.isBlank() -> "Tap + to add this week's inspiration."
+                                    else -> "Tap to view this week's inspiration."
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
                         }
+
+                        // + button — opens dialog; click doesn't propagate to row
+                        IconButton(onClick = { showMindsetDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add mindset text"
+                            )
+                        }
+
+                        // Chevron (visual; row handles the click)
                         Icon(
-                            imageVector = if (isMindsetExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = if (isMindsetExpanded) "Collapse mindset" else "Expand mindset"
+                            imageVector = Icons.Filled.ExpandMore,
+                            contentDescription = if (isMindsetExpanded) "Collapse mindset" else "Expand mindset",
+                            modifier = Modifier.rotate(chevronRotation)
                         )
                     }
 
@@ -282,17 +310,27 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 .padding(top = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text(
-                                text = "Loving Jesus",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            // The editable mindset text, shown ABOVE the goals
+                            if (mindsetText.isNotBlank()) {
+                                Text(
+                                    text = mindsetText,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            } else {
+                                Text(
+                                    text = "Tap + to add your mindset for this week",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                                )
+                            }
+
+                            // Goals list (unchanged)
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 listOf("Workout", "Study", "Read").forEach { focus ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Surface(
-                                            modifier = Modifier
-                                                .size(32.dp),
+                                            modifier = Modifier.size(32.dp),
                                             shape = MaterialTheme.shapes.small,
                                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                                             contentColor = MaterialTheme.colorScheme.primary
@@ -324,6 +362,23 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                     }
                 }
             }
+
+            // Mindset popup
+            if (showMindsetDialog) {
+                MindsetInputDialog(
+                    initial = mindsetText,
+                    onDismiss = { showMindsetDialog = false },
+                    onSave = { newText ->
+                        mindsetText = newText
+                        MindsetPrefs.setText(context, newText)
+                        isMindsetExpanded = true
+                        MindsetPrefs.setExpanded(context, true)
+                        showMindsetDialog = false
+                        scope.launch { snackbarHostState.showSnackbar("Mindset updated") }
+                    }
+                )
+            }
+            // -------- End Mindset Card ----------
 
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -362,7 +417,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                         val completed = goal.dayStates.count { it == 'C' }
                                         val over = overageCount(completed, goal.frequency)
                                         contentDescription = "$completed of ${goal.frequency} completed" +
-                                            if (over > 0) ", $over over target" else ""
+                                                if (over > 0) ", $over over target" else ""
                                     }
                                 ) {
                                     val completed = goal.dayStates.count { it == 'C' }
@@ -924,4 +979,39 @@ private fun EdgeCelebrationOverlay(modifier: Modifier = Modifier) {
             size = androidx.compose.ui.geometry.Size(thickness, size.height)
         )
     }
+}
+
+// ---------- Added: Mindset input dialog ----------
+@Composable
+private fun MindsetInputDialog(
+    initial: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(initial) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Mindset") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                placeholder = { Text("e.g., Loving Jesus") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 6,
+                keyboardOptions = KeyboardOptions.Default
+            )
+        },
+        confirmButton = {
+            TextButton(
+                enabled = text.isNotBlank(),
+                onClick = { onSave(text.trim()) }
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
