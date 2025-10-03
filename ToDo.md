@@ -2,18 +2,6 @@
 *****************DO LITTLE BY LITTLE*****************
 *** Create a single activity and multiple screens ***
     ******************PRIORITY*******************
-* Mindset to learn:
-
-It will be the same mindset to all my Goals. The mindset will
-be initially centered but it will give the option of being note centered.
-
-* Mindset and color of goals
-  Whenever I change the mindset of my goal I can choose which goals will develop that mindset.
-
-I can also change the color of them that will create a border with that color. I need to ask chat
-GPT to build it beautifully. I can drag and drop a Goal into a Mindset and it will change it's
-color. One goal can belong in two different mindsets. Whenever I make progress in it it will
-update in both.
 
 * Add an overall description for all the Goals.
 
@@ -74,6 +62,19 @@ Make it look beautiful.
 
 * The Record says No record yet. I want to put an animation here whenever it is empty from loties.
   Also improve the separation from weeks so I see how they look better.
+
+* Mindset to learn:
+
+The mindset will be initially centered but it will give the option of being note centered.
+
+* Mindset and color of goals
+  Whenever I change the mindset of my goal I can choose which goals will develop that mindset.
+
+I can also change the color of them that will create a border with that color. I need to ask chat
+GPT to build it beautifully. I can drag and drop a Goal into a Mindset and it will change it's
+color. One goal can belong in two different mindsets. Whenever I make progress in it it will
+update in both.
+
 *************************************Later**********************************************************
 * The purple pop up that displays when adding an event looks supper ugly and colorless so I need to
   create a better UI with more beauty.

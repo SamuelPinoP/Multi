@@ -131,22 +131,32 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
     // --- Mindset state (multi-card) ---
     val mindsetItems = remember { mutableStateListOf<MindsetItem>() }
-    val expandedState = remember { mutableStateMapOf<Long, Boolean>() } // per-card expand state
+    // Persisted expand/collapse states (parallel to mindsetItems)
+    val mindsetExpanded = remember { mutableStateListOf<Boolean>() }
     var showMindsetDialog by remember { mutableStateOf(false) }
     var mindsetDialogText by remember { mutableStateOf("") }
     var mindsetDialogIndex by remember { mutableStateOf<Int?>(null) } // null = none, -1 = add, >=0 = edit
 
     LaunchedEffect(Unit) {
         edgeCelebration = GoalCelebrationPrefs.isActive(context)
-        // Load persisted mindsets (list of strings)
-        val saved = MindsetPrefs.getMindsets(context)
+
+        // Load persisted mindsets + expanded states
+        val savedTexts = MindsetPrefs.getMindsets(context)
+        val savedExpanded = MindsetPrefs.getExpandedStates(context)
+
         mindsetItems.clear()
+        mindsetExpanded.clear()
+
         val base = System.currentTimeMillis()
-        saved.forEachIndexed { i, txt ->
-            val item = MindsetItem(id = base + i, text = txt)
-            mindsetItems.add(item)
-            expandedState.putIfAbsent(item.id, false)
+        savedTexts.forEachIndexed { i, txt ->
+            mindsetItems.add(MindsetItem(id = base + i, text = txt))
         }
+
+        // Ensure expanded list matches item count (pad/truncate)
+        val adjusted = MutableList(mindsetItems.size) { idx ->
+            savedExpanded.getOrNull(idx) ?: false
+        }
+        mindsetExpanded.addAll(adjusted)
     }
 
     // Auto stop confetti after 3s
@@ -269,10 +279,10 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
             Spacer(Modifier.height(8.dp))
 
-            // -------- Mindset Cards (multi-card) ----------
+            // -------- Mindset Cards (multi-card with persisted expansion) ----------
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 mindsetItems.forEachIndexed { idx, item ->
-                    val expanded = expandedState[item.id] ?: false
+                    val expanded = mindsetExpanded.getOrNull(idx) ?: false
                     val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "mindset-${item.id}")
 
                     ElevatedCard(
@@ -291,7 +301,16 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        expandedState[item.id] = !expanded
+                                        // toggle + persist
+                                        val newState = !(mindsetExpanded.getOrNull(idx) ?: false)
+                                        if (idx < mindsetExpanded.size) {
+                                            mindsetExpanded[idx] = newState
+                                        } else {
+                                            // pad if needed (shouldn't happen, but safe)
+                                            while (mindsetExpanded.size < idx) mindsetExpanded.add(false)
+                                            mindsetExpanded.add(newState)
+                                        }
+                                        MindsetPrefs.setExpandedStates(context, mindsetExpanded.toList())
                                     }
                                     .padding(vertical = 2.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -336,10 +355,17 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 // Delete (this card)
                                 IconButton(
                                     onClick = {
-                                        mindsetItems.removeAt(idx)
-                                        MindsetPrefs.setMindsets(context, mindsetItems.map { it.text })
-                                        snackbarHostState.currentSnackbarData?.dismiss()
-                                        scope.launch { snackbarHostState.showSnackbar("Mindset deleted") }
+                                        if (idx in mindsetItems.indices) {
+                                            mindsetItems.removeAt(idx)
+                                            if (idx in mindsetExpanded.indices) {
+                                                mindsetExpanded.removeAt(idx)
+                                            }
+                                            // persist both lists
+                                            MindsetPrefs.setMindsets(context, mindsetItems.map { it.text })
+                                            MindsetPrefs.setExpandedStates(context, mindsetExpanded.toList())
+                                            snackbarHostState.currentSnackbarData?.dismiss()
+                                            scope.launch { snackbarHostState.showSnackbar("Mindset deleted") }
+                                        }
                                     }
                                 ) {
                                     Icon(Icons.Default.Delete, contentDescription = "Delete mindset")
@@ -401,7 +427,8 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                         text = text
                                     )
                                     mindsetItems.add(item)
-                                    expandedState[item.id] = true
+                                    // default new card to expanded (or set false if you prefer)
+                                    mindsetExpanded.add(true)
                                 }
                                 else -> { // edit existing
                                     if (i in mindsetItems.indices) {
@@ -409,7 +436,9 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                     }
                                 }
                             }
+                            // persist both lists
                             MindsetPrefs.setMindsets(context, mindsetItems.map { it.text })
+                            MindsetPrefs.setExpandedStates(context, mindsetExpanded.toList())
                             scope.launch { snackbarHostState.showSnackbar("Mindset saved") }
                         }
                         showMindsetDialog = false

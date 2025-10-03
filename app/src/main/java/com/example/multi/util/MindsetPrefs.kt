@@ -4,12 +4,17 @@ import android.content.Context
 import androidx.core.content.edit
 import org.json.JSONArray
 
-/** Stores persisted state for the Weekly Goals "Mindset" section (multi-card). */
+/** Stores the persisted state for the Weekly Goals mindset section (multi-card). */
 object MindsetPrefs {
     private const val PREFS_NAME = "weekly_goals_prefs"
-    private const val KEY_MINDSET_LIST = "mindset_list"          // JSON Array of strings
-    private const val KEY_MINDSET_EXPANDED = "mindset_expanded"   // (legacy single-card)
-    private const val KEY_MINDSET_TEXT = "mindset_text"           // (legacy single-card)
+
+    // Multi-card storage
+    private const val KEY_MINDSET_LIST = "mindset_list"                 // JSON Array of strings
+    private const val KEY_MINDSET_EXPANDED_LIST = "mindset_expanded_list" // JSON Array of booleans (parallel to above)
+
+    // Legacy single-card keys kept for backward compatibility
+    private const val KEY_MINDSET_EXPANDED = "mindset_expanded"
+    private const val KEY_MINDSET_TEXT = "mindset_text"
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -23,9 +28,14 @@ object MindsetPrefs {
         if (raw.isNullOrEmpty()) {
             val legacy = p.getString(KEY_MINDSET_TEXT, null)
             if (!legacy.isNullOrEmpty()) {
-                // Store as list and clear legacy
                 setMindsets(context, listOf(legacy))
-                p.edit { remove(KEY_MINDSET_TEXT) }
+                // Default expanded state for the first card based on legacy flag
+                val exp = if (p.getBoolean(KEY_MINDSET_EXPANDED, false)) listOf(true) else listOf(false)
+                setExpandedStates(context, exp)
+                p.edit {
+                    remove(KEY_MINDSET_TEXT)
+                    remove(KEY_MINDSET_EXPANDED)
+                }
                 return mutableListOf(legacy)
             }
             return mutableListOf()
@@ -39,30 +49,31 @@ object MindsetPrefs {
         return out
     }
 
-    /** Overwrite the entire list. */
+    /** Overwrite the entire mindset text list. */
     fun setMindsets(context: Context, list: List<String>) {
         val arr = JSONArray()
         list.forEach { arr.put(it) }
         prefs(context).edit { putString(KEY_MINDSET_LIST, arr.toString()) }
     }
 
-    /** Convenience: add one item to the end. */
-    fun addMindset(context: Context, text: String) {
-        val list = getMindsets(context)
-        list.add(text)
-        setMindsets(context, list)
-    }
-
-    /** Convenience: remove by index (no-op if out of bounds). */
-    fun removeMindset(context: Context, index: Int) {
-        val list = getMindsets(context)
-        if (index in list.indices) {
-            list.removeAt(index)
-            setMindsets(context, list)
+    /** Parallel expanded states; list size should match getMindsets().size */
+    fun getExpandedStates(context: Context): MutableList<Boolean> {
+        val raw = prefs(context).getString(KEY_MINDSET_EXPANDED_LIST, null) ?: return mutableListOf()
+        return try {
+            val arr = JSONArray(raw)
+            MutableList(arr.length()) { i -> arr.optBoolean(i, false) }
+        } catch (_: Exception) {
+            mutableListOf()
         }
     }
 
-    // ---- Legacy single-card helpers kept for backward compatibility ----
+    fun setExpandedStates(context: Context, states: List<Boolean>) {
+        val arr = JSONArray()
+        states.forEach { arr.put(it) }
+        prefs(context).edit { putString(KEY_MINDSET_EXPANDED_LIST, arr.toString()) }
+    }
+
+    // ---- Legacy single-card helpers (still used elsewhere safely) ----
     fun isExpanded(context: Context): Boolean =
         prefs(context).getBoolean(KEY_MINDSET_EXPANDED, false)
 
@@ -77,5 +88,8 @@ object MindsetPrefs {
 
     fun setText(context: Context, text: String) {
         setMindsets(context, listOf(text))
+        // Keep expanded list length consistent
+        setExpandedStates(context, listOf(false))
     }
 }
+
