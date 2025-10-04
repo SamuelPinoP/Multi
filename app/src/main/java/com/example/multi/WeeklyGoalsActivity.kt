@@ -1,20 +1,21 @@
 package com.example.multi
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
@@ -69,6 +71,12 @@ import nl.dionsegijn.konfetti.core.Rotation
 import nl.dionsegijn.konfetti.core.emitter.Emitter
 import nl.dionsegijn.konfetti.core.models.Shape
 import nl.dionsegijn.konfetti.core.models.Size
+
+// Reorderable (drag & drop)
+import org.burnoutcrew.reorderable.ReorderableItem
+import org.burnoutcrew.reorderable.detectReorderAfterLongPress
+import org.burnoutcrew.reorderable.rememberReorderableLazyListState
+import org.burnoutcrew.reorderable.reorderable
 
 const val EXTRA_GOAL_ID = "extra_goal_id"
 
@@ -118,30 +126,48 @@ private data class MindsetItem(val id: Long, var text: String)
 /** Per-goal description & expansion prefs (no DB schema change needed). */
 private object GoalNotesPrefs {
     private const val NAME = "goal_notes_prefs"
-    private fun sp(ctx: android.content.Context) =
-        ctx.getSharedPreferences(NAME, android.content.Context.MODE_PRIVATE)
+    private fun sp(ctx: Context) =
+        ctx.getSharedPreferences(NAME, Context.MODE_PRIVATE)
 
-    fun getText(ctx: android.content.Context, goalId: Long): String =
+    fun getText(ctx: Context, goalId: Long): String =
         sp(ctx).getString("text_$goalId", "") ?: ""
 
-    fun setText(ctx: android.content.Context, goalId: Long, value: String) {
+    fun setText(ctx: Context, goalId: Long, value: String) {
         sp(ctx).edit().putString("text_$goalId", value).apply()
     }
 
-    fun isExpanded(ctx: android.content.Context, goalId: Long): Boolean =
+    fun isExpanded(ctx: Context, goalId: Long): Boolean =
         sp(ctx).getBoolean("expanded_$goalId", false)
 
-    fun setExpanded(ctx: android.content.Context, goalId: Long, expanded: Boolean) {
+    fun setExpanded(ctx: Context, goalId: Long, expanded: Boolean) {
         sp(ctx).edit().putBoolean("expanded_$goalId", expanded).apply()
     }
+}
 
-    fun clear(ctx: android.content.Context, goalId: Long) {
-        sp(ctx).edit()
-            .remove("text_$goalId")
-            .remove("expanded_$goalId")
-            .apply()
+/** Persist the mixed order (Mindset + Goal) by stable keys like "M:<id>" or "G:<id>". */
+private object DashboardOrderPrefs {
+    private const val NAME = "dashboard_order_prefs"
+    private const val KEY = "order"
+    private fun sp(ctx: Context) = ctx.getSharedPreferences(NAME, Context.MODE_PRIVATE)
+    fun load(ctx: Context): List<String> =
+        sp(ctx).getString(KEY, "")?.split('|')?.filter { it.isNotBlank() } ?: emptyList()
+    fun save(ctx: Context, keys: List<String>) {
+        sp(ctx).edit().putString(KEY, keys.joinToString("|")).apply()
     }
 }
+
+/** Mixed list item for drag & drop. */
+private sealed class DashItem {
+    data class Mindset(val item: MindsetItem) : DashItem()
+    data class Goal(val goal: WeeklyGoal) : DashItem()
+}
+
+/** Stable key used by Compose + persistence. */
+private val DashItem.stableKey: String
+    get() = when (this) {
+        is DashItem.Mindset -> "M:${item.id}"
+        is DashItem.Goal -> "G:${goal.id}"
+    }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -171,6 +197,34 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
     var editingGoalDescId by remember { mutableStateOf<Long?>(null) }
     var editingGoalDescText by remember { mutableStateOf("") }
 
+    // --- Mixed list you can reorder ---
+    val dashItems = remember { mutableStateListOf<DashItem>() }
+
+    /** Rebuild mixed list from current mindsets + goals using persisted order when possible. */
+    fun rebuildDashItemsFromPrefs() {
+        val keyToItem = mutableMapOf<String, DashItem>()
+        mindsetItems.forEach { keyToItem["M:${it.id}"] = DashItem.Mindset(it) }
+        goals.forEach { keyToItem["G:${it.id}"] = DashItem.Goal(it) }
+
+        val saved = DashboardOrderPrefs.load(context)
+        dashItems.clear()
+        // 1) add items in saved order if they still exist
+        saved.forEach { k -> keyToItem.remove(k)?.let { dashItems.add(it) } }
+        // 2) append any new/unsaved items (mindsets first, then goals)
+        mindsetItems.forEach { mi ->
+            if (dashItems.none { it is DashItem.Mindset && it.item.id == mi.id }) {
+                dashItems.add(DashItem.Mindset(mi))
+            }
+        }
+        goals.forEach { g ->
+            if (dashItems.none { it is DashItem.Goal && it.goal.id == g.id }) {
+                dashItems.add(DashItem.Goal(g))
+            }
+        }
+        // Persist the result (keeps things stable on next launch)
+        DashboardOrderPrefs.save(context, dashItems.map { it.stableKey })
+    }
+
     LaunchedEffect(Unit) {
         edgeCelebration = GoalCelebrationPrefs.isActive(context)
 
@@ -185,6 +239,9 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
         }
         val adjusted = MutableList(mindsetItems.size) { idx -> savedExpanded.getOrNull(idx) ?: false }
         mindsetExpanded.addAll(adjusted)
+
+        // Build initial mixed list (mindsets only for now, goals come in below)
+        rebuildDashItemsFromPrefs()
     }
 
     // Auto stop confetti after 3s
@@ -202,21 +259,26 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
         val recordDao = db.weeklyGoalRecordDao()
         val stored = withContext(Dispatchers.IO) { dao.getGoals() }
         val currentWeek = currentWeek()
-        theLoop@ for (entity in stored) {
+        val today = LocalDate.now()
+        val startCurrent = today.minusDays((today.dayOfWeek.value % 7).toLong())
+        val prevStart = startCurrent.minusDays(7)
+        val prevEnd = startCurrent.minusDays(1)
+        val prevStartStr = prevStart.toString()
+        val prevEndStr = prevEnd.toString()
+
+        goals.clear()
+        stored.forEach { entity ->
             var model = entity.toModel()
             if (model.weekNumber != currentWeek) {
-                val today = LocalDate.now()
-                val startCurrent = today.minusDays((today.dayOfWeek.value % 7).toLong())
-                val prevStart = startCurrent.minusDays(7)
-                val prevEnd = startCurrent.minusDays(1)
+                val completed = model.dayStates.count { it == 'C' }
                 val record = WeeklyGoalRecord(
                     header = model.header,
-                    completed = model.dayStates.count { it == 'C' },
+                    completed = completed,
                     frequency = model.frequency,
-                    weekStart = prevStart.toString(),
-                    weekEnd = prevEnd.toString(),
+                    weekStart = prevStartStr,
+                    weekEnd = prevEndStr,
                     dayStates = model.dayStates,
-                    overageCount = overageCount(model.dayStates.count { it == 'C' }, model.frequency)
+                    overageCount = overageCount(completed, model.frequency)
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -231,389 +293,461 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
             model = model.copy(remaining = (model.frequency - completed).coerceAtLeast(0))
             goals.add(model)
 
-            // preload description prefs
+            // prime description & expansion for this goal
             goalDescriptions[model.id] = GoalNotesPrefs.getText(context, model.id)
             goalExpanded[model.id] = GoalNotesPrefs.isExpanded(context, model.id)
         }
+
+        // Now that goals are loaded, rebuild mixed list to include them (respect saved order)
+        rebuildDashItemsFromPrefs()
+
         highlightGoalId?.let { id ->
             val index = goals.indexOfFirst { it.id == id }
             if (index >= 0) editingIndex = index
         }
     }
 
+    // Reorder state for the single mixed LazyColumn
+    val reorderState = rememberReorderableLazyListState(
+        onMove = { from, to ->
+            // Reorder the mixed list
+            dashItems.add(to.index, dashItems.removeAt(from.index))
+        },
+        onDragEnd = { _, _ ->
+            // Persist order
+            DashboardOrderPrefs.save(context, dashItems.map { it.stableKey })
+        }
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (edgeCelebration) {
             EdgeCelebrationOverlay(modifier = Modifier.matchParentSize())
         }
 
-        // ONE list for header + mindsets + goals so everything scrolls together
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(bottom = 96.dp) // space for bottom FABs
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            // Header: Record button
-            item {
+            // Header (not draggable). Mindsets + Goals list below IS draggable & scrolls together.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                ElevatedButton(
+                    onClick = {
+                        context.startActivity(
+                            android.content.Intent(context, RecordActivity::class.java)
+                        )
+                    },
+                    modifier = Modifier
+                        .height(50.dp)
+                        .defaultMinSize(minWidth = 170.dp)
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
+                    Text("Record", fontSize = 18.sp)
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            val remaining = daysRemainingInWeek()
+            Text(
+                text = "$remaining days remaining",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+
+            // Tiny + when there are NO mindsets yet
+            if (mindsetItems.isEmpty()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.Center
+                        .padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    ElevatedButton(
+                    IconButton(
                         onClick = {
-                            context.startActivity(
-                                android.content.Intent(context, RecordActivity::class.java)
-                            )
+                            mindsetDialogIndex = -1
+                            mindsetDialogText = ""
+                            showMindsetDialog = true
                         },
-                        modifier = Modifier
-                            .height(50.dp)
-                            .defaultMinSize(minWidth = 170.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
-                        Text("Record", fontSize = 18.sp)
+                        Icon(Icons.Default.Add, contentDescription = "Add mindset")
                     }
                 }
             }
 
-            // Days remaining
-            item {
-                val remaining = daysRemainingInWeek()
-                Text(
-                    text = "$remaining days remaining",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
-            }
+            Spacer(Modifier.height(8.dp))
 
-            // Tiny + button when there are NO mindset cards
-            item {
-                if (mindsetItems.isEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        IconButton(
-                            onClick = {
-                                mindsetDialogIndex = -1
-                                mindsetDialogText = ""
-                                showMindsetDialog = true
-                            },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add mindset")
-                        }
-                    }
-                }
-            }
-
-            // Mindset cards
-            itemsIndexed(mindsetItems) { idx, item ->
-                val expanded = mindsetExpanded.getOrNull(idx) ?: false
-                val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "mindset-${item.id}")
-
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 16.dp)
-                    ) {
-                        Row(
+            // --- ONE mixed list: Mindsets + Goals, fully draggable ---
+            LazyColumn(
+                state = reorderState.listState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .reorderable(reorderState),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 96.dp)
+            ) {
+                items(
+                    items = dashItems,
+                    key = { it.stableKey }
+                ) { item ->
+                    ReorderableItem(
+                        state = reorderState,
+                        key = item.stableKey
+                    ) { _ ->
+                        // Long-press anywhere on the row to drag
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
-                                    val newState = !(mindsetExpanded.getOrNull(idx) ?: false)
-                                    if (idx < mindsetExpanded.size) {
-                                        mindsetExpanded[idx] = newState
-                                    } else {
-                                        while (mindsetExpanded.size < idx) mindsetExpanded.add(false)
-                                        mindsetExpanded.add(newState)
-                                    }
-                                    MindsetPrefs.setExpandedStates(context, mindsetExpanded.toList())
-                                }
-                                .padding(vertical = 2.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .detectReorderAfterLongPress(reorderState)
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Mindset",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(Modifier.height(2.dp))
-                                Text(
-                                    text = if (expanded) "Your focus is:" else "Tap to view",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                )
-                            }
 
-                            IconButton(
-                                onClick = {
-                                    mindsetDialogIndex = -1
-                                    mindsetDialogText = ""
-                                    showMindsetDialog = true
-                                }
-                            ) { Icon(Icons.Default.Add, contentDescription = "Add another mindset") }
-
-                            IconButton(
-                                onClick = {
-                                    mindsetDialogIndex = idx
-                                    mindsetDialogText = item.text
-                                    showMindsetDialog = true
-                                }
-                            ) { Icon(Icons.Default.Edit, contentDescription = "Edit mindset") }
-
-                            IconButton(
-                                onClick = {
-                                    if (idx in mindsetItems.indices) {
-                                        mindsetItems.removeAt(idx)
-                                        if (idx in mindsetExpanded.indices) {
-                                            mindsetExpanded.removeAt(idx)
-                                        }
-                                        MindsetPrefs.setMindsets(context, mindsetItems.map { it.text })
-                                        MindsetPrefs.setExpandedStates(context, mindsetExpanded.toList())
-                                        snackbarHostState.currentSnackbarData?.dismiss()
-                                        scope.launch { snackbarHostState.showSnackbar("Mindset deleted") }
-                                    }
-                                }
-                            ) { Icon(Icons.Default.Delete, contentDescription = "Delete mindset") }
-
-                            Icon(
-                                imageVector = Icons.Filled.ExpandMore,
-                                contentDescription = if (expanded) "Collapse mindset" else "Expand mindset",
-                                modifier = Modifier.rotate(rotation)
-                            )
-                        }
-
-                        AnimatedVisibility(
-                            visible = expanded,
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                if (item.text.isNotBlank()) {
-                                    Text(
-                                        text = item.text,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
+                            when (item) {
+                                is DashItem.Mindset -> {
+                                    val idx = mindsetItems.indexOfFirst { it.id == item.item.id }
+                                    val expanded = mindsetExpanded.getOrNull(idx) ?: false
+                                    val rotation by animateFloatAsState(
+                                        if (expanded) 180f else 0f,
+                                        label = "mindset-${item.item.id}"
                                     )
-                                } else {
-                                    Text(
-                                        text = "No text yet. Tap the pencil to edit.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
 
-            // Goals list (now in the same LazyColumn)
-            itemsIndexed(goals) { index, goal ->
-                val desc = goalDescriptions[goal.id] ?: ""
-                val isExpanded = goalExpanded[goal.id] ?: false
-                val rotation by animateFloatAsState(
-                    targetValue = if (isExpanded) 180f else 0f,
-                    label = "goal-desc-chevron-${goal.id}"
-                )
-
-                ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { editingIndex = index }
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        // Title + description controls
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(goal.header, style = MaterialTheme.typography.bodyLarge)
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(
-                                    onClick = {
-                                        editingGoalDescId = goal.id
-                                        editingGoalDescText = desc
-                                        showGoalDescDialog = true
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = if (desc.isBlank()) Icons.Default.Add else Icons.Default.Edit,
-                                        contentDescription = if (desc.isBlank()) "Add description" else "Edit description"
-                                    )
-                                }
-                                IconButton(
-                                    onClick = {
-                                        val newState = !isExpanded
-                                        goalExpanded[goal.id] = newState
-                                        GoalNotesPrefs.setExpanded(context, goal.id, newState)
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ExpandMore,
-                                        contentDescription = if (isExpanded) "Collapse description" else "Expand description",
-                                        modifier = Modifier.rotate(rotation)
-                                    )
-                                }
-                            }
-                        }
-
-                        // Counts row
-                        val completed = goal.dayStates.count { it == 'C' }
-                        val over = overageCount(completed, goal.frequency)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 2.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.semantics {
-                                    contentDescription = "$completed of ${goal.frequency} completed" +
-                                            if (over > 0) ", $over over target" else ""
-                                }
-                            ) {
-                                if (goal.remaining == 0) {
-                                    Text(
-                                        text = "Completed!",
-                                        color = Color(0xFF43A047),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        modifier = Modifier.padding(end = 8.dp),
-                                    )
-                                }
-                                Text(
-                                    text = "$completed/${goal.frequency}",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                if (over > 0) {
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = "+$over",
-                                        color = MaterialTheme.colorScheme.tertiary,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-
-                            val today = LocalDate.now().toString()
-                            if (goal.lastCheckedDate != today && completed < goal.frequency + 20) {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = "Completed",
-                                    tint = Color(0xFF43A047),
-                                    modifier = Modifier
-                                        .padding(start = 8.dp)
-                                        .clickable {
-                                            val chars = goal.dayStates.toCharArray()
-                                            val dIndex = LocalDate.now().dayOfWeek.value % 7
-                                            if (chars[dIndex] != 'C') {
-                                                chars[dIndex] = 'C'
-                                                val newCompleted = chars.count { it == 'C' }
-                                                val updated = goal.copy(
-                                                    dayStates = String(chars),
-                                                    remaining = (goal.frequency - newCompleted).coerceAtLeast(0),
-                                                    lastCheckedDate = today
+                                    ElevatedCard(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.elevatedCardColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 20.dp, vertical = 16.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        if (idx >= 0) {
+                                                            val newState = !mindsetExpanded[idx]
+                                                            mindsetExpanded[idx] = newState
+                                                            MindsetPrefs.setExpandedStates(context, mindsetExpanded.toList())
+                                                        }
+                                                    }
+                                                    .padding(vertical = 2.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.DragHandle,
+                                                    contentDescription = "Drag",
+                                                    tint = MaterialTheme.colorScheme.outline
                                                 )
-                                                val wasIncomplete = goal.remaining > 0
-                                                goals[index] = updated
-                                                if (wasIncomplete && updated.remaining == 0) {
-                                                    showConfetti = true
-                                                    scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
-                                                }
-                                                if (goals.all { it.remaining == 0 }) {
-                                                    GoalCelebrationPrefs.activateForCurrentWeek(context)
-                                                    showAllDialog = true
-                                                    edgeCelebration = true
-                                                }
-                                                scope.launch {
-                                                    saveGoalCompletion(
-                                                        context = context,
-                                                        goalId = goal.id,
-                                                        goalHeader = goal.header,
-                                                        completionDate = LocalDate.now()
+
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = "Mindset",
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        fontWeight = FontWeight.SemiBold
                                                     )
-                                                    val dao = EventDatabase.getInstance(context).weeklyGoalDao()
-                                                    withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                                    Spacer(Modifier.height(2.dp))
+                                                    Text(
+                                                        text = if (expanded) "Your focus is:" else "Tap to view",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                                    )
+                                                }
+
+                                                IconButton(
+                                                    onClick = {
+                                                        mindsetDialogIndex = -1
+                                                        mindsetDialogText = ""
+                                                        showMindsetDialog = true
+                                                    }
+                                                ) { Icon(Icons.Default.Add, contentDescription = "Add another mindset") }
+
+                                                IconButton(
+                                                    onClick = {
+                                                        if (idx >= 0) {
+                                                            mindsetDialogIndex = idx
+                                                            mindsetDialogText = mindsetItems[idx].text
+                                                            showMindsetDialog = true
+                                                        }
+                                                    }
+                                                ) { Icon(Icons.Default.Edit, contentDescription = "Edit mindset") }
+
+                                                IconButton(
+                                                    onClick = {
+                                                        if (idx in mindsetItems.indices) {
+                                                            val idToRemove = mindsetItems[idx].id
+                                                            mindsetItems.removeAt(idx)
+                                                            mindsetExpanded.removeAt(idx)
+                                                            // Remove from mixed list too
+                                                            dashItems.removeAll { it is DashItem.Mindset && it.item.id == idToRemove }
+                                                            // Persist related prefs
+                                                            MindsetPrefs.setMindsets(context, mindsetItems.map { it.text })
+                                                            MindsetPrefs.setExpandedStates(context, mindsetExpanded.toList())
+                                                            DashboardOrderPrefs.save(context, dashItems.map { it.stableKey })
+                                                            snackbarHostState.currentSnackbarData?.dismiss()
+                                                            scope.launch { snackbarHostState.showSnackbar("Mindset deleted") }
+                                                        }
+                                                    }
+                                                ) { Icon(Icons.Default.Delete, contentDescription = "Delete mindset") }
+
+                                                Icon(
+                                                    imageVector = Icons.Filled.ExpandMore,
+                                                    contentDescription = if (expanded) "Collapse mindset" else "Expand mindset",
+                                                    modifier = Modifier.rotate(rotation)
+                                                )
+                                            }
+
+                                            AnimatedVisibility(
+                                                visible = expanded,
+                                                enter = fadeIn() + expandVertically(),
+                                                exit = fadeOut() + shrinkVertically()
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(top = 8.dp),
+                                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    val txt = mindsetItems.getOrNull(idx)?.text.orEmpty()
+                                                    if (txt.isNotBlank()) {
+                                                        Text(
+                                                            text = txt,
+                                                            style = MaterialTheme.typography.titleMedium,
+                                                            fontWeight = FontWeight.SemiBold
+                                                        )
+                                                    } else {
+                                                        Text(
+                                                            text = "No text yet. Tap the pencil to edit.",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
-                                )
-                            }
-                        }
+                                    }
+                                }
 
-                        // Progress bar
-                        val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
-                        LinearProgressIndicator(
-                            progress = progress,
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
-                        )
+                                is DashItem.Goal -> {
+                                    val goal = item.goal
+                                    val desc = goalDescriptions[goal.id] ?: ""
+                                    val isExpanded = goalExpanded[goal.id] ?: false
+                                    val rotation by animateFloatAsState(
+                                        targetValue = if (isExpanded) 180f else 0f,
+                                        label = "goal-desc-chevron-${goal.id}"
+                                    )
+                                    val goalIdx = goals.indexOfFirst { it.id == goal.id }
 
-                        // Description
-                        AnimatedVisibility(
-                            visible = isExpanded,
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 10.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                if (desc.isBlank()) {
-                                    Text(
-                                        text = "No description yet. Tap + to add one.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                } else {
-                                    Text(
-                                        text = desc,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                                    ElevatedCard(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { if (goalIdx >= 0) editingIndex = goalIdx }
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        ) {
+                                            // Title + description controls
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(
+                                                        Icons.Default.DragHandle,
+                                                        contentDescription = "Drag",
+                                                        tint = MaterialTheme.colorScheme.outline,
+                                                        modifier = Modifier.padding(end = 8.dp)
+                                                    )
+                                                    Text(goal.header, style = MaterialTheme.typography.bodyLarge)
+                                                }
+
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    IconButton(
+                                                        onClick = {
+                                                            editingGoalDescId = goal.id
+                                                            editingGoalDescText = desc
+                                                            showGoalDescDialog = true
+                                                        }
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = if (desc.isBlank()) Icons.Default.Add else Icons.Default.Edit,
+                                                            contentDescription = if (desc.isBlank()) "Add description" else "Edit description"
+                                                        )
+                                                    }
+                                                    IconButton(
+                                                        onClick = {
+                                                            val newState = !isExpanded
+                                                            goalExpanded[goal.id] = newState
+                                                            GoalNotesPrefs.setExpanded(context, goal.id, newState)
+                                                        }
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.ExpandMore,
+                                                            contentDescription = if (isExpanded) "Collapse description" else "Expand description",
+                                                            modifier = Modifier.rotate(rotation)
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            // Counts row
+                                            val completed = goal.dayStates.count { it == 'C' }
+                                            val over = overageCount(completed, goal.frequency)
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(top = 2.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier.semantics {
+                                                        contentDescription =
+                                                            "$completed of ${goal.frequency} completed" +
+                                                                    if (over > 0) ", $over over target" else ""
+                                                    }
+                                                ) {
+                                                    if (goal.remaining == 0) {
+                                                        Text(
+                                                            text = "Completed!",
+                                                            color = Color(0xFF43A047),
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            modifier = Modifier.padding(end = 8.dp),
+                                                        )
+                                                    }
+                                                    Text(
+                                                        text = "$completed/${goal.frequency}",
+                                                        style = MaterialTheme.typography.bodyLarge
+                                                    )
+                                                    if (over > 0) {
+                                                        Spacer(Modifier.width(4.dp))
+                                                        Text(
+                                                            text = "+$over",
+                                                            color = MaterialTheme.colorScheme.tertiary,
+                                                            style = MaterialTheme.typography.bodyLarge,
+                                                            fontWeight = FontWeight.Medium
+                                                        )
+                                                    }
+                                                }
+
+                                                val today = LocalDate.now().toString()
+                                                if (goal.lastCheckedDate != today && completed < goal.frequency + 20) {
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = "Completed",
+                                                        tint = Color(0xFF43A047),
+                                                        modifier = Modifier
+                                                            .padding(start = 8.dp)
+                                                            .clickable {
+                                                                if (goalIdx >= 0) {
+                                                                    val chars = goal.dayStates.toCharArray()
+                                                                    val dIndex = LocalDate.now().dayOfWeek.value % 7
+                                                                    if (chars[dIndex] != 'C') {
+                                                                        chars[dIndex] = 'C'
+                                                                        val newCompleted = chars.count { it == 'C' }
+                                                                        val updated = goal.copy(
+                                                                            dayStates = String(chars),
+                                                                            remaining = (goal.frequency - newCompleted).coerceAtLeast(0),
+                                                                            lastCheckedDate = today
+                                                                        )
+                                                                        val wasIncomplete = goal.remaining > 0
+                                                                        goals[goalIdx] = updated
+                                                                        // keep mixed list in sync
+                                                                        val di = dashItems.indexOfFirst {
+                                                                            it is DashItem.Goal && it.goal.id == goal.id
+                                                                        }
+                                                                        if (di >= 0) dashItems[di] = DashItem.Goal(updated)
+
+                                                                        if (wasIncomplete && updated.remaining == 0) {
+                                                                            showConfetti = true
+                                                                            scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
+                                                                        }
+                                                                        if (goals.all { it.remaining == 0 }) {
+                                                                            GoalCelebrationPrefs.activateForCurrentWeek(context)
+                                                                            showAllDialog = true
+                                                                            edgeCelebration = true
+                                                                        }
+                                                                        scope.launch {
+                                                                            saveGoalCompletion(
+                                                                                context = context,
+                                                                                goalId = goal.id,
+                                                                                goalHeader = goal.header,
+                                                                                completionDate = LocalDate.now()
+                                                                            )
+                                                                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                                                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                    )
+                                                }
+                                            }
+
+                                            // Progress bar
+                                            val progress = (goal.frequency - goal.remaining).toFloat() / goal.frequency
+                                            LinearProgressIndicator(
+                                                progress = progress,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(top = 8.dp)
+                                            )
+
+                                            // Description
+                                            AnimatedVisibility(
+                                                visible = isExpanded,
+                                                enter = fadeIn() + expandVertically(),
+                                                exit = fadeOut() + shrinkVertically()
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(top = 10.dp),
+                                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    if (desc.isBlank()) {
+                                                        Text(
+                                                            text = "No description yet. Tap + to add one.",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    } else {
+                                                        Text(
+                                                            text = desc,
+                                                            style = MaterialTheme.typography.bodyMedium
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            Spacer(Modifier.height(8.dp))
+                                            DayButtonsRow(states = goal.dayStates) { dayIndex ->
+                                                if (goalIdx >= 0) {
+                                                    selectedGoalIndex = goalIdx
+                                                    selectedDayIndex = dayIndex
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                        }
-
-                        Spacer(Modifier.height(8.dp))
-                        DayButtonsRow(states = goal.dayStates) { dayIndex ->
-                            selectedGoalIndex = index
-                            selectedDayIndex = dayIndex
                         }
                     }
                 }
@@ -639,10 +773,17 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 )
                                 mindsetItems.add(item)
                                 mindsetExpanded.add(true)
+                                // also add to mixed list & persist order
+                                dashItems.add(DashItem.Mindset(item))
+                                DashboardOrderPrefs.save(context, dashItems.map { it.stableKey })
                             }
                             else -> {
                                 if (i in mindsetItems.indices) {
+                                    val oldId = mindsetItems[i].id
                                     mindsetItems[i] = mindsetItems[i].copy(text = text)
+                                    // keep mixed list text in sync (id is same)
+                                    val di = dashItems.indexOfFirst { it is DashItem.Mindset && it.item.id == oldId }
+                                    if (di >= 0) dashItems[di] = DashItem.Mindset(mindsetItems[i])
                                 }
                             }
                         }
@@ -676,7 +817,7 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
             )
         }
 
-        // Empty state animation (only when there are neither goals nor mindsets)
+        // Empty state animation (when there is nothing to show)
         if (goals.isEmpty() && mindsetItems.isEmpty()) {
             val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.making))
             Column(
@@ -737,6 +878,10 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                     val completed = chars.count { it == 'C' }
                     val updated = g.copy(dayStates = String(chars), remaining = (g.frequency - completed).coerceAtLeast(0))
                     goals[gIndex] = updated
+                    // sync mixed list
+                    val di = dashItems.indexOfFirst { it is DashItem.Goal && it.goal.id == g.id }
+                    if (di >= 0) dashItems[di] = DashItem.Goal(updated)
+
                     scope.launch {
                         val dao = EventDatabase.getInstance(context).weeklyGoalDao()
                         withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
@@ -761,6 +906,10 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                     )
                     val wasIncomplete = g.remaining > 0
                     goals[gIndex] = updated
+                    // sync mixed list
+                    val di = dashItems.indexOfFirst { it is DashItem.Goal && it.goal.id == g.id }
+                    if (di >= 0) dashItems[di] = DashItem.Goal(updated)
+
                     if (wasIncomplete && updated.remaining == 0) {
                         showConfetti = true
                         scope.launch { snackbarHostState.showSnackbar("Goal completed!") }
@@ -1116,7 +1265,7 @@ private fun MindsetInputDialog(
     )
 }
 
-// ---------- NEW: Goal description dialog ----------
+// ---------- Goal description dialog ----------
 @Composable
 private fun GoalDescriptionDialog(
     initial: String,
