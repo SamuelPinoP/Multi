@@ -4,8 +4,7 @@
     ******************PRIORITY*******************
 
 * I need to be able to drag and drop the mindset and the weekly goals in order to rearrange their 
-order for now mindset is not scrollable. Creating several mindsets occupies the whole screen. This
-could be the way to create the organization structure that I wanted. By grouping and so on.
+order. This could be the way to create the organization structure that I wanted. By grouping.
 
 * Sorting notes by alphabetical order or date or access.
 
