@@ -798,6 +798,81 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
 
         // Goal Description Dialog
         if (showGoalDescDialog) {
+            // --- Add/Edit Goal dialog ---
+            val editIdx = editingIndex
+            if (editIdx != null) {
+                // Initial model for the dialog
+                val initialForDialog = if (editIdx >= 0) {
+                    goals[editIdx]
+                } else {
+                    WeeklyGoal(
+                        id = 0L,
+                        header = "",
+                        frequency = 3,                    // default
+                        remaining = 3,                    // default: same as frequency
+                        weekNumber = currentWeek(),       // current week
+                        lastCheckedDate = null,
+                        dayStates = DEFAULT_DAY_STATES    // e.g. "......."
+                    )
+                }
+
+                WeeklyGoalDialog(
+                    initial = initialForDialog,
+                    onDismiss = { editingIndex = null },
+                    onSave = { header, freq ->
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                            if (editIdx >= 0) {
+                                // Update existing goal
+                                val current = goals[editIdx]
+                                val completed = current.dayStates.count { it == 'C' }
+                                val updated = current.copy(
+                                    header = header,
+                                    frequency = freq,
+                                    remaining = (freq - completed).coerceAtLeast(0)
+                                )
+                                withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                                goals[editIdx] = updated
+                                // keep mixed list in sync
+                                val di = dashItems.indexOfFirst { it is DashItem.Goal && it.goal.id == updated.id }
+                                if (di >= 0) dashItems[di] = DashItem.Goal(updated)
+                            } else {
+                                // Insert new goal
+                                val newGoal = WeeklyGoal(
+                                    id = 0L,
+                                    header = header,
+                                    frequency = freq,
+                                    remaining = freq,
+                                    weekNumber = currentWeek(),
+                                    lastCheckedDate = null,
+                                    dayStates = DEFAULT_DAY_STATES
+                                )
+                                // Room @Insert typically returns the new rowId (Long)
+                                val newId = withContext(Dispatchers.IO) { dao.insert(newGoal.toEntity()) }
+                                val created = newGoal.copy(id = newId)
+                                goals.add(created)
+                                dashItems.add(DashItem.Goal(created))
+                                DashboardOrderPrefs.save(context, dashItems.map { it.stableKey })
+                            }
+                            editingIndex = null
+                        }
+                    },
+                    onDelete = if (editIdx >= 0) {
+                        {
+                            val toRemove = goals[editIdx]
+                            scope.launch {
+                                val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                                withContext(Dispatchers.IO) { dao.delete(toRemove.toEntity()) }
+                                goals.removeAt(editIdx)
+                                dashItems.removeAll { it is DashItem.Goal && it.goal.id == toRemove.id }
+                                DashboardOrderPrefs.save(context, dashItems.map { it.stableKey })
+                                editingIndex = null
+                            }
+                        }
+                    } else null,
+                    onProgress = null
+                )
+            }
             GoalDescriptionDialog(
                 initial = editingGoalDescText,
                 onDismiss = { showGoalDescDialog = false },
@@ -816,7 +891,85 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                 }
             )
         }
+        // --- Add/Edit Goal dialog ---
+        val editIdx = editingIndex
+        if (editIdx != null) {
+            // Build the initial model for the dialog
+            val initialForDialog = if (editIdx >= 0) {
+                // editing an existing goal
+                goals[editIdx]
+            } else {
+                // adding a new goal (defaults)
+                WeeklyGoal(
+                    id = 0L,
+                    header = "",
+                    frequency = 3,
+                    remaining = 3,
+                    weekNumber = currentWeek(),
+                    lastCheckedDate = null,
+                    dayStates = "......." // 7 days blank
+                )
+            }
 
+            WeeklyGoalDialog(
+                initial = initialForDialog,
+                onDismiss = { editingIndex = null },
+                onSave = { header, freq ->
+                    scope.launch {
+                        val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                        if (editIdx >= 0) {
+                            // Update existing goal
+                            val current = goals[editIdx]
+                            val completed = current.dayStates.count { it == 'C' }
+                            val updated = current.copy(
+                                header = header,
+                                frequency = freq,
+                                remaining = (freq - completed).coerceAtLeast(0)
+                            )
+                            withContext(Dispatchers.IO) { dao.update(updated.toEntity()) }
+                            goals[editIdx] = updated
+
+                            // keep mixed list in sync if you show it from dashItems
+                            val di = dashItems.indexOfFirst { it is DashItem.Goal && it.goal.id == updated.id }
+                            if (di >= 0) dashItems[di] = DashItem.Goal(updated)
+                        } else {
+                            // Insert new goal
+                            val newGoal = WeeklyGoal(
+                                id = 0L,
+                                header = header,
+                                frequency = freq,
+                                remaining = freq,
+                                weekNumber = currentWeek(),
+                                lastCheckedDate = null,
+                                dayStates = "......."
+                            )
+                            val newId = withContext(Dispatchers.IO) { dao.insert(newGoal.toEntity()) }
+                            val created = newGoal.copy(id = newId)
+
+                            // add to in-memory lists so it appears immediately
+                            goals.add(created)
+                            dashItems.add(DashItem.Goal(created))
+                            DashboardOrderPrefs.save(context, dashItems.map { it.stableKey })
+                        }
+                        editingIndex = null
+                    }
+                },
+                onDelete = if (editIdx >= 0) {
+                    {
+                        val toRemove = goals[editIdx]
+                        scope.launch {
+                            val dao = EventDatabase.getInstance(context).weeklyGoalDao()
+                            withContext(Dispatchers.IO) { dao.delete(toRemove.toEntity()) }
+                            goals.removeAt(editIdx)
+                            dashItems.removeAll { it is DashItem.Goal && it.goal.id == toRemove.id }
+                            DashboardOrderPrefs.save(context, dashItems.map { it.stableKey })
+                            editingIndex = null
+                        }
+                    }
+                } else null,
+                onProgress = null
+            )
+        }
         // Empty state animation (when there is nothing to show)
         if (goals.isEmpty() && mindsetItems.isEmpty()) {
             val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.making))
