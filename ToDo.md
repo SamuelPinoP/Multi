@@ -3,20 +3,19 @@
 *** Create a single activity and multiple screens ***
     ******************PRIORITY*******************
 
-* I need to be able to drag and drop the mindset and the weekly goals in order to rearrange their 
-order. This could be the way to create the organization structure that I wanted. By grouping.
-
-* Sorting notes by alphabetical order or date or access.
-
 * Pressing Multi will change the images on the screen for others.
 
 * Add a sideways button that displays Notes Calendar Events Goals on click. It must be beautiful.
 
-* Add remainders to the Notes. The notes must send a notification.
 
 3- Add a description that says: You can create an Event/ Weekly Goal the first time the user opens
 the app. Like a tutorial. After the user has clicked the tutorial then it disappears. Put it in the
 settings.
+
+* Add remainders to the Notes. The notes must send a notification.
+
+* Focus needs to update below the keyboard.
+  It is possible and it will make a lot of difference.
 
 4- Make two different widgets for the Calendar (says when is the next event Date above and days
 remaining under).
@@ -28,9 +27,6 @@ remaining under).
 * Make it so that people can add links to the notes and the events. Also they can display the site.
 
 * Make sure the Note Widget has an Icon and a name Multi Notes could be the name.
-
-* Consider adding a description for the Goals.
- Adding a Note to the Goals that will be a description.
 
 * Adding initial Goal suggestions.
  Suggest to work out as a Goal to whoever opens the app. Suggest an spiritual and intellectual Goal 
@@ -48,11 +44,8 @@ the mediator. I was thinking a water filling system or bottom completion bar.
  A battery should have 0/9 and be filled each time we complete a weekly task all the way to the top.
 Make it look beautiful.
 
-* Focus needs to update below the keyboard.
-  It is possible and it will make a lot of difference.
-
 * Post both apps.
-  Post Multi. Post Tic Tac Toe in the Play Store.
+ Post Multi. Post Tic Tac Toe in the Play Store.
 
 5- Allow Voice Notes as notes in multi.
 
@@ -75,6 +68,8 @@ I can also change the color of them that will create a border with that color. I
 GPT to build it beautifully. I can drag and drop a Goal into a Mindset and it will change it's
 color. One goal can belong in two different mindsets. Whenever I make progress in it it will
 update in both.
+
+* Sorting notes by alphabetical order or date or access.
 
 *************************************Later**********************************************************
 * The purple pop up that displays when adding an event looks supper ugly and colorless so I need to
@@ -100,7 +95,7 @@ or they can use one of the default songs.
 ----------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
 * Tic Tac Toe design and AI.
-  Make the AI have two levels of difficulty. The Superium level is impossible to defeat. Virtually 
+  Make the AI have two levels of difficulty. The Superium level is impossible to defeat. Virtually  
 nobody can. If you find an algorithm to win. If you find a way to win you are probably a genius. 
 Communicate that to the user.
 

@@ -88,7 +88,7 @@ private object Motion {
 private object Wheel {
     // slight overlap to avoid hairline seams at slice boundaries
     const val ArcEpsilonDeg = 1.2f
-    const val WheelScale = 1.22f
+    const val WheelScale = 1.20f
 }
 
 /** Texture sets (put your images in res/drawable as *_tile_1..10.png) */
@@ -197,7 +197,6 @@ private fun summarizeEvents(events: List<EventEntity>): EventSummary {
             }
         }
     }
-
     return EventSummary(todayCount = todayCount, weekCount = weekCount)
 }
 
