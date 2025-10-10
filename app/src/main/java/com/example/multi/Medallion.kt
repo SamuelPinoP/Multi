@@ -551,6 +551,7 @@ fun Medallion(
                         val notesIndex = order.indexOf(MedallionSegment.NOTES)
                         val radiusPx = with(density) { radiusDp.toPx() }
                         val labelRadiusPx = radiusPx * 0.58f
+                        val labelTextColor = Color.White.copy(alpha = 0.87f)
 
                         if (goalsIndex >= 0) {
                             val midAngle = mids[goalsIndex] + angleDeg
@@ -569,17 +570,17 @@ fun Medallion(
                                 Text(
                                     text = stringResource(defs.getValue(MedallionSegment.WEEKLY_GOALS).labelRes),
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = weeklyGoalsContentColor.copy(alpha = 0.9f)
+                                    color = labelTextColor
                                 )
                                 Text(
                                     text = "${weeklyGoalsSummary.percent}%",
                                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = weeklyGoalsContentColor.copy(alpha = 0.95f)
+                                    color = labelTextColor
                                 )
                                 Text(
                                     text = "This week: ${weeklyGoalsSummary.cappedCompleted}/${weeklyGoalsSummary.total}",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                                    color = weeklyGoalsContentColor.copy(alpha = 0.8f)
+                                    color = labelTextColor
                                 )
                             }
                         }
@@ -600,17 +601,17 @@ fun Medallion(
                                 Text(
                                     text = stringResource(defs.getValue(MedallionSegment.EVENTS).labelRes),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = eventsContentColor.copy(alpha = 0.9f)
+                                    color = labelTextColor
                                 )
                                 Text(
                                     text = "Today: ${eventSummary.todayCount}",
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                    color = eventsContentColor.copy(alpha = 0.9f)
+                                    color = labelTextColor
                                 )
                                 Text(
                                     text = "This week: ${eventSummary.weekCount}",
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                    color = eventsContentColor.copy(alpha = 0.9f)
+                                    color = labelTextColor
                                 )
                             }
                         }
@@ -631,12 +632,12 @@ fun Medallion(
                                 Text(
                                     text = stringResource(defs.getValue(MedallionSegment.CALENDAR).labelRes),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = calendarContentColor.copy(alpha = 0.9f)
+                                    color = labelTextColor
                                 )
                                 Text(
                                     text = calendarSubtitle,
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                    color = calendarContentColor.copy(alpha = 0.9f)
+                                    color = labelTextColor
                                 )
                             }
                         }
@@ -657,12 +658,12 @@ fun Medallion(
                                 Text(
                                     text = stringResource(defs.getValue(MedallionSegment.NOTES).labelRes),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = eventsContentColor.copy(alpha = 0.9f)
+                                    color = labelTextColor
                                 )
                                 Text(
                                     text = "Total: $notesCount",
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                    color = eventsContentColor.copy(alpha = 0.9f)
+                                    color = labelTextColor
                                 )
                             }
                         }
