@@ -59,9 +59,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.example.multi.data.EventEntity
 import com.example.multi.data.toModel
-import kotlin.math.ceil
 import kotlin.math.cos
-import kotlin.math.floor
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -86,15 +84,14 @@ private object Motion {
 
 /** Visual tweaks */
 private object Wheel {
-    // slight overlap to avoid hairline seams at slice boundaries
-    const val ArcEpsilonDeg = 1.2f
+    // tiny overlap to hide AA hairlines at slice boundaries (not image seams)
+    const val ArcEpsilonDeg = 2.0f
     const val WheelScale = 1.20f
 }
 
 /** Texture sets (put your images in res/drawable as *_tile_1..10.png) */
 private object Lava { // EVENTS (red)
-    const val SpeedPxPerSec = 24f   // slow scroll; raise for faster
-    const val Scale = 1.15f         // tile size scale
+    const val Scale = 1.15f        // ≈115% zoom
     const val GlowStrength = 0.55f
     const val TextOnRimBias = 0.82f
     val ResIds = intArrayOf(
@@ -105,8 +102,7 @@ private object Lava { // EVENTS (red)
     )
 }
 private object Ice { // NOTES (blue)
-    const val SpeedPxPerSec = 14f
-    const val Scale = 1.0f
+    const val Scale = 1.0f         // 100% zoom
     const val GlowStrength = 0.45f
     const val TextOnRimBias = 0.80f
     val ResIds = intArrayOf(
@@ -117,8 +113,7 @@ private object Ice { // NOTES (blue)
     )
 }
 private object Rock { // CALENDAR (gray)
-    const val SpeedPxPerSec = 10f
-    const val Scale = 1.0f
+    const val Scale = 1.0f         // 100% zoom
     const val GlowStrength = 0.35f
     const val TextOnRimBias = 0.80f
     val ResIds = intArrayOf(
@@ -129,8 +124,7 @@ private object Rock { // CALENDAR (gray)
     )
 }
 private object Moss { // WEEKLY GOALS (green)
-    const val SpeedPxPerSec = 8f
-    const val Scale = 1.1f
+    const val Scale = 1.1f         // ≈110% zoom
     const val GlowStrength = 0.40f
     const val TextOnRimBias = 0.82f
     val ResIds = intArrayOf(
@@ -295,58 +289,45 @@ private fun arcPath(rect: Rect, startDeg: Float, sweepDeg: Float) = Path().apply
     moveTo(rect.center.x, rect.center.y); arcTo(rect, startDeg, sweepDeg, false); close()
 }
 
-/** SEAM-FREE manual tiler: tiles an ImageBitmap inside a wedge, with slow scroll + tiny overlap */
-private fun DrawScope.drawTiledSlice(
+/** ONE-IMAGE center-crop "cover" renderer (no tiling, no seams).
+ *  - Crops a centered square region from the bitmap; `Scale` > 1f = more zoom.
+ *  - Draws it to the full circle rect (cover), then clips to the wedge.
+ *  - Result: while rotating, you always see one continuous image per slice.
+ */
+private fun DrawScope.drawSingleImageSlice(
     bitmap: ImageBitmap,
     start: Float,
     sweep: Float,
-    rect: Rect,
-    scale: Float,
-    phasePx: Float,
+    rect: Rect,           // full circle bounds
+    scale: Float,         // zoom per slice
     glowColor: Color,
     glowStrength: Float,
     center: Offset,
-    rPx: Float,
-    dxFactor: Float = 0.45f,   // per-slice direction multipliers
-    dyFactor: Float = 0.30f
+    rPx: Float
 ) {
     val wedge = arcPath(rect, start, sweep)
-    val rawW = bitmap.width.toFloat()
-    val rawH = bitmap.height.toFloat()
 
-    // destination tile size
-    val tw = rawW * scale
-    val th = rawH * scale
+    // Compute centered square crop in bitmap space
+    val bmpW = bitmap.width
+    val bmpH = bitmap.height
+    val baseSide = min(bmpW, bmpH).toFloat()
+    val cropSide = (baseSide / scale).coerceAtLeast(1f) // smaller side -> zoom in
+    val srcLeft = ((bmpW - cropSide) / 2f).toInt()
+    val srcTop  = ((bmpH - cropSide) / 2f).toInt()
+    val srcSize = IntSize(cropSide.toInt(), cropSide.toInt())
 
-    // scroll offsets (phasePx comes from animations below)
-    val tx = -phasePx * dxFactor
-    val ty = -phasePx * dyFactor
-
-    // 1px overlap to kill AA gaps at tile edges
-    val pad = 1f
+    // Destination is the full circle rect, so the image "covers" the medallion
+    val dstOffset = IntOffset(rect.left.toInt(), rect.top.toInt())
+    val dstSize   = IntSize(rect.width.toInt(), rect.height.toInt())
 
     clipPath(wedge) {
-        // figure out tile index range that covers the circular rect
-        val kx0 = floor((rect.left  + tx - pad) / tw).toInt()
-        val kx1 = ceil ((rect.right + tx + pad) / tw).toInt()
-        val ky0 = floor((rect.top   + ty - pad) / th).toInt()
-        val ky1 = ceil ((rect.bottom+ ty + pad) / th).toInt()
-
-        val srcSize = IntSize(rawW.toInt(), rawH.toInt())
-
-        for (ky in ky0..ky1) {
-            val top = ky * th - ty - pad
-            for (kx in kx0..kx1) {
-                val left = kx * tw - tx - pad
-                drawImage(
-                    image = bitmap,
-                    srcOffset = IntOffset.Zero,
-                    srcSize = srcSize,
-                    dstOffset = IntOffset(left.toInt(), top.toInt()),
-                    dstSize = IntSize((tw + pad * 2f).toInt(), (th + pad * 2f).toInt())
-                )
-            }
-        }
+        drawImage(
+            image = bitmap,
+            srcOffset = IntOffset(srcLeft, srcTop),
+            srcSize = srcSize,
+            dstOffset = dstOffset,
+            dstSize = dstSize
+        )
 
         // Additive inner glow for depth
         drawArc(
@@ -359,7 +340,7 @@ private fun DrawScope.drawTiledSlice(
         )
     }
 
-    // soft rim highlight around slice
+    // soft rim highlight
     drawArc(
         brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.08f), Color.Transparent)),
         startAngle = start, sweepAngle = sweep, useCenter = false,
@@ -439,32 +420,13 @@ fun Medallion(
     val rockBitmap = ImageBitmap.imageResource(rockResId)
     val mossBitmap = ImageBitmap.imageResource(mossResId)
 
-    // slow texture motion phases (in pixels)
-    val phases = rememberInfiniteTransition(label = "tile_phases")
-    val lavaPhase by phases.animateFloat(
-        initialValue = 0f, targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = (1000f / Lava.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(6000), easing = LinearEasing)
-        ), label = "lavaPhase"
-    )
-    val icePhase by phases.animateFloat(
-        initialValue = 0f, targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = (1000f / Ice.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(7000), easing = LinearEasing)
-        ), label = "icePhase"
-    )
-    val rockPhase by phases.animateFloat(
-        initialValue = 0f, targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = (1000f / Rock.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(8000), easing = LinearEasing)
-        ), label = "rockPhase"
-    )
-    val mossPhase by phases.animateFloat(
-        initialValue = 0f, targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = (1000f / Moss.SpeedPxPerSec * 1000f).toInt().coerceAtLeast(8500), easing = LinearEasing)
-        ), label = "mossPhase"
-    )
+    // No texture motion needed; keep simple constants (fixes your tween/easing error)
+    val lavaPhase = 0f
+    val icePhase = 0f
+    val rockPhase = 0f
+    val mossPhase = 0f
+    @Suppress("UNUSED_VARIABLE")
+    val _ignoreUseToAvoidWarnings = lavaPhase + icePhase + rockPhase + mossPhase
 
     Box(
         modifier = modifier.fillMaxSize().pointerInput(Unit) {
@@ -534,44 +496,40 @@ fun Medallion(
                             style = Stroke(width = with(density) { 2.dp.toPx() })
                         )
 
-                        // slices with tiled moving textures
+                        // slices with ONE centered image each (no tiling)
                         repeat(4) { i ->
                             val seg = order[i]
                             val start = mids[i] + angleDeg - 45f - Wheel.ArcEpsilonDeg
                             val sweep = 90f + Wheel.ArcEpsilonDeg * 2f
 
                             when (seg) {
-                                MedallionSegment.EVENTS -> drawTiledSlice(
+                                MedallionSegment.EVENTS -> drawSingleImageSlice(
                                     bitmap = lavaBitmap,
                                     start = start, sweep = sweep, rect = rect,
-                                    scale = Lava.Scale, phasePx = lavaPhase,
+                                    scale = Lava.Scale,
                                     glowColor = Color(0xFFFF7A00), glowStrength = Lava.GlowStrength,
-                                    center = center, rPx = rPx,
-                                    dxFactor = 0.50f, dyFactor = 0.32f
+                                    center = center, rPx = rPx
                                 )
-                                MedallionSegment.NOTES -> drawTiledSlice(
+                                MedallionSegment.NOTES -> drawSingleImageSlice(
                                     bitmap = iceBitmap,
                                     start = start, sweep = sweep, rect = rect,
-                                    scale = Ice.Scale, phasePx = icePhase,
+                                    scale = Ice.Scale,
                                     glowColor = Color(0xFF6AD0FF), glowStrength = Ice.GlowStrength,
-                                    center = center, rPx = rPx,
-                                    dxFactor = 0.40f, dyFactor = 0.26f
+                                    center = center, rPx = rPx
                                 )
-                                MedallionSegment.CALENDAR -> drawTiledSlice(
+                                MedallionSegment.CALENDAR -> drawSingleImageSlice(
                                     bitmap = rockBitmap,
                                     start = start, sweep = sweep, rect = rect,
-                                    scale = Rock.Scale, phasePx = rockPhase,
+                                    scale = Rock.Scale,
                                     glowColor = Color(0xFF7EC8A6), glowStrength = Rock.GlowStrength,
-                                    center = center, rPx = rPx,
-                                    dxFactor = 0.30f, dyFactor = 0.18f
+                                    center = center, rPx = rPx
                                 )
-                                MedallionSegment.WEEKLY_GOALS -> drawTiledSlice(
+                                MedallionSegment.WEEKLY_GOALS -> drawSingleImageSlice(
                                     bitmap = mossBitmap,
                                     start = start, sweep = sweep, rect = rect,
-                                    scale = Moss.Scale, phasePx = mossPhase,
+                                    scale = Moss.Scale,
                                     glowColor = Color(0xFF7CFF63), glowStrength = Moss.GlowStrength,
-                                    center = center, rPx = rPx,
-                                    dxFactor = 0.24f, dyFactor = 0.16f
+                                    center = center, rPx = rPx
                                 )
                             }
                         }
@@ -585,7 +543,7 @@ fun Medallion(
                         }
                     }
 
-                    // Tap detection overlay & calendar label
+                    // Tap detection overlay & labels
                     Box(Modifier.size(diameterDp)) {
                         val goalsIndex = order.indexOf(MedallionSegment.WEEKLY_GOALS)
                         val eventsIndex = order.indexOf(MedallionSegment.EVENTS)
@@ -593,6 +551,7 @@ fun Medallion(
                         val notesIndex = order.indexOf(MedallionSegment.NOTES)
                         val radiusPx = with(density) { radiusDp.toPx() }
                         val labelRadiusPx = radiusPx * 0.58f
+
                         if (goalsIndex >= 0) {
                             val midAngle = mids[goalsIndex] + angleDeg
                             val angleRad = Math.toRadians(midAngle.toDouble())
@@ -608,7 +567,7 @@ fun Medallion(
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 Text(
-                                    text = stringResource(weeklyGoalsDef.labelRes),
+                                    text = stringResource(defs.getValue(MedallionSegment.WEEKLY_GOALS).labelRes),
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                                     color = weeklyGoalsContentColor.copy(alpha = 0.9f)
                                 )
@@ -639,7 +598,7 @@ fun Medallion(
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 Text(
-                                    text = stringResource(eventsDef.labelRes),
+                                    text = stringResource(defs.getValue(MedallionSegment.EVENTS).labelRes),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                     color = eventsContentColor.copy(alpha = 0.9f)
                                 )
@@ -670,7 +629,7 @@ fun Medallion(
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 Text(
-                                    text = stringResource(calendarDef.labelRes),
+                                    text = stringResource(defs.getValue(MedallionSegment.CALENDAR).labelRes),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                     color = calendarContentColor.copy(alpha = 0.9f)
                                 )
@@ -681,7 +640,6 @@ fun Medallion(
                                 )
                             }
                         }
-
                         if (notesIndex >= 0) {
                             val midAngle = mids[notesIndex] + angleDeg
                             val angleRad = Math.toRadians(midAngle.toDouble())
@@ -697,7 +655,7 @@ fun Medallion(
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 Text(
-                                    text = stringResource(notesDef.labelRes),
+                                    text = stringResource(defs.getValue(MedallionSegment.NOTES).labelRes),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                     color = eventsContentColor.copy(alpha = 0.9f)
                                 )
