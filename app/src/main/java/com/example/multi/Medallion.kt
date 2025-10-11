@@ -722,17 +722,43 @@ fun Medallion(
 @Composable
 fun MedallionScreen() {
     val context = LocalContext.current
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Medallion { segment ->
-                val cls = when (segment) {
-                    MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                    MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                    MedallionSegment.EVENTS -> EventsActivity::class.java
-                    MedallionSegment.NOTES -> NotesActivity::class.java
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween // keep medallion + buttons nicely spaced
+        ) {
+            // Top content: Medallion
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f), // medallion takes most space
+                contentAlignment = Alignment.Center
+            ) {
+                Medallion { segment ->
+                    val cls = when (segment) {
+                        MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
+                        MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+                        MedallionSegment.EVENTS -> EventsActivity::class.java
+                        MedallionSegment.NOTES -> NotesActivity::class.java
+                    }
+                    context.startActivity(Intent(context, cls))
                 }
-                context.startActivity(Intent(context, cls))
             }
+
+            // Bottom buttons row
+            Spacer(Modifier.height(12.dp))
+            HomeQuickActions(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
+            )
         }
     }
 }
