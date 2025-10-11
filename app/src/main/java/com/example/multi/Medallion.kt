@@ -482,7 +482,13 @@ fun Medallion(
                 if (containerDp > 0.dp) {
                     val radiusDp: Dp = containerDp * Wheel.WheelScale / 2f
                     val diameterDp: Dp = radiusDp * 2f
-                    val mids = listOf(270f, 0f, 90f, 180f)
+                    // Orient the quadrants so the slice dividers align with the
+                    // vertical and horizontal axes (0°, 90°, 180°, 270°). This keeps
+                    // opposite slices perfectly even and gives the medallion a
+                    // visual "2x2" layout instead of the previous diamond layout
+                    // that produced slanted seams between notes and calendar.
+                    val mids = listOf(225f, 315f, 45f, 135f)
+
 
                     Canvas(Modifier.size(diameterDp).semantics { contentDescription = "Multi wheel" }) {
                         val center = Offset(size.width / 2f, size.height / 2f)
