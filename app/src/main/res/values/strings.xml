@@ -5,6 +5,11 @@
     <string name="label_notes">Notes</string>
     <string name="label_weekly_goals">Weekly Goals</string>
     <string name="open_last_note">Open last note</string>
+    <string name="quick_actions_title">Quick actions</string>
+    <string name="quick_action_notes">Capture ideas instantly</string>
+    <string name="quick_action_goals">Stay on track this week</string>
+    <string name="quick_action_events">Plan what's next</string>
+    <string name="quick_action_calendar">Glance at upcoming dates</string>
     <plurals name="words_count">
         <item quantity="one">%d word</item>
         <item quantity="other">%d words</item>

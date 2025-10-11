@@ -723,16 +723,35 @@ fun Medallion(
 fun MedallionScreen() {
     val context = LocalContext.current
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Medallion { segment ->
-                val cls = when (segment) {
-                    MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                    MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                    MedallionSegment.EVENTS -> EventsActivity::class.java
-                    MedallionSegment.NOTES -> NotesActivity::class.java
-                }
-                context.startActivity(Intent(context, cls))
+        val openSegment: (MedallionSegment) -> Unit = { segment ->
+            val cls = when (segment) {
+                MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
+                MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+                MedallionSegment.EVENTS -> EventsActivity::class.java
+                MedallionSegment.NOTES -> NotesActivity::class.java
             }
+            context.startActivity(Intent(context, cls))
+        }
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Medallion(onSegmentClick = openSegment)
+            }
+            MedallionQuickActions(
+                onSegmentSelected = openSegment,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 28.dp)
+                    .navigationBarsPadding()
+            )
         }
     }
 }
