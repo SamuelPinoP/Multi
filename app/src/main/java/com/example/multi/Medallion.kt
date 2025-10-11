@@ -489,7 +489,6 @@ fun Medallion(
                     // that produced slanted seams between notes and calendar.
                     val mids = listOf(225f, 315f, 45f, 135f)
 
-
                     Canvas(Modifier.size(diameterDp).semantics { contentDescription = "Multi wheel" }) {
                         val center = Offset(size.width / 2f, size.height / 2f)
                         val rPx = with(density) { radiusDp.toPx() }
@@ -698,12 +697,23 @@ fun Medallion(
                                     val dist = sqrt(dx * dx + dy * dy)
                                     val rPx = with(densityHere) { radiusDp.toPx() }
                                     if (dist <= rPx) {
-                                        var ang = Math.toDegrees(kotlin.math.atan2(dy.toDouble(), dx.toDouble())).toFloat()
-                                        if (ang < 0f) ang += 360f
-                                        val local = (ang - angleDeg + 360f) % 360f
-                                        val quad = (((local + 45f) / 90f).toInt()) % 4
-                                        val mappedIndex = (quad + 1) % 4
-                                        onSegmentClick(order[mappedIndex])
+                                        // Get tap angle in degrees (0° = right, increases counterclockwise)
+                                        var tapAngle = Math.toDegrees(kotlin.math.atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                        if (tapAngle < 0f) tapAngle += 360f
+
+                                        // Adjust for current wheel rotation
+                                        val adjustedAngle = (tapAngle - angleDeg + 360f) % 360f
+
+                                        // Map to our quadrant system (45° offset from cardinal directions)
+                                        // Bottom-left: 180-270°, Top-left: 270-360°, Top-right: 0-90°, Bottom-right: 90-180°
+                                        val quadIndex = when {
+                                            adjustedAngle >= 180f && adjustedAngle < 270f -> 0  // Bottom-left (225°)
+                                            adjustedAngle >= 270f || adjustedAngle < 0f -> 1    // Top-left (315°)
+                                            adjustedAngle >= 0f && adjustedAngle < 90f -> 2     // Top-right (45°)
+                                            else -> 3                                             // Bottom-right (135°)
+                                        }
+
+                                        onSegmentClick(order[quadIndex])
                                     }
                                 }
                             }
