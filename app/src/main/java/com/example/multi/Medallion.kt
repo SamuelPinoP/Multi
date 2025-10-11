@@ -85,7 +85,7 @@ private object Motion {
 /** Visual tweaks */
 private object Wheel {
     // tiny overlap to hide AA hairlines at slice boundaries (not image seams)
-    const val ArcEpsilonDeg = 2.0f
+    const val ArcEpsilonDeg = 0f
     const val WheelScale = 1.20f
 }
 
@@ -107,7 +107,7 @@ private object Ice { // NOTES (blue)
     const val TextOnRimBias = 0.80f
     val ResIds = intArrayOf(
         R.drawable.blue_tile_1, R.drawable.blue_tile_2, R.drawable.blue_tile_3,
-        R.drawable.blue_tile_4, R.drawable.blue_tile_5, R.drawable.blue_tile_6,
+        R.drawable.blue_tile_4, R.drawable.blue_tile_6,
         R.drawable.blue_tile_7, R.drawable.blue_tile_8, R.drawable.blue_tile_9,
         R.drawable.blue_tile_10
     )
