@@ -723,8 +723,8 @@ fun Medallion(
 fun MedallionScreen() {
     val context = LocalContext.current
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Medallion { segment ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            val openSegment: (MedallionSegment) -> Unit = { segment ->
                 val cls = when (segment) {
                     MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
                     MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
@@ -733,6 +733,18 @@ fun MedallionScreen() {
                 }
                 context.startActivity(Intent(context, cls))
             }
+
+            Medallion(
+                modifier = Modifier.align(Alignment.Center),
+                onSegmentClick = openSegment
+            )
+
+            HomeQuickActionsRow(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                onActionSelected = openSegment
+            )
         }
     }
 }
