@@ -420,14 +420,6 @@ fun Medallion(
     val rockBitmap = ImageBitmap.imageResource(rockResId)
     val mossBitmap = ImageBitmap.imageResource(mossResId)
 
-    // No texture motion needed; keep simple constants (fixes your tween/easing error)
-    val lavaPhase = 0f
-    val icePhase = 0f
-    val rockPhase = 0f
-    val mossPhase = 0f
-    @Suppress("UNUSED_VARIABLE")
-    val _ignoreUseToAvoidWarnings = lavaPhase + icePhase + rockPhase + mossPhase
-
     Box(
         modifier = modifier.fillMaxSize().pointerInput(Unit) {
             while (true) {
