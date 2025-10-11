@@ -461,9 +461,11 @@ fun Medallion(
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(16.dp))
-            MultiWordmark(modifier = Modifier.padding(top = 8.dp), onClick = { if (!spinning) order = order.shuffled() })
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(8.dp))
+            MultiWordmark(modifier = Modifier.padding(top = 4.dp), onClick = {
+                if (!spinning) order = order.shuffled()
+            })
+            Spacer(Modifier.height(48.dp))
 
             val density = LocalDensity.current
             var containerDp by remember { mutableStateOf(0.dp) }
@@ -471,7 +473,6 @@ fun Medallion(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f, true)
                     .aspectRatio(1f)
                     .onSizeChanged { sz ->
                         val minPx = min(sz.width, sz.height)
@@ -721,8 +722,6 @@ fun Medallion(
                     }
                 }
             }
-
-            Spacer(Modifier.height(24.dp))
         }
     }
 }
