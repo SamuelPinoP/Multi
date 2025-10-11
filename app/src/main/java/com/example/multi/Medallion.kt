@@ -534,6 +534,20 @@ fun Medallion(
                             }
                         }
 
+                        // Draw exact borders between slices to hide any seams
+                        repeat(4) { i ->
+                            val borderAngle = mids[i] + angleDeg - 45f
+                            drawLine(
+                                color = outlineRing.copy(alpha = 0.4f),
+                                start = center,
+                                end = Offset(
+                                    center.x + rPx * cos(Math.toRadians(borderAngle.toDouble())).toFloat(),
+                                    center.y + rPx * sin(Math.toRadians(borderAngle.toDouble())).toFloat()
+                                ),
+                                strokeWidth = with(density) { 1.5.dp.toPx() }
+                            )
+                        }
+
                         // faint rotating light
                         rotate(angleDeg) {
                             drawCircle(
