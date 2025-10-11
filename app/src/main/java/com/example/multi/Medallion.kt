@@ -722,17 +722,38 @@ fun Medallion(
 @Composable
 fun MedallionScreen() {
     val context = LocalContext.current
+    val onSegmentSelected: (MedallionSegment) -> Unit = { segment ->
+        val cls = when (segment) {
+            MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
+            MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+            MedallionSegment.EVENTS -> EventsActivity::class.java
+            MedallionSegment.NOTES -> NotesActivity::class.java
+        }
+        context.startActivity(Intent(context, cls))
+    }
+
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Medallion { segment ->
-                val cls = when (segment) {
-                    MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                    MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                    MedallionSegment.EVENTS -> EventsActivity::class.java
-                    MedallionSegment.NOTES -> NotesActivity::class.java
-                }
-                context.startActivity(Intent(context, cls))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center,
+            ) {
+                Medallion(onSegmentClick = onSegmentSelected)
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            HomeQuickActions(
+                modifier = Modifier.fillMaxWidth(),
+                onActionClick = onSegmentSelected,
+            )
         }
     }
 }

@@ -4,6 +4,10 @@
     <string name="label_events">Events</string>
     <string name="label_notes">Notes</string>
     <string name="label_weekly_goals">Weekly Goals</string>
+    <string name="quick_action_notes_tagline">Capture ideas fast</string>
+    <string name="quick_action_goals_tagline">Track your weekly wins</string>
+    <string name="quick_action_events_tagline">Plan every moment</string>
+    <string name="quick_action_calendar_tagline">See what’s coming up</string>
     <string name="open_last_note">Open last note</string>
     <plurals name="words_count">
         <item quantity="one">%d word</item>
