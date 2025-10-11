@@ -4,6 +4,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import android.content.Context
 import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
@@ -67,6 +68,7 @@ import kotlin.math.roundToInt
 
 import androidx.compose.runtime.mutableIntStateOf
 import com.example.multi.data.EventDatabase
+import com.example.multi.ui.HomeQuickActions
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -723,16 +725,39 @@ fun Medallion(
 fun MedallionScreen() {
     val context = LocalContext.current
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Medallion { segment ->
-                val cls = when (segment) {
-                    MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                    MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                    MedallionSegment.EVENTS -> EventsActivity::class.java
-                    MedallionSegment.NOTES -> NotesActivity::class.java
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 32.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f, fill = true)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Medallion { segment ->
+                    launchSegment(context, segment)
                 }
-                context.startActivity(Intent(context, cls))
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+            HomeQuickActions(
+                modifier = Modifier.fillMaxWidth()
+            ) { segment ->
+                launchSegment(context, segment)
             }
         }
     }
+}
+
+private fun launchSegment(context: Context, segment: MedallionSegment) {
+    val destination = when (segment) {
+        MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
+        MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+        MedallionSegment.EVENTS -> EventsActivity::class.java
+        MedallionSegment.NOTES -> NotesActivity::class.java
+    }
+    context.startActivity(Intent(context, destination))
 }
