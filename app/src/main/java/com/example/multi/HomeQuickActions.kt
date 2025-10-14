@@ -14,12 +14,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Note
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,7 +26,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -50,7 +43,7 @@ fun HomeQuickActions(
     // Set to "Dates" if you prefer that label:
     calendarLabel: String = "Calendar",
     cornerRadius: Dp = 16.dp,
-    height: Dp = 56.dp
+    height: Dp = 68.dp
 ) {
     val c = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -68,36 +61,32 @@ fun HomeQuickActions(
         QuickActionButton(
             modifier = Modifier.weight(1f), // weight comes from RowScope here
             label = "Notes",
-            icon = Icons.Filled.Note,
-            start = c.primary.copy(alpha = 0.85f),
-            end = c.tertiary.copy(alpha = 0.85f),
+            start = Color(0xFF14213D),
+            end = Color(0xFF1F3C88),
             shape = shape,
         ) { context.startActivity(Intent(context, NotesActivity::class.java)) }
 
         QuickActionButton(
             modifier = Modifier.weight(1f),
             label = "Goals",
-            icon = Icons.Filled.Flag,
-            start = Color(0xFF39D98A),
-            end = Color(0xFF12B886),
+            start = Color(0xFF0F766E),
+            end = Color(0xFF0B525B),
             shape = shape,
         ) { context.startActivity(Intent(context, WeeklyGoalsActivity::class.java)) }
 
         QuickActionButton(
             modifier = Modifier.weight(1f),
             label = "Events",
-            icon = Icons.Filled.Event,
-            start = Color(0xFFFF8A5B),
-            end = Color(0xFFFF6B3D),
+            start = Color(0xFF8B1E3F),
+            end = Color(0xFF6F1A2D),
             shape = shape,
         ) { context.startActivity(Intent(context, EventsActivity::class.java)) }
 
         QuickActionButton(
             modifier = Modifier.weight(1f),
             label = calendarLabel,
-            icon = Icons.Filled.DateRange,
-            start = Color(0xFF8A80FF),
-            end = Color(0xFF6C63FF),
+            start = Color(0xFF2C2A4A),
+            end = Color(0xFF3C3B6E),
             shape = shape,
         ) { context.startActivity(Intent(context, CalendarMenuActivity::class.java)) }
     }
@@ -108,7 +97,6 @@ fun HomeQuickActions(
 private fun QuickActionButton(
     modifier: Modifier = Modifier,              // <-- accept modifier so Row can pass weight
     label: String,
-    icon: ImageVector,
     start: Color,
     end: Color,
     shape: RoundedCornerShape,
@@ -140,10 +128,17 @@ private fun QuickActionButton(
             Color.Transparent
         )
     )
+    val textGlow = Brush.linearGradient(
+        colors = listOf(
+            Color.White.copy(alpha = 0.35f),
+            Color.White,
+            Color.White.copy(alpha = 0.35f)
+        )
+    )
 
     Box(
         modifier = modifier
-            .height(56.dp)
+            .height(68.dp)
             .shadow(elevation = 10.dp, shape = shape, ambientColor = end, spotColor = start)
             .clip(shape)
             .background(bg)
@@ -165,33 +160,24 @@ private fun QuickActionButton(
                 .offset(x = shift.dp)
         )
 
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 20.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
             Text(
-                text = label,
+                text = label.uppercase(),
                 color = Color.White,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                maxLines = 1
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                maxLines = 1,
+                modifier = Modifier
+                    .shadow(8.dp, shape = RoundedCornerShape(8.dp), clip = false)
+                    .background(
+                        brush = textGlow,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
     }
