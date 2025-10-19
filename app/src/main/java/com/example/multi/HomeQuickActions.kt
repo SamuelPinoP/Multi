@@ -1,33 +1,20 @@
 package com.example.multi
 
 import android.content.Intent
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue // <-- needed for `val x by ...`
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -40,12 +27,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun HomeQuickActions(
     modifier: Modifier = Modifier,
-    // Set to "Dates" if you prefer that label:
     calendarLabel: String = "Calendar",
-    cornerRadius: Dp = 16.dp,
-    height: Dp = 72.dp
+    cornerRadius: Dp = 22.dp,
+    height: Dp = 112.dp,          // BIGGER buttons
+    gap: Dp = 12.dp,              // space only BETWEEN buttons
+    borderWidth: Dp = 1.dp        // MUCH thinner border
 ) {
-    val c = MaterialTheme.colorScheme
     val context = LocalContext.current
     val shape = RoundedCornerShape(cornerRadius)
 
@@ -53,114 +40,68 @@ fun HomeQuickActions(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = height)
-            .padding(horizontal = 12.dp)
-            .navigationBarsPadding(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 0.dp),          // ensures edge-to-edge
+        horizontalArrangement = Arrangement.spacedBy(gap), // even gaps only between
         verticalAlignment = Alignment.CenterVertically
     ) {
         QuickActionButton(
-            modifier = Modifier.weight(1f), // weight comes from RowScope here
+            modifier = Modifier.weight(1f),
             label = "Notes",
-            start = Color(0xFF1E3C72),
-            end = Color(0xFF2A5298),
             shape = shape,
+            borderWidth = borderWidth,
+            height = height
         ) { context.startActivity(Intent(context, NotesActivity::class.java)) }
 
         QuickActionButton(
             modifier = Modifier.weight(1f),
             label = "Goals",
-            start = Color(0xFF0F766E),
-            end = Color(0xFF14B8A6),
             shape = shape,
+            borderWidth = borderWidth,
+            height = height
         ) { context.startActivity(Intent(context, WeeklyGoalsActivity::class.java)) }
 
         QuickActionButton(
             modifier = Modifier.weight(1f),
             label = "Events",
-            start = Color(0xFF7C2D12),
-            end = Color(0xFFDC2626),
             shape = shape,
+            borderWidth = borderWidth,
+            height = height
         ) { context.startActivity(Intent(context, EventsActivity::class.java)) }
 
         QuickActionButton(
             modifier = Modifier.weight(1f),
             label = calendarLabel,
-            start = Color(0xFF1E1B4B),
-            end = Color(0xFF312E81),
             shape = shape,
+            borderWidth = borderWidth,
+            height = height
         ) { context.startActivity(Intent(context, CalendarMenuActivity::class.java)) }
     }
 }
 
-/** Fancy pill card with animated sheen + gradient border. */
+/** Modern, minimal: transparent fill, thin black outline, black label (titleMedium). */
 @Composable
 private fun QuickActionButton(
-    modifier: Modifier = Modifier,              // <-- accept modifier so Row can pass weight
+    modifier: Modifier = Modifier,
     label: String,
-    start: Color,
-    end: Color,
     shape: RoundedCornerShape,
+    borderWidth: Dp,
+    height: Dp,
     onClick: () -> Unit
 ) {
-    // Animated highlight sheen across the button
-    val infinite = rememberInfiniteTransition(label = "qaSheen")
-    val shift by infinite.animateFloat(
-        initialValue = -300f, targetValue = 300f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2400, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ), label = "qaShift"
-    )
-
-    val bg = Brush.linearGradient(listOf(start, end))
-    val borderBrush = Brush.linearGradient(
-        colors = listOf(
-            start.copy(alpha = 0.9f),
-            end.copy(alpha = 0.9f),
-            start.copy(alpha = 0.9f)
-        ),
-        tileMode = TileMode.Clamp
-    )
-    val sheen = Brush.linearGradient(
-        colors = listOf(
-            Color.Transparent,
-            Color.White.copy(alpha = 0.35f),
-            Color.Transparent
-        )
-    )
-
     Box(
         modifier = modifier
-            .height(72.dp)
-            .shadow(elevation = 10.dp, shape = shape, ambientColor = end, spotColor = start)
+            .height(height)
             .clip(shape)
-            .background(bg)
-            .border(BorderStroke(1.dp, borderBrush), shape)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            ),
+            .border(BorderStroke(borderWidth, Color.Black), shape)
+            .background(Color.Transparent)
+            .clickable(onClick = onClick), // use default ripple for a modern feel
         contentAlignment = Alignment.Center
     ) {
-        // Sheen overlay (subtle animated sweep)
-        Box(
-            Modifier
-                .matchParentSize()
-                .padding(horizontal = 6.dp)
-                .clip(shape)
-                .background(sheen)
-                .offset(x = shift.dp)
-        )
-
         Text(
             text = label,
-            color = Color.White,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            maxLines = 1,
-            modifier = Modifier.align(Alignment.Center)
+            color = Color.Black,
+            style = MaterialTheme.typography.titleMedium, // original size
+            maxLines = 1
         )
     }
 }
