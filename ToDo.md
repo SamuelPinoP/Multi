@@ -3,6 +3,14 @@
 *** Create a single activity and multiple screens ***
     ******************PRIORITY*******************
 
+//////////////////////////////////////
+
+I must be able to change activities by swiping to the side!
+
+/////////////////////////////////
+
+
+
 * Pressing Multi will change the images on the screen for others.
 
 * Add a sideways button that displays Notes Calendar Events Goals on click. It must be beautiful.
