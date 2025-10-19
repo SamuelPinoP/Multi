@@ -40,6 +40,7 @@ fun HomeQuickActions(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = height)
+            // Bump this padding above 0.dp if you ever want space on the left/right edges.
             .padding(horizontal = 0.dp),          // ensures edge-to-edge
         horizontalArrangement = Arrangement.spacedBy(gap), // even gaps only between
         verticalAlignment = Alignment.CenterVertically

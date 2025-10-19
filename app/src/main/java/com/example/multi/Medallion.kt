@@ -276,11 +276,6 @@ private fun MultiWordmark(
             ),
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Notes • Goals • Events • Calendar",
-            style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-        )
     }
 }
 
@@ -453,8 +448,8 @@ fun Medallion(
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(8.dp))
-            MultiWordmark(modifier = Modifier.padding(top = 4.dp), onClick = {
+            // Tweak the offset here if you ever need the "Multi" title higher/lower.
+            MultiWordmark(modifier = Modifier.offset(y = (-12).dp), onClick = {
                 if (!spinning) order = order.shuffled()
             })
             Spacer(Modifier.height(48.dp))
@@ -753,11 +748,14 @@ fun MedallionScreen() {
             }
 
             // Bottom buttons row
-            Spacer(Modifier.height(12.dp))
+            // Increase this spacer to push the quick-action buttons further down the screen.
+            Spacer(Modifier.height(28.dp))
             HomeQuickActions(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                    // Keep horizontal padding at 0.dp so Notes hugs the left edge and
+                    // Calendar hugs the right edge; adjust the bottom padding for vertical spacing.
+                    .padding(bottom = 20.dp)
             )
         }
     }
