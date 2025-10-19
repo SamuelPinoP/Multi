@@ -1,12 +1,6 @@
 package com.example.multi
 
 import android.content.Intent
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,22 +11,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue // <-- needed for `val x by ...`
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * A single-row bar of 4 luxe-looking quick-action buttons:
+ * A single-row bar of 4 bold outlined quick-action buttons:
  * Notes • Goals • Events • Calendar (or Dates)
  *
  * Place it under the medallion on the Home screen.
@@ -42,10 +33,9 @@ fun HomeQuickActions(
     modifier: Modifier = Modifier,
     // Set to "Dates" if you prefer that label:
     calendarLabel: String = "Calendar",
-    cornerRadius: Dp = 16.dp,
-    height: Dp = 72.dp
+    cornerRadius: Dp = 24.dp,
+    height: Dp = 112.dp
 ) {
-    val c = MaterialTheme.colorScheme
     val context = LocalContext.current
     val shape = RoundedCornerShape(cornerRadius)
 
@@ -53,89 +43,59 @@ fun HomeQuickActions(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = height)
-            .padding(horizontal = 12.dp)
             .navigationBarsPadding(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         QuickActionButton(
             modifier = Modifier.weight(1f), // weight comes from RowScope here
             label = "Notes",
-            start = Color(0xFF1E3C72),
-            end = Color(0xFF2A5298),
             shape = shape,
+            height = height,
         ) { context.startActivity(Intent(context, NotesActivity::class.java)) }
 
         QuickActionButton(
             modifier = Modifier.weight(1f),
             label = "Goals",
-            start = Color(0xFF0F766E),
-            end = Color(0xFF14B8A6),
             shape = shape,
+            height = height,
         ) { context.startActivity(Intent(context, WeeklyGoalsActivity::class.java)) }
 
         QuickActionButton(
             modifier = Modifier.weight(1f),
             label = "Events",
-            start = Color(0xFF7C2D12),
-            end = Color(0xFFDC2626),
             shape = shape,
+            height = height,
         ) { context.startActivity(Intent(context, EventsActivity::class.java)) }
 
         QuickActionButton(
             modifier = Modifier.weight(1f),
             label = calendarLabel,
-            start = Color(0xFF1E1B4B),
-            end = Color(0xFF312E81),
             shape = shape,
+            height = height,
         ) { context.startActivity(Intent(context, CalendarMenuActivity::class.java)) }
     }
 }
 
-/** Fancy pill card with animated sheen + gradient border. */
+/**
+ * Minimal quick action button with a bold outline and transparent center so the
+ * label stands alone.
+ */
 @Composable
 private fun QuickActionButton(
     modifier: Modifier = Modifier,              // <-- accept modifier so Row can pass weight
     label: String,
-    start: Color,
-    end: Color,
     shape: RoundedCornerShape,
+    height: Dp,
     onClick: () -> Unit
 ) {
-    // Animated highlight sheen across the button
-    val infinite = rememberInfiniteTransition(label = "qaSheen")
-    val shift by infinite.animateFloat(
-        initialValue = -300f, targetValue = 300f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2400, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ), label = "qaShift"
-    )
-
-    val bg = Brush.linearGradient(listOf(start, end))
-    val borderBrush = Brush.linearGradient(
-        colors = listOf(
-            start.copy(alpha = 0.9f),
-            end.copy(alpha = 0.9f),
-            start.copy(alpha = 0.9f)
-        ),
-        tileMode = TileMode.Clamp
-    )
-    val sheen = Brush.linearGradient(
-        colors = listOf(
-            Color.Transparent,
-            Color.White.copy(alpha = 0.35f),
-            Color.Transparent
-        )
-    )
-
     Box(
         modifier = modifier
-            .height(72.dp)
-            .shadow(elevation = 10.dp, shape = shape, ambientColor = end, spotColor = start)
+            .height(height)
+            .shadow(elevation = 10.dp, shape = shape)
             .clip(shape)
-            .background(bg)
-            .border(BorderStroke(1.dp, borderBrush), shape)
+            .background(Color.Transparent)
+            .border(BorderStroke(2.dp, Color.Black), shape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -143,21 +103,11 @@ private fun QuickActionButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Sheen overlay (subtle animated sweep)
-        Box(
-            Modifier
-                .matchParentSize()
-                .padding(horizontal = 6.dp)
-                .clip(shape)
-                .background(sheen)
-                .offset(x = shift.dp)
-        )
-
         Text(
             text = label,
-            color = Color.White,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.Bold
+            color = Color.Black,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.SemiBold
             ),
             maxLines = 1,
             modifier = Modifier.align(Alignment.Center)
