@@ -30,7 +30,7 @@ fun HomeQuickActions(
     calendarLabel: String = "Calendar",
     cornerRadius: Dp = 22.dp,
     height: Dp = 112.dp,          // BIGGER buttons
-    gap: Dp = 12.dp,              // space only BETWEEN buttons
+    gap: Dp = 2.dp,              // space only BETWEEN buttons
     borderWidth: Dp = 1.dp        // MUCH thinner border
 ) {
     val context = LocalContext.current
