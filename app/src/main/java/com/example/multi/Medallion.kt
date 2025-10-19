@@ -757,7 +757,7 @@ fun MedallionScreen() {
             HomeQuickActions(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                    .padding(vertical = 20.dp)
             )
         }
     }
