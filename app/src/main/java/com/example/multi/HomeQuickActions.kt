@@ -40,7 +40,7 @@ fun HomeQuickActions(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = height)
-            .padding(horizontal = 0.dp),          // ensures edge-to-edge
+            .padding(horizontal = 0.dp),          // keep Notes/Calendar flush with the screen edges
         horizontalArrangement = Arrangement.spacedBy(gap), // even gaps only between
         verticalAlignment = Alignment.CenterVertically
     ) {

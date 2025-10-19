@@ -276,11 +276,7 @@ private fun MultiWordmark(
             ),
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Notes • Goals • Events • Calendar",
-            style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-        )
+        // Add your own subtitle (or reinstate the old one) by inserting a Text composable below.
     }
 }
 
@@ -453,8 +449,10 @@ fun Medallion(
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(8.dp))
-            MultiWordmark(modifier = Modifier.padding(top = 4.dp), onClick = {
+            val wordmarkTopSpacing = 0.dp
+            // ↑ Shrink this spacer to lift "Multi" higher, or increase it to nudge the title downward.
+            Spacer(Modifier.height(wordmarkTopSpacing))
+            MultiWordmark(modifier = Modifier, onClick = {
                 if (!spinning) order = order.shuffled()
             })
             Spacer(Modifier.height(48.dp))
@@ -753,11 +751,13 @@ fun MedallionScreen() {
             }
 
             // Bottom buttons row
-            Spacer(Modifier.height(12.dp))
+            val buttonRowTopSpacing = 24.dp
+            // ↑ Raise/lower the quick actions by tweaking this gap below the medallion.
+            Spacer(Modifier.height(buttonRowTopSpacing))
             HomeQuickActions(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                    .padding(vertical = 20.dp)
             )
         }
     }
