@@ -64,7 +64,6 @@ import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.roundToInt
-
 import androidx.compose.runtime.mutableIntStateOf
 import com.example.multi.data.EventDatabase
 import java.time.DayOfWeek
@@ -86,7 +85,7 @@ private object Motion {
 private object Wheel {
     // tiny overlap to hide AA hairlines at slice boundaries (not image seams)
     const val ArcEpsilonDeg = 0f
-    const val WheelScale = 1.20f
+    const val WheelScale = 1.15f
 }
 
 /** Texture sets (put your images in res/drawable as *_tile_1..10.png) */
