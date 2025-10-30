@@ -751,12 +751,12 @@ fun MedallionScreen() {
 
             // Bottom buttons row
             // Bump this spacer value up/down to move the quick action bar further from or closer to the medallion.
-            Spacer(Modifier.height(32.dp))
+            //Spacer(Modifier.height(70.dp))
             HomeQuickActions(
                 modifier = Modifier
                     .fillMaxWidth()
                     // Adjust this padding to control how close the buttons sit to the screen edges.
-                    .padding(bottom = 24.dp)
+                    .padding(bottom = 10.dp)
             )
         }
     }
