@@ -15,6 +15,26 @@ Remembers last-visited workspace
 
 Respects light/dark theme preferences
 
+## 📸 Screenshots
+
+### Events — Empty State
+![Events Empty](events_empty.jpg)
+
+### Goals Calendar
+![Goals Calendar](goals_calendar.jpg)
+
+### Goals List
+![Goals List](goals_list.jpg)
+
+### Weekly Goals
+![Weekly Goals](goals_weekly.jpg)
+
+### Note Editor
+![Note Editor](note_editor.jpg)
+
+### Notes List
+![Notes List](note_list.jpg)
+
 📝 Notes Workspace
 
 Rich note editor with keyboard-safe scrolling
