@@ -1,44 +1,120 @@
-# Multi
+Multi — Android Productivity Suite
 
-This is a simple Android application using Jetpack Compose.
+A modern multi-feature productivity hub built with Kotlin and Jetpack Compose.
 
-The home screen now shows a Material Design date picker dialog when the
-Calendar segment is tapped. Ensure your Gradle configuration includes the
-Compose Material 3 dependency:
+Multi combines Notes, Events, Weekly Goals, and Calendar views into a unified, animated, and theme-adaptive workspace. Built to demonstrate production-level Android development practices including Compose UI, Room persistence, animations, navigation, and modern architecture.
 
-```kotlin
-implementation("androidx.compose.material3:material3")
-```
+✨ Features
+🧭 Animated Medallion Navigation
 
-## Prerequisites
+Interactive animated medallion home screen
 
-- Android Studio Hedgehog or later with the Android SDK configured
-- JDK 11 or later
+Fast switching between Notes, Calendar, Events, and Weekly Goals
 
-## Building with Android Studio
+Remembers last-visited workspace
 
-1. Open the project in Android Studio.
-2. Let the IDE download any required dependencies.
-3. Select **Run \u2192 Run 'app'** to build and deploy to a connected device or emulator.
+Respects light/dark theme preferences
 
-## Building from the command line
+📝 Notes Workspace
 
-Use the provided Gradle wrapper to build the debug APK:
+Rich note editor with keyboard-safe scrolling
 
-```bash
+File and image attachments
+
+Import & export to DOCX, TXT, and PDF
+
+Bulk actions (multi-select delete/restore/move)
+
+Integrated Trash Bin with 30-day retention
+
+📅 Events & Scheduling
+
+Scrollable Kizitonwose Calendar for quick browsing
+
+Expandable event cards with titles, descriptions, and times
+
+Configurable local notifications
+
+Map deep links for location-based events
+
+Attach notes to events for richer context
+
+🎯 Weekly Goals
+
+Drag-and-drop reordering
+
+Persistent “mindset” cards
+
+Automatic weekly rollover (Sunday-based logic)
+
+Confetti and animations for accomplishments
+
+Tracks daily completions across sessions
+
+🗄 Unified Room Database
+
+One schema powering Notes, Events, Weekly Goals, and Trash
+
+Entity mappers for clean data flow
+
+Database migrations included
+
+MVVM architecture with state-driven Compose UI
+
+🛠 Tech Stack
+
+Kotlin
+
+Jetpack Compose
+
+Material Design 3
+
+Room Database
+
+Kizitonwose Calendar
+
+Coroutines & Flows
+
+Git / GitHub (multi-branch workflow)
+
+🚀 Getting Started
+Prerequisites
+
+Android Studio Hedgehog or later
+
+JDK 11+
+
+Android SDK installed
+
+🔧 Building the App
+Using Android Studio
+
+Open the project in Android Studio
+
+Allow dependency syncing
+
+Run the app on a device/emulator
+
+Command Line
+
+Build the debug APK:
+
 ./gradlew assembleDebug
-```
 
-The generated APK can be found in `app/build/outputs/apk/debug/`.
 
-To run unit tests:
+Run tests:
 
-```bash
 ./gradlew test
-```
 
-## Trash Bin
 
-Deleted notes are moved to a temporary trash bin. Items remain there for 30 days
-unless restored or permanently removed earlier.
+APK output:
+app/build/outputs/apk/debug/
+
+🗑 Trash Bin
+
+Deleted notes and items move to a temporary Trash Bin and stay there for 30 days unless restored or permanently deleted earlier.
+
+📍 Project Link
+
+https://github.com/SamuelPinoP/Multi
 
