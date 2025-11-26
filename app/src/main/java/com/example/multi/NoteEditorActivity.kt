@@ -34,7 +34,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
@@ -52,6 +51,7 @@ import com.example.multi.util.shareAsTxt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 
 const val EXTRA_NOTE_ID = "extra_note_id"
 const val EXTRA_NOTE_CONTENT = "extra_note_content"
@@ -117,13 +117,19 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
             
-            val density = LocalDensity.current
-
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
             LaunchedEffect(Unit) {
                 if (!readOnly) {
                     textFocusRequester.requestFocus()
+                }
+            }
+
+            LaunchedEffect(textState.value.selection, readOnly) {
+                if (!readOnly) {
+                    // Allow the IME insets to settle before scrolling the cursor into view.
+                    delay(150)
+                    textBringIntoView.bringIntoView()
                 }
             }
 
