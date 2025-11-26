@@ -39,6 +39,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -113,6 +114,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val textBringIntoView = remember { BringIntoViewRequester() }
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
+            val textLayoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
             val textFocusRequester = remember { FocusRequester() }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
@@ -124,6 +126,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
             LaunchedEffect(Unit) {
                 if (!readOnly) {
                     textFocusRequester.requestFocus()
+                }
+            }
+
+            LaunchedEffect(textState.value.selection, textLayoutResult.value) {
+                if (!readOnly) {
+                    textLayoutResult.value?.let { layoutResult ->
+                        textBringIntoView.bringIntoView(
+                            layoutResult.getCursorRect(textState.value.selection.start)
+                        )
+                    }
                 }
             }
 
@@ -289,6 +301,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
                             ),
+                            onTextLayout = { layoutResult ->
+                                textLayoutResult.value = layoutResult
+                            },
                             keyboardOptions = KeyboardOptions.Default.copy(
                                 capitalization = KeyboardCapitalization.Sentences
                             )
