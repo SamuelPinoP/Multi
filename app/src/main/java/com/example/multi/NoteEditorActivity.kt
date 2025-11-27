@@ -40,6 +40,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
@@ -114,13 +115,21 @@ class NoteEditorActivity : SegmentActivity("Note") {
             val headerState = remember { mutableStateOf(currentHeader) }
             val textState = remember { mutableStateOf(TextFieldValue(currentText, TextRange(noteCursor))) }
             val textFocusRequester = remember { FocusRequester() }
+            var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
             var textSize by textSizeState
             var showSizeDialog by showSizeDialogState
-            
+
             val density = LocalDensity.current
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
+            LaunchedEffect(textState.value.selection, textLayoutResult) {
+                val layout = textLayoutResult ?: return@LaunchedEffect
+                val selectionEnd = textState.value.selection.end.coerceIn(0, textState.value.text.length)
+                val cursorRect = layout.getCursorRect(selectionEnd)
+                val extraSpace = with(density) { 16.dp.toPx() }
+                textBringIntoView.bringIntoView(cursorRect.inflate(extraSpace))
+            }
             LaunchedEffect(Unit) {
                 if (!readOnly) {
                     textFocusRequester.requestFocus()
@@ -289,6 +298,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
                             ),
+                            onTextLayout = { textLayoutResult = it },
                             keyboardOptions = KeyboardOptions.Default.copy(
                                 capitalization = KeyboardCapitalization.Sentences
                             )
