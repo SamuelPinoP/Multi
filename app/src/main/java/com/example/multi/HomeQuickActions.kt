@@ -34,10 +34,10 @@ import androidx.compose.ui.unit.dp
 fun HomeQuickActions(
     modifier: Modifier = Modifier,
     calendarLabel: String = "Calendar",
-    cornerRadius: Dp = 22.dp,
-    height: Dp = 112.dp,
-    gap: Dp = 2.dp,
-    borderWidth: Dp = 1.5.dp
+    cornerRadius: Dp = 18.dp,
+    height: Dp = 88.dp,
+    gap: Dp = 12.dp,
+    borderWidth: Dp = 1.25.dp
 ) {
     val context = LocalContext.current
     val shape = RoundedCornerShape(cornerRadius)
@@ -106,50 +106,46 @@ private fun SophisticatedButton(
         label = "scale"
     )
 
-    // Animated border gradient (very subtle)
-    val infiniteTransition = rememberInfiniteTransition(label = "border")
-    val animatedAngle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(8000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "angle"
-    )
-
     // Text color animation on press
     val textColor by animateColorAsState(
-        targetValue = if (isPressed) Color(0xFF1a1a1a) else Color(0xFF2a2a2a),
+        targetValue = if (isPressed) Color.White else Color(0xFFEDE6FF),
         animationSpec = tween(150),
         label = "textColor"
     )
+
+    val baseBrush = remember {
+        Brush.verticalGradient(
+            listOf(
+                Color(0xFF3B2955),
+                Color(0xFF2C1D3E)
+            )
+        )
+    }
 
     Box(
         modifier = modifier
             .height(height)
             .scale(scale)
+            .clip(shape)
+            .background(baseBrush)
             .drawWithContent {
                 drawContent()
 
-                // Draw sophisticated gradient border
                 val strokeWidth = borderWidth.toPx()
                 val cornerRadiusPx = shape.topStart.toPx(size, this)
 
-                // Create subtle gradient from dark gray to slightly lighter
-                val colors = listOf(
-                    Color(0xFF2a2a2a),
-                    Color(0xFF404040),
-                    Color(0xFF2a2a2a)
-                )
-
-                val brush = Brush.sweepGradient(
-                    colors = colors,
-                    center = Offset(size.width / 2, size.height / 2)
+                val borderBrush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF8C78D4),
+                        Color(0xFF4A345F),
+                        Color(0xFF8C78D4)
+                    ),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, size.height)
                 )
 
                 drawRoundRect(
-                    brush = brush,
+                    brush = borderBrush,
                     topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
                     size = Size(
                         size.width - strokeWidth,
@@ -158,9 +154,21 @@ private fun SophisticatedButton(
                     cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
                     style = Stroke(width = strokeWidth)
                 )
+
+                drawRoundRect(
+                    brush = Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.14f), Color.Transparent)
+                    ),
+                    cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
+                )
+
+                if (isPressed) {
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = 0.06f),
+                        cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
+                    )
+                }
             }
-            .clip(shape)
-            .background(Color.White)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,

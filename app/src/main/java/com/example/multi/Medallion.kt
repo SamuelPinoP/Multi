@@ -215,11 +215,19 @@ private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
     )
 
     Canvas(modifier.fillMaxSize()) {
-        drawRect(color = c.surface)
+        drawRect(
+            brush = Brush.verticalGradient(
+                listOf(
+                    c.background,
+                    c.surface,
+                    c.background
+                )
+            )
+        )
         val w = size.width; val h = size.height
         fun blob(cx: Float, cy: Float, color: Color, r: Float) {
             drawCircle(
-                brush = Brush.radialGradient(listOf(color.copy(alpha = 0.25f), Color.Transparent)),
+                brush = Brush.radialGradient(listOf(color.copy(alpha = 0.28f), Color.Transparent)),
                 radius = r,
                 center = Offset(cx, cy),
                 blendMode = BlendMode.SrcOver
@@ -720,11 +728,20 @@ fun MedallionScreen() {
     val context = LocalContext.current
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.background
+                        )
+                    )
+                )
                 .statusBarsPadding()
                 .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
