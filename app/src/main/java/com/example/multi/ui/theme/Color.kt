@@ -6,13 +6,19 @@ package com.example.multi.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val Plum80 = Color(0xFFE0C9FF)
+val Twilight80 = Color(0xFFC7B8E6)
+val MistyRose80 = Color(0xFFF2C8D9)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val Plum40 = Color(0xFF9C7BFF)
+val Twilight40 = Color(0xFF7E6AA8)
+val MistyRose40 = Color(0xFFB37892)
+
+val MidnightSurface = Color(0xFF1F0F2E)
+val MidnightOverlay = Color(0xFF2A1A3D)
+val MidnightAlt = Color(0xFF34244A)
+val LavenderGlow = Color(0xFF8A7BCF)
+val AzureAccent = Color(0xFF7AC7FF)
 
 
 /** Background color for today's date cell */

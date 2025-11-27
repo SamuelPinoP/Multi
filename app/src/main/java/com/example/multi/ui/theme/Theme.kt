@@ -2,7 +2,6 @@ package com.example.multi.ui.theme
 
 import android.app.Activity
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -10,27 +9,36 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Plum80,
+    secondary = LavenderGlow,
+    tertiary = AzureAccent,
+    background = MidnightSurface,
+    surface = MidnightSurface,
+    surfaceVariant = MidnightOverlay,
+    onPrimary = Color(0xFF140824),
+    onSecondary = Color(0xFF0E0818),
+    onTertiary = Color(0xFF0E0818),
+    onBackground = Color(0xFFEDE7F6),
+    onSurface = Color(0xFFEDE7F6),
+    outline = Color(0xFF7C6AA6)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = Plum40,
+    secondary = LavenderGlow,
+    tertiary = AzureAccent,
+    background = MidnightAlt,
+    surface = MidnightAlt,
+    surfaceVariant = MidnightOverlay,
+    onPrimary = Color(0xFF0F071C),
+    onSecondary = Color(0xFF0E0818),
+    onTertiary = Color(0xFF0E0818),
+    onBackground = Color(0xFFF5EEFF),
+    onSurface = Color(0xFFF5EEFF),
+    outline = Color(0xFF9E8BD2)
 )
 
 /**
@@ -40,9 +48,9 @@ private val LightColorScheme = lightColorScheme(
  */
 @Composable
 fun MultiTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
