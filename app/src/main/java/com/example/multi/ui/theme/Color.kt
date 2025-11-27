@@ -6,13 +6,28 @@ package com.example.multi.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val DeepPurpleBackground = Color(0xFF1A0F24)
+val DeepPurpleSurface = Color(0xFF21142C)
+val DeepPurpleSurfaceVariant = Color(0xFF2C1B38)
+val DeepPurplePrimary = Color(0xFFBDA8FF)
+val DeepPurplePrimaryAlt = Color(0xFF9F86FF)
+val DeepPurpleOnSurface = Color(0xFFEFE7FA)
+val DeepPurpleOnBackground = Color(0xFFF4ECFF)
+val DeepPurpleOnPrimary = Color(0xFF1C102D)
+val DeepPurpleContainer = Color(0xFF332043)
+val DeepPurpleOnContainer = Color(0xFFF1E8FF)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val BackdropTop = Color(0xFF2F1C46)
+val BackdropBottom = Color(0xFF1B0F2B)
+val BackdropHighlightA = Color(0xFF764DB3)
+val BackdropHighlightB = Color(0xFF5B3A8A)
+val BackdropHighlightC = Color(0xFF9C7AE0)
+
+val QuickActionGradientStart = Color(0xFF3A284F)
+val QuickActionGradientEnd = Color(0xFF2A1B3D)
+val QuickActionBorderLight = Color(0xFF9F8CFF)
+val QuickActionBorderDark = Color(0xFF5C4A7A)
+val QuickActionText = Color(0xFFEDE4FF)
 
 
 /** Background color for today's date cell */

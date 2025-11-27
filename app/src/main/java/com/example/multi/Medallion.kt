@@ -59,6 +59,11 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.example.multi.data.EventEntity
 import com.example.multi.data.toModel
+import com.example.multi.ui.theme.BackdropBottom
+import com.example.multi.ui.theme.BackdropHighlightA
+import com.example.multi.ui.theme.BackdropHighlightB
+import com.example.multi.ui.theme.BackdropHighlightC
+import com.example.multi.ui.theme.BackdropTop
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -196,7 +201,6 @@ private fun summarizeEvents(events: List<EventEntity>): EventSummary {
 /** Animated backdrop (soft blobs) */
 @Composable
 private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
-    val c = MaterialTheme.colorScheme
     val infinite = rememberInfiniteTransition()
 
     val shiftA by infinite.animateFloat(
@@ -215,19 +219,19 @@ private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
     )
 
     Canvas(modifier.fillMaxSize()) {
-        drawRect(color = c.surface)
+        drawRect(brush = Brush.verticalGradient(listOf(BackdropTop, BackdropBottom)))
         val w = size.width; val h = size.height
         fun blob(cx: Float, cy: Float, color: Color, r: Float) {
             drawCircle(
-                brush = Brush.radialGradient(listOf(color.copy(alpha = 0.25f), Color.Transparent)),
+                brush = Brush.radialGradient(listOf(color.copy(alpha = 0.28f), Color.Transparent)),
                 radius = r,
                 center = Offset(cx, cy),
                 blendMode = BlendMode.SrcOver
             )
         }
-        blob(w * (0.25f + 0.1f * shiftA), h * 0.2f, c.primary, w * 0.6f)
-        blob(w * (0.85f - 0.1f * shiftB), h * 0.75f, c.tertiary, w * 0.7f)
-        blob(w * 0.5f, h * (0.5f + 0.05f * (shiftA - shiftB)), c.secondary, w * 0.55f)
+        blob(w * (0.25f + 0.1f * shiftA), h * 0.2f, BackdropHighlightA, w * 0.6f)
+        blob(w * (0.85f - 0.1f * shiftB), h * 0.75f, BackdropHighlightB, w * 0.7f)
+        blob(w * 0.5f, h * (0.5f + 0.05f * (shiftA - shiftB)), BackdropHighlightC, w * 0.55f)
     }
 }
 
@@ -720,43 +724,47 @@ fun MedallionScreen() {
     val context = LocalContext.current
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
+        color = Color.Transparent
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween // keep medallion + buttons nicely spaced
+                .background(Brush.verticalGradient(listOf(BackdropTop, BackdropBottom)))
         ) {
-            // Top content: Medallion
-            Box(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f), // medallion takes most space
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Medallion { segment ->
-                    val cls = when (segment) {
-                        MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                        MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                        MedallionSegment.EVENTS -> EventsActivity::class.java
-                        MedallionSegment.NOTES -> NotesActivity::class.java
+                // Top content: Medallion
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Medallion { segment ->
+                        val cls = when (segment) {
+                            MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
+                            MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+                            MedallionSegment.EVENTS -> EventsActivity::class.java
+                            MedallionSegment.NOTES -> NotesActivity::class.java
+                        }
+                        context.startActivity(Intent(context, cls))
                     }
-                    context.startActivity(Intent(context, cls))
                 }
-            }
 
-            // Bottom buttons row
-            // Bump this spacer value up/down to move the quick action bar further from or closer to the medallion.
-            //Spacer(Modifier.height(70.dp))
-            HomeQuickActions(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    // Adjust this padding to control how close the buttons sit to the screen edges.
-                    .padding(bottom = 10.dp)
-            )
+                // Bottom buttons row
+                HomeQuickActions(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                )
+            }
         }
     }
 }

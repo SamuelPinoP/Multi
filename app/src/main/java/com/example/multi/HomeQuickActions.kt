@@ -2,30 +2,50 @@ package com.example.multi
 
 import android.content.Intent
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.multi.ui.theme.QuickActionBorderDark
+import com.example.multi.ui.theme.QuickActionBorderLight
+import com.example.multi.ui.theme.QuickActionGradientEnd
+import com.example.multi.ui.theme.QuickActionGradientStart
+import com.example.multi.ui.theme.QuickActionText
 
 /**
  * A single-row bar of 4 sophisticated quick-action buttons with subtle animations
@@ -35,9 +55,9 @@ fun HomeQuickActions(
     modifier: Modifier = Modifier,
     calendarLabel: String = "Calendar",
     cornerRadius: Dp = 22.dp,
-    height: Dp = 112.dp,
-    gap: Dp = 2.dp,
-    borderWidth: Dp = 1.5.dp
+    height: Dp = 92.dp,
+    gap: Dp = 10.dp,
+    borderWidth: Dp = 1.6.dp
 ) {
     val context = LocalContext.current
     val shape = RoundedCornerShape(cornerRadius)
@@ -46,7 +66,7 @@ fun HomeQuickActions(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = height)
-            .padding(horizontal = 0.dp),
+            .padding(horizontal = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(gap),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -103,7 +123,7 @@ private fun SophisticatedButton(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
         ),
-        label = "scale"
+        label = "scale",
     )
 
     // Animated border gradient (very subtle)
@@ -113,22 +133,27 @@ private fun SophisticatedButton(
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
             animation = tween(8000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
+            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
         ),
-        label = "angle"
+        label = "angle",
     )
 
     // Text color animation on press
     val textColor by animateColorAsState(
-        targetValue = if (isPressed) Color(0xFF1a1a1a) else Color(0xFF2a2a2a),
-        animationSpec = tween(150),
-        label = "textColor"
+        targetValue = if (isPressed) QuickActionText.copy(alpha = 0.92f) else QuickActionText,
+        animationSpec = tween(140),
+        label = "textColor",
     )
+
+    val backgroundBrush = remember {
+        Brush.verticalGradient(colors = listOf(QuickActionGradientStart, QuickActionGradientEnd))
+    }
 
     Box(
         modifier = modifier
             .height(height)
             .scale(scale)
+            .shadow(elevation = 10.dp, shape = shape, clip = false)
             .drawWithContent {
                 drawContent()
 
@@ -136,11 +161,10 @@ private fun SophisticatedButton(
                 val strokeWidth = borderWidth.toPx()
                 val cornerRadiusPx = shape.topStart.toPx(size, this)
 
-                // Create subtle gradient from dark gray to slightly lighter
                 val colors = listOf(
-                    Color(0xFF2a2a2a),
-                    Color(0xFF404040),
-                    Color(0xFF2a2a2a)
+                    QuickActionBorderLight,
+                    QuickActionBorderDark,
+                    QuickActionBorderLight
                 )
 
                 val brush = Brush.sweepGradient(
@@ -148,19 +172,21 @@ private fun SophisticatedButton(
                     center = Offset(size.width / 2, size.height / 2)
                 )
 
-                drawRoundRect(
-                    brush = brush,
-                    topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
-                    size = Size(
-                        size.width - strokeWidth,
-                        size.height - strokeWidth
-                    ),
-                    cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
-                    style = Stroke(width = strokeWidth)
-                )
+                rotate(animatedAngle) {
+                    drawRoundRect(
+                        brush = brush,
+                        topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
+                        size = Size(
+                            size.width - strokeWidth,
+                            size.height - strokeWidth
+                        ),
+                        cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
+                        style = Stroke(width = strokeWidth)
+                    )
+                }
             }
             .clip(shape)
-            .background(Color.White)
+            .background(backgroundBrush)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
