@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.focus.FocusRequester
@@ -118,9 +119,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
             var showSizeDialog by showSizeDialogState
             
             val density = LocalDensity.current
+            val cursorPaddingPx = with(density) { 32.dp.toPx() }
 
             LaunchedEffect(scrollState.value) { noteScroll = scrollState.value }
             LaunchedEffect(textState.value.selection) { noteCursor = textState.value.selection.start }
+            var latestCursorRect by remember { mutableStateOf<Rect?>(null) }
+            LaunchedEffect(textState.value.selection, latestCursorRect) {
+                val rect = latestCursorRect ?: return@LaunchedEffect
+                // Inflate the cursor area so it remains comfortably above the IME.
+                textBringIntoView.bringIntoView(rect.inflate(cursorPaddingPx))
+            }
             LaunchedEffect(Unit) {
                 if (!readOnly) {
                     textFocusRequester.requestFocus()
@@ -285,6 +293,9 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                         }
                                     }
                                 },
+                            onTextLayout = { layoutResult ->
+                                latestCursorRect = layoutResult.getCursorRect(textState.value.selection.start)
+                            },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = textSize.sp
