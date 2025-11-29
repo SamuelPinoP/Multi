@@ -9,5 +9,6 @@ data class WeeklyGoalRecord(
     var weekStart: String,
     var weekEnd: String,
     var dayStates: String = DEFAULT_DAY_STATES,
-    var overageCount: Int = 0
+    var overageCount: Int = 0,
+    var mindset: String = ""
 )

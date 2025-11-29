@@ -11,9 +11,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -66,6 +68,7 @@ fun RecordScreen() {
     val context = LocalContext.current
     val records = remember { mutableStateListOf<WeeklyGoalRecord>() }
     val scope = rememberCoroutineScope()
+    var mindsetDialogRecord by remember { mutableStateOf<WeeklyGoalRecord?>(null) }
 
     LaunchedEffect(Unit) {
         val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
@@ -192,8 +195,15 @@ fun RecordScreen() {
                                 DayButtonsRow(states = rec.dayStates) { }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    TextButton(
+                                        onClick = { mindsetDialogRecord = rec },
+                                        enabled = rec.mindset.isNotBlank()
+                                    ) {
+                                        Text("View Mindset")
+                                    }
                                     TextButton(onClick = {
                                         scope.launch {
                                             val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
@@ -207,6 +217,24 @@ fun RecordScreen() {
                     }
                 }
             }
+        }
+
+        mindsetDialogRecord?.let { rec ->
+            AlertDialog(
+                onDismissRequest = { mindsetDialogRecord = null },
+                confirmButton = {
+                    TextButton(onClick = { mindsetDialogRecord = null }) {
+                        Text("Close")
+                    }
+                },
+                title = { Text("Mindset") },
+                text = {
+                    Text(
+                        text = rec.mindset.ifBlank { "No mindset was captured for this record." },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            )
         }
     }
 }
