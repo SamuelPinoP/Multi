@@ -445,11 +445,12 @@ fun Medallion(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 20.dp)
+                .padding(top = 32.dp, bottom = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Tweak this offset to nudge the "Multi" wordmark higher (negative) or lower (positive).
-            val wordmarkVerticalOffset = (-12).dp
+            val wordmarkVerticalOffset = 8.dp
             MultiWordmark(modifier = Modifier.offset(y = wordmarkVerticalOffset), onClick = {
                 if (!spinning) order = order.shuffled()
             })
@@ -750,12 +751,12 @@ fun MedallionScreen() {
 
             // Bottom buttons row
             // Bump this spacer value up/down to move the quick action bar further from or closer to the medallion.
-            //Spacer(Modifier.height(70.dp))
+            Spacer(Modifier.height(32.dp))
             HomeQuickActions(
                 modifier = Modifier
                     .fillMaxWidth()
                     // Adjust this padding to control how close the buttons sit to the screen edges.
-                    .padding(bottom = 10.dp)
+                    .padding(bottom = 20.dp)
             )
         }
     }
