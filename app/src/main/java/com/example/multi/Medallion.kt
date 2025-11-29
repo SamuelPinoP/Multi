@@ -19,8 +19,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -718,45 +721,67 @@ fun Medallion(
 @Composable
 fun MedallionScreen() {
     val context = LocalContext.current
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
-    ) {
-        Column(
+    val gradient = Brush.verticalGradient(
+        listOf(
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+        )
+    )
+
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween // keep medallion + buttons nicely spaced
+                .background(gradient)
         ) {
-            // Top content: Medallion
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f), // medallion takes most space
-                contentAlignment = Alignment.Center
-            ) {
-                Medallion { segment ->
-                    val cls = when (segment) {
-                        MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                        MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                        MedallionSegment.EVENTS -> EventsActivity::class.java
-                        MedallionSegment.NOTES -> NotesActivity::class.java
-                    }
-                    context.startActivity(Intent(context, cls))
-                }
-            }
+            AnimatedBackdrop(Modifier.matchParentSize().padding(top = 12.dp))
 
-            // Bottom buttons row
-            // Bump this spacer value up/down to move the quick action bar further from or closer to the medallion.
-            //Spacer(Modifier.height(70.dp))
-            HomeQuickActions(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    // Adjust this padding to control how close the buttons sit to the screen edges.
-                    .padding(bottom = 10.dp)
-            )
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 18.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MultiWordmark()
+                    Text(
+                        text = "Your day at a glance",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Medallion { segment ->
+                        val cls = when (segment) {
+                            MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
+                            MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
+                            MedallionSegment.EVENTS -> EventsActivity::class.java
+                            MedallionSegment.NOTES -> NotesActivity::class.java
+                        }
+                        context.startActivity(Intent(context, cls))
+                    }
+                }
+
+                HomeQuickActions(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 6.dp)
+                )
+            }
         }
     }
 }
