@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
@@ -59,6 +58,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
+import com.example.multi.ui.components.ModernButton
+import com.example.multi.ui.components.ModernButtonVariant
 import com.example.multi.ui.theme.MultiTheme
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.openAddressInMaps
@@ -225,14 +226,16 @@ private fun CreateEventScreen(activity: ComponentActivity) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val selectedColor = MaterialTheme.colorScheme.primary
                 val unselectedColor = MaterialTheme.colorScheme.surfaceVariant
-                Button(
+                ModernButton(
                     onClick = { repeatOption = "Every" },
+                    variant = ModernButtonVariant.Secondary,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (repeatOption == "Every") selectedColor else unselectedColor
                     )
                 ) { Text("Every") }
-                Button(
+                ModernButton(
                     onClick = { repeatOption = "Every other" },
+                    variant = ModernButtonVariant.Secondary,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (repeatOption == "Every other") selectedColor else unselectedColor
                     )
@@ -286,7 +289,7 @@ private fun CreateEventScreen(activity: ComponentActivity) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Button(
+            ModernButton(
                 onClick = {
                     if (title.isNotBlank() && notificationTime != null) {
                         scope.launch {
@@ -327,7 +330,7 @@ private fun CreateEventScreen(activity: ComponentActivity) {
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Button(
+            ModernButton(
                 onClick = {
                     if (title.isNotBlank()) {
                         scope.launch {

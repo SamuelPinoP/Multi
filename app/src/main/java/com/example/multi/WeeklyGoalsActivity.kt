@@ -53,6 +53,8 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.ui.components.ModernButton
+import com.example.multi.ui.components.ModernButtonVariant
 import com.example.multi.util.GoalCelebrationPrefs
 import com.example.multi.util.MindsetPrefs
 import com.example.multi.util.capitalizeSentences
@@ -98,20 +100,22 @@ private fun DayChoiceDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(
+            ModernButton(
                 onClick = {
                     onComplete()
                     onDismiss()
                 },
+                variant = ModernButtonVariant.Tertiary,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
             ) { Icon(Icons.Default.Check, contentDescription = null) }
         },
         dismissButton = {
-            Button(
+            ModernButton(
                 onClick = {
                     onMiss()
                     onDismiss()
                 },
+                variant = ModernButtonVariant.Danger,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
             ) { Icon(Icons.Default.Close, contentDescription = null) }
         },
@@ -1203,7 +1207,7 @@ private fun WeeklyGoalDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(
+            ModernButton(
                 onClick = { frequency?.let { onSave(header, it) } },
                 enabled = header.isNotBlank() && frequency != null
             ) { Text("Save") }
@@ -1211,11 +1215,12 @@ private fun WeeklyGoalDialog(
         dismissButton = {
             Row {
                 onProgress?.let { prog ->
-                    Button(
+                    ModernButton(
                         onClick = {
                             prog()
                             onDismiss()
                         },
+                        variant = ModernButtonVariant.Secondary,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                         modifier = Modifier.padding(end = 8.dp)
                     ) { Text("Progress") }
@@ -1257,8 +1262,9 @@ private fun WeeklyGoalDialog(
                         val selectedColor = MaterialTheme.colorScheme.primary
                         val unselectedColor = MaterialTheme.colorScheme.surfaceVariant
 
-                        Button(
+                        ModernButton(
                             onClick = { frequency = i },
+                            variant = ModernButtonVariant.Secondary,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (selected) selectedColor else unselectedColor
                             ),

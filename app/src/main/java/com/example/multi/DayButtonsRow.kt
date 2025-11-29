@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -13,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.multi.ui.components.ModernButton
+import com.example.multi.ui.components.ModernButtonVariant
 
 @Composable
 fun DayButtonsRow(states: String, onClick: (Int) -> Unit) {
@@ -27,8 +28,9 @@ fun DayButtonsRow(states: String, onClick: (Int) -> Unit) {
                 'M' -> Color.Red
                 else -> MaterialTheme.colorScheme.surfaceVariant
             }
-            Button(
+            ModernButton(
                 onClick = { onClick(index) },
+                variant = ModernButtonVariant.Secondary,
                 colors = ButtonDefaults.buttonColors(containerColor = color),
                 contentPadding = PaddingValues(0.dp),
                 modifier = Modifier.size(40.dp)

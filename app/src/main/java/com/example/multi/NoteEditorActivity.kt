@@ -21,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
@@ -45,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import androidx.lifecycle.lifecycleScope
+import com.example.multi.ui.components.ModernButton
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.toDateString
 import com.example.multi.util.shareAsTxt
@@ -309,7 +309,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                             text = {
                                 Column {
                                     listOf(16, 20, 24, 28, 32).forEach { size ->
-                                        Button(
+                                        ModernButton(
                                             onClick = {
                                                 textSize = size
                                                 showSizeDialog = false

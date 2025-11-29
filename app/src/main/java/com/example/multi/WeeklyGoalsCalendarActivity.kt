@@ -29,6 +29,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
+import com.example.multi.ui.components.ModernButton
+import com.example.multi.ui.components.ModernButtonVariant
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
 import com.example.multi.util.capitalizeSentences
@@ -413,7 +415,7 @@ private fun WeeklyGoalDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(
+            ModernButton(
                 onClick = { frequency?.let { onSave(header, it) } },
                 enabled = header.isNotBlank() && frequency != null
             ) { Text("Save") }
@@ -457,8 +459,9 @@ private fun WeeklyGoalDialog(
                         val selectedColor = MaterialTheme.colorScheme.primary
                         val unselectedColor = MaterialTheme.colorScheme.surfaceVariant
 
-                        Button(
+                        ModernButton(
                             onClick = { frequency = i },
+                            variant = ModernButtonVariant.Secondary,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (selected) selectedColor else unselectedColor
                             ),

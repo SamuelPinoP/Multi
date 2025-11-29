@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
@@ -38,6 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import com.example.multi.ui.components.ModernButton
+import com.example.multi.ui.components.ModernButtonVariant
 import androidx.compose.ui.platform.LocalContext
 import com.example.multi.util.capitalizeSentences
 import com.example.multi.util.openAddressInMaps
@@ -95,7 +96,7 @@ fun EventDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(
+            ModernButton(
                 onClick = {
                     val daysFull = listOf(
                         "Sunday",
@@ -186,14 +187,16 @@ fun EventDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val selectedColor = MaterialTheme.colorScheme.primary
                     val unselectedColor = MaterialTheme.colorScheme.surfaceVariant
-                    Button(
+                    ModernButton(
                         onClick = { repeatOption = "Every" },
+                        variant = ModernButtonVariant.Secondary,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (repeatOption == "Every") selectedColor else unselectedColor
                         )
                     ) { Text("Every") }
-                    Button(
+                    ModernButton(
                         onClick = { repeatOption = "Every other" },
+                        variant = ModernButtonVariant.Secondary,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (repeatOption == "Every other") selectedColor else unselectedColor
                         )
