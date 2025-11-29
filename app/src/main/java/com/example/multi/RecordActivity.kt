@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedCard
@@ -66,6 +67,7 @@ fun RecordScreen() {
     val context = LocalContext.current
     val records = remember { mutableStateListOf<WeeklyGoalRecord>() }
     val scope = rememberCoroutineScope()
+    var mindsetDialogText by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
@@ -192,8 +194,14 @@ fun RecordScreen() {
                                 DayButtonsRow(states = rec.dayStates) { }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    TextButton(onClick = {
+                                        mindsetDialogText = rec.mindset.ifBlank {
+                                            "No mindset stored for this week."
+                                        }
+                                    }) { Text("View Mindset") }
                                     TextButton(onClick = {
                                         scope.launch {
                                             val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
@@ -208,5 +216,18 @@ fun RecordScreen() {
                 }
             }
         }
+    }
+
+    if (mindsetDialogText != null) {
+        AlertDialog(
+            onDismissRequest = { mindsetDialogText = null },
+            confirmButton = {
+                TextButton(onClick = { mindsetDialogText = null }) {
+                    Text("Close")
+                }
+            },
+            title = { Text("Mindset") },
+            text = { Text(mindsetDialogText ?: "") }
+        )
     }
 }

@@ -137,7 +137,7 @@ private object GoalNotesPrefs {
     }
 
     fun isExpanded(ctx: Context, goalId: Long): Boolean =
-        sp(ctx).getBoolean("expanded_$goalId", false)
+        sp(ctx).getBoolean("expanded_$goalId", true)
 
     fun setExpanded(ctx: Context, goalId: Long, expanded: Boolean) {
         sp(ctx).edit().putBoolean("expanded_$goalId", expanded).apply()
@@ -278,7 +278,8 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
                     dayStates = model.dayStates,
-                    overageCount = overageCount(completed, model.frequency)
+                    overageCount = overageCount(completed, model.frequency),
+                    mindset = MindsetPrefs.snapshot(context)
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -542,11 +543,6 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                 is DashItem.Goal -> {
                                     val goal = item.goal
                                     val desc = goalDescriptions[goal.id] ?: ""
-                                    val isExpanded = goalExpanded[goal.id] ?: false
-                                    val rotation by animateFloatAsState(
-                                        targetValue = if (isExpanded) 180f else 0f,
-                                        label = "goal-desc-chevron-${goal.id}"
-                                    )
                                     val goalIdx = goals.indexOfFirst { it.id == goal.id }
 
                                     ElevatedCard(
@@ -586,19 +582,6 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                                         Icon(
                                                             imageVector = if (desc.isBlank()) Icons.Default.Add else Icons.Default.Edit,
                                                             contentDescription = if (desc.isBlank()) "Add description" else "Edit description"
-                                                        )
-                                                    }
-                                                    IconButton(
-                                                        onClick = {
-                                                            val newState = !isExpanded
-                                                            goalExpanded[goal.id] = newState
-                                                            GoalNotesPrefs.setExpanded(context, goal.id, newState)
-                                                        }
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.ExpandMore,
-                                                            contentDescription = if (isExpanded) "Collapse description" else "Expand description",
-                                                            modifier = Modifier.rotate(rotation)
                                                         )
                                                     }
                                                 }
@@ -711,29 +694,23 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                             )
 
                                             // Description
-                                            AnimatedVisibility(
-                                                visible = isExpanded,
-                                                enter = fadeIn() + expandVertically(),
-                                                exit = fadeOut() + shrinkVertically()
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(top = 10.dp),
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
-                                                Column(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(top = 10.dp),
-                                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                                ) {
-                                                    if (desc.isBlank()) {
-                                                        Text(
-                                                            text = "No description yet. Tap + to add one.",
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    } else {
-                                                        Text(
-                                                            text = desc,
-                                                            style = MaterialTheme.typography.bodyMedium
-                                                        )
-                                                    }
+                                                if (desc.isBlank()) {
+                                                    Text(
+                                                        text = "No description yet. Tap + to add one.",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                } else {
+                                                    Text(
+                                                        text = desc,
+                                                        style = MaterialTheme.typography.bodyMedium
+                                                    )
                                                 }
                                             }
 

@@ -91,5 +91,13 @@ object MindsetPrefs {
         // Keep expanded list length consistent
         setExpandedStates(context, listOf(false))
     }
+
+    /** Snapshot the current list as a single string for historical records. */
+    fun snapshot(context: Context): String {
+        return getMindsets(context)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString(separator = "\n")
+    }
 }
 
