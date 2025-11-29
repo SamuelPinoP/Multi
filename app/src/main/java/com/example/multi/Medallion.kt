@@ -445,15 +445,15 @@ fun Medallion(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 20.dp, top = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Tweak this offset to nudge the "Multi" wordmark higher (negative) or lower (positive).
-            val wordmarkVerticalOffset = (-12).dp
+            val wordmarkVerticalOffset = 6.dp
             MultiWordmark(modifier = Modifier.offset(y = wordmarkVerticalOffset), onClick = {
                 if (!spinning) order = order.shuffled()
             })
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(56.dp))
 
             val density = LocalDensity.current
             var containerDp by remember { mutableStateOf(0.dp) }
@@ -755,7 +755,7 @@ fun MedallionScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     // Adjust this padding to control how close the buttons sit to the screen edges.
-                    .padding(bottom = 10.dp)
+                    .padding(horizontal = 20.dp, vertical = 22.dp)
             )
         }
     }
