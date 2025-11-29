@@ -2,177 +2,246 @@ package com.example.multi
 
 import android.content.Intent
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Note
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * A single-row bar of 4 sophisticated quick-action buttons with subtle animations
+ * A single-row bar of modern quick-action buttons with subtle animations
  */
 @Composable
 fun HomeQuickActions(
     modifier: Modifier = Modifier,
     calendarLabel: String = "Calendar",
-    cornerRadius: Dp = 22.dp,
-    height: Dp = 112.dp,
-    gap: Dp = 2.dp,
-    borderWidth: Dp = 1.5.dp
+    cornerRadius: Dp = 20.dp,
+    height: Dp = 116.dp,
+    gap: Dp = 12.dp
 ) {
     val context = LocalContext.current
     val shape = RoundedCornerShape(cornerRadius)
+
+    val actions = listOf(
+        QuickAction(
+            label = "Notes",
+            subtitle = "Capture thoughts",
+            colors = listOf(Color(0xFF5D5FEF), Color(0xFF8A8CFF)),
+            icon = Icons.Filled.Note
+        ) { context.startActivity(Intent(context, NotesActivity::class.java)) },
+        QuickAction(
+            label = "Goals",
+            subtitle = "Weekly focus",
+            colors = listOf(Color(0xFF16C196), Color(0xFF2DD4BF)),
+            icon = Icons.Filled.Flag
+        ) { context.startActivity(Intent(context, WeeklyGoalsActivity::class.java)) },
+        QuickAction(
+            label = "Events",
+            subtitle = "Plan ahead",
+            colors = listOf(Color(0xFFFF8D70), Color(0xFFFF5F6D)),
+            icon = Icons.Filled.Event
+        ) { context.startActivity(Intent(context, EventsActivity::class.java)) },
+        QuickAction(
+            label = calendarLabel,
+            subtitle = "Your agenda",
+            colors = listOf(Color(0xFF7C3AED), Color(0xFF9F7AEA)),
+            icon = Icons.Filled.DateRange
+        ) { context.startActivity(Intent(context, CalendarMenuActivity::class.java)) }
+    )
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = height)
-            .padding(horizontal = 0.dp),
+            .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(gap),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SophisticatedButton(
-            modifier = Modifier.weight(1f),
-            label = "Notes",
-            shape = shape,
-            borderWidth = borderWidth,
-            height = height
-        ) { context.startActivity(Intent(context, NotesActivity::class.java)) }
-
-        SophisticatedButton(
-            modifier = Modifier.weight(1f),
-            label = "Goals",
-            shape = shape,
-            borderWidth = borderWidth,
-            height = height
-        ) { context.startActivity(Intent(context, WeeklyGoalsActivity::class.java)) }
-
-        SophisticatedButton(
-            modifier = Modifier.weight(1f),
-            label = "Events",
-            shape = shape,
-            borderWidth = borderWidth,
-            height = height
-        ) { context.startActivity(Intent(context, EventsActivity::class.java)) }
-
-        SophisticatedButton(
-            modifier = Modifier.weight(1f),
-            label = calendarLabel,
-            shape = shape,
-            borderWidth = borderWidth,
-            height = height
-        ) { context.startActivity(Intent(context, CalendarMenuActivity::class.java)) }
+        actions.forEach { action ->
+            ModernQuickAction(
+                modifier = Modifier.weight(1f),
+                action = action,
+                shape = shape,
+                height = height
+            )
+        }
     }
 }
 
 @Composable
-private fun SophisticatedButton(
+private fun ModernQuickAction(
     modifier: Modifier = Modifier,
-    label: String,
+    action: QuickAction,
     shape: RoundedCornerShape,
-    borderWidth: Dp,
-    height: Dp,
-    onClick: () -> Unit
+    height: Dp
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // Subtle scale animation
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = tween(durationMillis = 220, easing = LinearEasing),
         label = "scale"
     )
 
-    // Animated border gradient (very subtle)
-    val infiniteTransition = rememberInfiniteTransition(label = "border")
-    val animatedAngle by infiniteTransition.animateFloat(
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.18f else 0.1f,
+        animationSpec = tween(220),
+        label = "glow"
+    )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "background")
+    val waveOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 360f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(8000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
+            animation = tween(3500, easing = LinearEasing)
         ),
-        label = "angle"
+        label = "wave"
     )
 
-    // Text color animation on press
-    val textColor by animateColorAsState(
-        targetValue = if (isPressed) Color(0xFF1a1a1a) else Color(0xFF2a2a2a),
-        animationSpec = tween(150),
-        label = "textColor"
+    val iconTint by animateColorAsState(
+        targetValue = if (isPressed) Color.White else Color(0xFFF5F5FF),
+        animationSpec = tween(180),
+        label = "iconTint"
     )
 
-    Box(
+    val cardElevation by animateFloatAsState(
+        targetValue = if (isPressed) 8f else 14f,
+        animationSpec = tween(200),
+        label = "elevation"
+    )
+
+    Surface(
         modifier = modifier
             .height(height)
-            .scale(scale)
-            .drawWithContent {
-                drawContent()
-
-                // Draw sophisticated gradient border
-                val strokeWidth = borderWidth.toPx()
-                val cornerRadiusPx = shape.topStart.toPx(size, this)
-
-                // Create subtle gradient from dark gray to slightly lighter
-                val colors = listOf(
-                    Color(0xFF2a2a2a),
-                    Color(0xFF404040),
-                    Color(0xFF2a2a2a)
-                )
-
-                val brush = Brush.sweepGradient(
-                    colors = colors,
-                    center = Offset(size.width / 2, size.height / 2)
-                )
-
-                drawRoundRect(
-                    brush = brush,
-                    topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
-                    size = Size(
-                        size.width - strokeWidth,
-                        size.height - strokeWidth
-                    ),
-                    cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
-                    style = Stroke(width = strokeWidth)
-                )
+            .graphicsLayer {
+                shadowElevation = cardElevation
+                shape = shape
+                clip = true
             }
-            .clip(shape)
-            .background(Color.White)
+            .scale(scale)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClick = onClick
+                onClick = action.onClick
             ),
-        contentAlignment = Alignment.Center
+        shape = shape,
+        color = Color.Transparent
     ) {
-        Text(
-            text = label,
-            color = textColor,
-            style = MaterialTheme.typography.titleMedium,
-            maxLines = 1
-        )
+        Box(
+            modifier = Modifier
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = action.colors,
+                        tileMode = TileMode.Clamp
+                    )
+                )
+                .drawBehind {
+                    val waveBrush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.2f),
+                            Color.White.copy(alpha = 0.05f),
+                            Color.White.copy(alpha = 0.2f)
+                        )
+                    )
+                    val width = size.width
+                    val heightPx = size.height
+                    val offset = width * waveOffset
+                    drawRect(
+                        brush = waveBrush,
+                        topLeft = androidx.compose.ui.geometry.Offset(x = -width + offset, y = 0f),
+                        size = androidx.compose.ui.geometry.Size(width * 2, heightPx)
+                    )
+                }
+                .padding(horizontal = 14.dp, vertical = 14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = action.label,
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = action.subtitle,
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.White.copy(alpha = glowAlpha)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = action.icon,
+                        contentDescription = action.label,
+                        tint = iconTint
+                    )
+                }
+            }
+        }
     }
 }
+
+private data class QuickAction(
+    val label: String,
+    val subtitle: String,
+    val colors: List<Color>,
+    val icon: ImageVector,
+    val onClick: () -> Unit
+)

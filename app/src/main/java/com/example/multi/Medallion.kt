@@ -15,12 +15,14 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -215,7 +217,15 @@ private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
     )
 
     Canvas(modifier.fillMaxSize()) {
-        drawRect(color = c.surface)
+        val base = Brush.linearGradient(
+            colors = listOf(
+                c.surfaceVariant.copy(alpha = 0.85f),
+                c.surface
+            ),
+            start = Offset.Zero,
+            end = Offset(size.width, size.height)
+        )
+        drawRect(brush = base)
         val w = size.width; val h = size.height
         fun blob(cx: Float, cy: Float, color: Color, r: Float) {
             drawCircle(
@@ -228,6 +238,74 @@ private fun AnimatedBackdrop(modifier: Modifier = Modifier) {
         blob(w * (0.25f + 0.1f * shiftA), h * 0.2f, c.primary, w * 0.6f)
         blob(w * (0.85f - 0.1f * shiftB), h * 0.75f, c.tertiary, w * 0.7f)
         blob(w * 0.5f, h * (0.5f + 0.05f * (shiftA - shiftB)), c.secondary, w * 0.55f)
+
+        drawCircle(
+            color = Color.White.copy(alpha = 0.03f),
+            radius = w * 0.42f,
+            center = Offset(w / 2f, h * 0.35f),
+            style = Stroke(width = 3f)
+        )
+    }
+}
+
+@Composable
+private fun HomeWelcomeHeader(modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(26.dp),
+        color = colors.surface.copy(alpha = 0.8f),
+        tonalElevation = 8.dp,
+        shadowElevation = 8.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "Welcome back",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = colors.onSurfaceVariant
+                )
+                Text(
+                    text = "Design your day",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = colors.onSurface
+                )
+                Text(
+                    text = "One place for notes, goals, events, and routines.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(66.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(colors.primary, colors.tertiary),
+                            start = Offset.Zero,
+                            end = Offset(140f, 140f)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Home",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White
+                )
+            }
+        }
     }
 }
 
@@ -726,10 +804,13 @@ fun MedallionScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween // keep medallion + buttons nicely spaced
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
+            HomeWelcomeHeader()
+
             // Top content: Medallion
             Box(
                 modifier = Modifier
@@ -749,13 +830,10 @@ fun MedallionScreen() {
             }
 
             // Bottom buttons row
-            // Bump this spacer value up/down to move the quick action bar further from or closer to the medallion.
-            //Spacer(Modifier.height(70.dp))
             HomeQuickActions(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // Adjust this padding to control how close the buttons sit to the screen edges.
-                    .padding(bottom = 10.dp)
+                    .padding(bottom = 6.dp)
             )
         }
     }
