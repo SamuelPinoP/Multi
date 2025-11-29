@@ -31,6 +31,7 @@ import com.example.multi.data.toEntity
 import com.example.multi.data.toModel
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
+import com.example.multi.util.MindsetPrefs
 import com.example.multi.util.capitalizeSentences
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
@@ -77,6 +78,10 @@ private fun WeeklyGoalsCalendarScreen() {
         val prevEnd = startCurrent.minusDays(1)
         val prevStartStr = prevStart.toString()
         val prevEndStr = prevEnd.toString()
+        val mindsetSnapshot = MindsetPrefs
+            .getMindsets(context)
+            .joinToString(separator = "\n") { it.trim() }
+            .trim()
 
         goals.clear()
         stored.forEach { entity ->
@@ -90,7 +95,8 @@ private fun WeeklyGoalsCalendarScreen() {
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
                     dayStates = model.dayStates,
-                    overageCount = overageCount(completed, model.frequency)
+                    overageCount = overageCount(completed, model.frequency),
+                    mindset = mindsetSnapshot
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(

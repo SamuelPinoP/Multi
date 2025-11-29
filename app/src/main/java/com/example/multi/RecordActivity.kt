@@ -10,12 +10,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -58,6 +62,17 @@ class RecordActivity : BaseActivity() {
             }
         }
     }
+
+    mindsetDialogText?.let { mindsetText ->
+        AlertDialog(
+            onDismissRequest = { mindsetDialogText = null },
+            confirmButton = {
+                TextButton(onClick = { mindsetDialogText = null }) { Text("Close") }
+            },
+            title = { Text("Mindset") },
+            text = { Text(mindsetText) }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +81,7 @@ fun RecordScreen() {
     val context = LocalContext.current
     val records = remember { mutableStateListOf<WeeklyGoalRecord>() }
     val scope = rememberCoroutineScope()
+    var mindsetDialogText by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
@@ -180,6 +196,13 @@ fun RecordScreen() {
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
+                                if (rec.mindset.isNotBlank()) {
+                                    TextButton(
+                                        onClick = { mindsetDialogText = rec.mindset },
+                                        modifier = Modifier.align(Alignment.Start)
+                                    ) { Text("View mindset") }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                }
                                 LinearProgressIndicator(
                                     progress = progress,
                                     modifier = Modifier
@@ -208,5 +231,16 @@ fun RecordScreen() {
                 }
             }
         }
+    }
+
+    mindsetDialogText?.let { mindsetText ->
+        AlertDialog(
+            onDismissRequest = { mindsetDialogText = null },
+            confirmButton = {
+                TextButton(onClick = { mindsetDialogText = null }) { Text("Close") }
+            },
+            title = { Text("Mindset") },
+            text = { Text(mindsetText) }
+        )
     }
 }
