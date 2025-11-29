@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -258,6 +259,9 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
         val dao = db.weeklyGoalDao()
         val recordDao = db.weeklyGoalRecordDao()
         val stored = withContext(Dispatchers.IO) { dao.getGoals() }
+        val mindsetSnapshot = MindsetPrefs.getMindsets(context)
+            .filter { it.isNotBlank() }
+            .joinToString(separator = "\n") { it }
         val currentWeek = currentWeek()
         val today = LocalDate.now()
         val startCurrent = today.minusDays((today.dayOfWeek.value % 7).toLong())
@@ -278,7 +282,8 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                     weekStart = prevStartStr,
                     weekEnd = prevEndStr,
                     dayStates = model.dayStates,
-                    overageCount = overageCount(completed, model.frequency)
+                    overageCount = overageCount(completed, model.frequency),
+                    mindset = mindsetSnapshot
                 )
                 withContext(Dispatchers.IO) { recordDao.insert(record.toEntity()) }
                 model = model.copy(
@@ -710,30 +715,26 @@ private fun WeeklyGoalsScreen(highlightGoalId: Long? = null) {
                                                     .padding(top = 8.dp)
                                             )
 
-                                            // Description
-                                            AnimatedVisibility(
-                                                visible = isExpanded,
-                                                enter = fadeIn() + expandVertically(),
-                                                exit = fadeOut() + shrinkVertically()
+                                            // Description (always visible, expandable for long text)
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(top = 10.dp),
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
-                                                Column(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(top = 10.dp),
-                                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                                ) {
-                                                    if (desc.isBlank()) {
-                                                        Text(
-                                                            text = "No description yet. Tap + to add one.",
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    } else {
-                                                        Text(
-                                                            text = desc,
-                                                            style = MaterialTheme.typography.bodyMedium
-                                                        )
-                                                    }
+                                                if (desc.isBlank()) {
+                                                    Text(
+                                                        text = "No description yet. Tap + to add one.",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                } else {
+                                                    Text(
+                                                        text = desc,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        maxLines = if (isExpanded) Int.MAX_VALUE else 2,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
                                                 }
                                             }
 

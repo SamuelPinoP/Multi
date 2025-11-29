@@ -10,10 +10,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -66,6 +68,7 @@ fun RecordScreen() {
     val context = LocalContext.current
     val records = remember { mutableStateListOf<WeeklyGoalRecord>() }
     val scope = rememberCoroutineScope()
+    var selectedMindset by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         val dao = EventDatabase.getInstance(context).weeklyGoalRecordDao()
@@ -119,6 +122,7 @@ fun RecordScreen() {
             ) {
                 grouped.forEach { (range, list) ->
                     item {
+                        val weekMindset = list.firstOrNull()?.mindset?.takeIf { it.isNotBlank() }
                         val start = LocalDate.parse(range.first)
                         val end = LocalDate.parse(range.second)
                         val month = start.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
@@ -138,6 +142,18 @@ fun RecordScreen() {
                                 textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.titleMedium
                             )
+                        }
+                        if (weekMindset != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { selectedMindset = weekMindset }) {
+                                    Text("View Mindset")
+                                }
+                            }
                         }
                     }
                     items(list) { rec ->
@@ -208,5 +224,18 @@ fun RecordScreen() {
                 }
             }
         }
+    }
+
+    selectedMindset?.let { mindsetText ->
+        AlertDialog(
+            onDismissRequest = { selectedMindset = null },
+            confirmButton = {
+                TextButton(onClick = { selectedMindset = null }) {
+                    Text("Close")
+                }
+            },
+            title = { Text("Mindset") },
+            text = { Text(mindsetText) }
+        )
     }
 }
