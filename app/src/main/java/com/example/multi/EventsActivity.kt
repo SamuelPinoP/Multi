@@ -63,6 +63,7 @@ import java.util.Calendar
 
 const val EXTRA_DATE = "extra_date"
 const val EXTRA_EVENT_ID = "extra_event_id"
+const val EXTRA_AUTO_CREATE_EVENT = "extra_auto_create_event"
 
 /** Activity displaying the list of user events. */
 class EventsActivity : SegmentActivity("Events") {
@@ -95,8 +96,10 @@ class EventsActivity : SegmentActivity("Events") {
         val scope = rememberCoroutineScope()
         val showAttachDialog by showAttachDialogState
         val openEventId = remember { intent.getLongExtra(EXTRA_EVENT_ID, -1L).takeIf { it >= 0 } }
+        val startWithCreate = remember { intent.getBooleanExtra(EXTRA_AUTO_CREATE_EVENT, false) }
         LaunchedEffect(Unit) { intent.removeExtra(EXTRA_EVENT_ID) }
-        EventsScreen(events, notes, openEventId)
+        LaunchedEffect(Unit) { intent.removeExtra(EXTRA_AUTO_CREATE_EVENT) }
+        EventsScreen(events, notes, openEventId, startWithCreate)
         val attachable = events.filter { !notes.containsKey(it.id) }
         if (showAttachDialog) {
             AttachNoteDialog(
@@ -149,10 +152,15 @@ class EventsActivity : SegmentActivity("Events") {
 }
 
 @Composable
-private fun EventsScreen(events: MutableList<Event>, notes: MutableMap<Long, Note>, openEventId: Long?) {
+private fun EventsScreen(
+    events: MutableList<Event>,
+    notes: MutableMap<Long, Note>,
+    openEventId: Long?,
+    startWithCreate: Boolean,
+) {
     val context = LocalContext.current
     var editingIndex by remember { mutableStateOf<Int?>(null) }
-    var showCreateDialog by remember { mutableStateOf(false) }
+    var showCreateDialog by remember { mutableStateOf(startWithCreate) }
     val scope = rememberCoroutineScope()
     var pendingOpenEventId by remember { mutableStateOf(openEventId) }
     var pendingNotificationRequest by remember { mutableStateOf<NotificationRequest?>(null) }
