@@ -7,27 +7,12 @@
 
 * Add remainders to the Notes. The notes must send a notification.
 
-4- Make two different widgets for the Calendar (says when is the next event Date above and days
-remaining under).
-
 * The information in the Record activity looks ugly. It needs to be more modern and interactive.
-
-* The Calendar Display needs to look better because it looks ugly and colorless.
-
-* Make it so that people can add links to the notes and the events. Also they can display the site.
 
 * Make sure the Note Widget has an Icon and a name Multi Notes could be the name.
 
-* Adding initial Goal suggestions.
- Suggest to work out as a Goal to whoever opens the app. Suggest an spiritual and intellectual Goal 
-to the user.
 
- If the user chooses spiritual then the app will suggest prayer, reading the scripture. If he clicks 
-intellectual then I will suggest reading or studying.
-
- Ask which mindset shift does he want the Goals to unlock.
-
- Possibly have separate mindsets for each goal. Completeness must be satisfying. It has to feel up 
+* Goal completeness must be satisfying. It has to feel up 
 the mediator. I was thinking a water filling system or bottom completion bar.
 
 * I am adding UI interactiveness.
@@ -39,25 +24,12 @@ Make it look beautiful.
 
 5- Allow Voice Notes as notes in multi.
 
-// Try UI without moving tiles and reduce size of wheel. Maybe create branch as it is before.
-
 * Icon:
   Multi and Tic Tac Toe need icons. I bet that is easy to do.
 
 * The Record says No record yet. I want to put an animation here whenever it is empty from loties.
   Also improve the separation from weeks so I see how they look better.
 
-* Mindset to learn:
-
-The mindset will be initially centered but it will give the option of being note centered.
-
-* Mindset and color of goals
-  Whenever I change the mindset of my goal I can choose which goals will develop that mindset.
-
-I can also change the color of them that will create a border with that color. I need to ask chat
-GPT to build it beautifully. I can drag and drop a Goal into a Mindset and it will change it's
-color. One goal can belong in two different mindsets. Whenever I make progress in it it will
-update in both.
 
 * Sorting notes by alphabetical order or date or access.
 
