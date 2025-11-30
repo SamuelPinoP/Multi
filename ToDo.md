@@ -3,27 +3,9 @@
 *** Create a single activity and multiple screens ***
     ******************PRIORITY*******************
 
-//////////////////////////////////////
-
-I must be able to change activities by swiping to the side!
-
-/////////////////////////////////
-
-
-
 * Pressing Multi will change the images on the screen for others.
 
-* Add a sideways button that displays Notes Calendar Events Goals on click. It must be beautiful.
-
-
-3- Add a description that says: You can create an Event/ Weekly Goal the first time the user opens
-the app. Like a tutorial. After the user has clicked the tutorial then it disappears. Put it in the
-settings.
-
 * Add remainders to the Notes. The notes must send a notification.
-
-* Focus needs to update below the keyboard.
-  It is possible and it will make a lot of difference.
 
 4- Make two different widgets for the Calendar (says when is the next event Date above and days
 remaining under).
