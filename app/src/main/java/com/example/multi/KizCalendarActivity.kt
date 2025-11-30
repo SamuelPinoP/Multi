@@ -68,12 +68,18 @@ import com.example.multi.ui.theme.CalendarTodayBorder
 import com.example.multi.util.occursOn
 import com.example.multi.util.openAddressInMaps
 import com.example.multi.util.showModernToast
+import com.example.multi.util.LastCalendarPreferences
 
 /** Activity showing the Kizitonwose calendar. */
 class KizCalendarActivity : SegmentActivity("Events Calendar") {
     @Composable
     override fun SegmentContent() {
         KizCalendarScreen()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        LastCalendarPreferences.setLastCalendar(this, this::class.java)
     }
 }
 

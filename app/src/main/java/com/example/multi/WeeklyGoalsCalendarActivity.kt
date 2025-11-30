@@ -32,6 +32,7 @@ import com.example.multi.data.toModel
 import com.example.multi.ui.theme.CalendarTodayBg
 import com.example.multi.ui.theme.CalendarTodayBorder
 import com.example.multi.util.capitalizeSentences
+import com.example.multi.util.LastCalendarPreferences
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.DayPosition
@@ -51,6 +52,11 @@ class WeeklyGoalsCalendarActivity : SegmentActivity("Goals Calendar") {
     @Composable
     override fun SegmentContent() {
         WeeklyGoalsCalendarScreen()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        LastCalendarPreferences.setLastCalendar(this, this::class.java)
     }
 }
 

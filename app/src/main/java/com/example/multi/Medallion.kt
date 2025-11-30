@@ -1,9 +1,5 @@
 package com.example.multi
 
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
@@ -59,6 +55,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.example.multi.data.EventEntity
 import com.example.multi.data.toModel
+import com.example.multi.util.LastCalendarPreferences
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -66,6 +63,11 @@ import kotlin.math.sqrt
 import kotlin.math.roundToInt
 import androidx.compose.runtime.mutableIntStateOf
 import com.example.multi.data.EventDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -718,6 +720,9 @@ fun Medallion(
 @Composable
 fun MedallionScreen() {
     val context = LocalContext.current
+    val appContext = remember(context) { context.applicationContext }
+    val database = remember(appContext) { EventDatabase.getInstance(appContext) }
+    val scope = rememberCoroutineScope()
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.surface
@@ -738,13 +743,43 @@ fun MedallionScreen() {
                 contentAlignment = Alignment.Center
             ) {
                 Medallion { segment ->
-                    val cls = when (segment) {
-                        MedallionSegment.CALENDAR -> CalendarMenuActivity::class.java
-                        MedallionSegment.WEEKLY_GOALS -> WeeklyGoalsActivity::class.java
-                        MedallionSegment.EVENTS -> EventsActivity::class.java
-                        MedallionSegment.NOTES -> NotesActivity::class.java
+                    when (segment) {
+                        MedallionSegment.NOTES -> {
+                            scope.launch {
+                                val lastNote = withContext(Dispatchers.IO) {
+                                    database.noteDao().getNotes().firstOrNull()?.toModel()
+                                }
+                                if (lastNote != null) {
+                                    val intent = Intent(context, NoteEditorActivity::class.java).apply {
+                                        putExtra(EXTRA_NOTE_ID, lastNote.id)
+                                        putExtra(EXTRA_NOTE_HEADER, lastNote.header)
+                                        putExtra(EXTRA_NOTE_CONTENT, lastNote.content)
+                                        putExtra(EXTRA_NOTE_CREATED, lastNote.created)
+                                        putExtra(EXTRA_NOTE_SCROLL, lastNote.scroll)
+                                        putExtra(EXTRA_NOTE_CURSOR, lastNote.cursor)
+                                        putExtra(EXTRA_NOTE_ATTACHMENT_URI, lastNote.attachmentUri)
+                                    }
+                                    context.startActivity(intent)
+                                } else {
+                                    context.startActivity(Intent(context, NotesActivity::class.java))
+                                }
+                            }
+                        }
+                        MedallionSegment.WEEKLY_GOALS -> {
+                            context.startActivity(Intent(context, WeeklyGoalsActivity::class.java))
+                        }
+                        MedallionSegment.EVENTS -> {
+                            val intent = Intent(context, EventsActivity::class.java).apply {
+                                putExtra(EXTRA_AUTO_CREATE_EVENT, true)
+                            }
+                            context.startActivity(intent)
+                        }
+                        MedallionSegment.CALENDAR -> {
+                            val target = LastCalendarPreferences.getLastCalendar(context)
+                                ?: CalendarMenuActivity::class.java
+                            context.startActivity(Intent(context, target))
+                        }
                     }
-                    context.startActivity(Intent(context, cls))
                 }
             }
 
