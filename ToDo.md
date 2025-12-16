@@ -3,83 +3,10 @@
 *** Create a single activity and multiple screens ***
     ******************PRIORITY*******************
 
-* Pressing Multi will change the images on the screen for others.
-
-* Add remainders to the Notes. The notes must send a notification.
-
-* The information in the Record activity looks ugly. It needs to be more modern and interactive.
-
 * Make sure the Note Widget has an Icon and a name Multi Notes could be the name.
-
-
-* Goal completeness must be satisfying. It has to feel up 
-the mediator. I was thinking a water filling system or bottom completion bar.
-
-* I am adding UI interactiveness.
- A battery should have 0/9 and be filled each time we complete a weekly task all the way to the top.
-Make it look beautiful.
-
-* Post both apps.
- Post Multi. Post Tic Tac Toe in the Play Store.
-
-5- Allow Voice Notes as notes in multi.
-
-* Icon:
-  Multi and Tic Tac Toe need icons. I bet that is easy to do.
-
-* The Record says No record yet. I want to put an animation here whenever it is empty from loties.
-  Also improve the separation from weeks so I see how they look better.
-
 
 * Sorting notes by alphabetical order or date or access.
 
-*************************************Later**********************************************************
-* The purple pop up that displays when adding an event looks supper ugly and colorless so I need to
-  create a better UI with more beauty.
-
-* Improving the design of the Calendar.
- The data the Calendar stores in each day could look better or be more interactive and fun. It 
-definitely needs to be more beautiful than it is and have more modernity.
-
-* Update with safety backup
-  When there is an update in the app the notes I created get deleted. It should not happen. Because 
-the user will have to create the notes again and will lose a lot of work and all the info. I need to
-be respectful of the user.
-
-* Maybe separate the notification from the rest also in a second screen
-together with the notification add an alarm. It should be cool. Give the option to have an alarm on 
-its own as a Widget too. It will allow the user to play any chosen song from the phone as an alarm 
-or they can use one of the default songs.
-
-
-----------------------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------
-* Tic Tac Toe design and AI.
-  Make the AI have two levels of difficulty. The Superium level is impossible to defeat. Virtually  
-nobody can. If you find an algorithm to win. If you find a way to win you are probably a genius. 
-Communicate that to the user.
-
-* Security and no data leaks when posting the app.
-  I will not ask for your personal data. I will give you real private use of technology.
-  
-- Add Attach button in the events activity to attach notes to an specific event. It could be a new
-note or an existing one or even multiple of them. I must select the event first and then the note.
-
-- Add a remainders page that will allow to set alarms and remainders in specific days in the 
-Calendar. 
-
-- Maybe add alarms with whichever song I choose.
-
-- I need to add levels of priority to the notes. Priority green. It is high. Yellow is medium. Red 
-is low. By clicking each of them we can display the notes with that priority.
-
-- Adding remainders and a todo tag in red to the note with red priority will make it somehow a todo 
-item.
-
-4- Add feature to the notification from weekly activities. The user can click progress without
-entering the app. As a Remainder, only for active users.
 -----------------------------------------------------------------------------
 
 1- The keyboard still covers some of the note. If I put the cursor in the bottom of the note the
