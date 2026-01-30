@@ -14,7 +14,7 @@ open class BaseActivity : ComponentActivity() {
      * Handles navigation when the user presses back. If this activity is the
      * root of the task, [MainActivity] is launched instead of closing.
      */
-    protected fun navigateBackOrFinish() {
+    protected open fun navigateBackOrFinish() {
         if (isTaskRoot) {
             startActivity(
                 Intent(this, MainActivity::class.java).apply {

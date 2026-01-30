@@ -26,6 +26,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.multi.data.EventDatabase
+import com.example.multi.data.toModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * A single-row bar of 4 sophisticated quick-action buttons with subtle animations
@@ -40,6 +45,9 @@ fun HomeQuickActions(
     borderWidth: Dp = 1.5.dp
 ) {
     val context = LocalContext.current
+    val appContext = remember(context) { context.applicationContext }
+    val database = remember(appContext) { EventDatabase.getInstance(appContext) }
+    val scope = rememberCoroutineScope()
     val shape = RoundedCornerShape(cornerRadius)
 
     Row(
@@ -56,7 +64,28 @@ fun HomeQuickActions(
             shape = shape,
             borderWidth = borderWidth,
             height = height
-        ) { context.startActivity(Intent(context, NotesActivity::class.java)) }
+        ) {
+            scope.launch {
+                val lastNote = withContext(Dispatchers.IO) {
+                    database.noteDao().getNotes().firstOrNull()?.toModel()
+                }
+                if (lastNote != null) {
+                    val intent = Intent(context, NoteEditorActivity::class.java).apply {
+                        putExtra(EXTRA_NOTE_ID, lastNote.id)
+                        putExtra(EXTRA_NOTE_HEADER, lastNote.header)
+                        putExtra(EXTRA_NOTE_CONTENT, lastNote.content)
+                        putExtra(EXTRA_NOTE_CREATED, lastNote.created)
+                        putExtra(EXTRA_NOTE_SCROLL, lastNote.scroll)
+                        putExtra(EXTRA_NOTE_CURSOR, lastNote.cursor)
+                        putExtra(EXTRA_NOTE_ATTACHMENT_URI, lastNote.attachmentUri)
+                        putExtra(EXTRA_NOTE_BACK_TARGET, NotesActivity::class.java.name)
+                    }
+                    context.startActivity(intent)
+                } else {
+                    context.startActivity(Intent(context, NotesActivity::class.java))
+                }
+            }
+        }
 
         SophisticatedButton(
             modifier = Modifier.weight(1f),

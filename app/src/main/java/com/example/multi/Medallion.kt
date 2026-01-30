@@ -395,6 +395,7 @@ fun Medallion(
     val dayOfWeekFormatter = DateTimeFormatter.ofPattern("EEE")
     val monthDayFormatter = DateTimeFormatter.ofPattern("MMM d")
     val calendarSubtitle = "${today.format(dayOfWeekFormatter)} • ${today.format(monthDayFormatter)}"
+    val scope = rememberCoroutineScope()
 
     var order by rememberSaveable {
         mutableStateOf(listOf(MedallionSegment.NOTES, MedallionSegment.WEEKLY_GOALS, MedallionSegment.EVENTS, MedallionSegment.CALENDAR))
@@ -403,7 +404,6 @@ fun Medallion(
     // wheel rotation
     var angleDeg by rememberSaveable { mutableStateOf(0f) }
     var spinning by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
     val outlineRing: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
 
     // random variant per cold launch
@@ -720,9 +720,6 @@ fun Medallion(
 @Composable
 fun MedallionScreen() {
     val context = LocalContext.current
-    val appContext = remember(context) { context.applicationContext }
-    val database = remember(appContext) { EventDatabase.getInstance(appContext) }
-    val scope = rememberCoroutineScope()
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.surface
@@ -745,25 +742,7 @@ fun MedallionScreen() {
                 Medallion { segment ->
                     when (segment) {
                         MedallionSegment.NOTES -> {
-                            scope.launch {
-                                val lastNote = withContext(Dispatchers.IO) {
-                                    database.noteDao().getNotes().firstOrNull()?.toModel()
-                                }
-                                if (lastNote != null) {
-                                    val intent = Intent(context, NoteEditorActivity::class.java).apply {
-                                        putExtra(EXTRA_NOTE_ID, lastNote.id)
-                                        putExtra(EXTRA_NOTE_HEADER, lastNote.header)
-                                        putExtra(EXTRA_NOTE_CONTENT, lastNote.content)
-                                        putExtra(EXTRA_NOTE_CREATED, lastNote.created)
-                                        putExtra(EXTRA_NOTE_SCROLL, lastNote.scroll)
-                                        putExtra(EXTRA_NOTE_CURSOR, lastNote.cursor)
-                                        putExtra(EXTRA_NOTE_ATTACHMENT_URI, lastNote.attachmentUri)
-                                    }
-                                    context.startActivity(intent)
-                                } else {
-                                    context.startActivity(Intent(context, NotesActivity::class.java))
-                                }
-                            }
+                            context.startActivity(Intent(context, NotesActivity::class.java))
                         }
                         MedallionSegment.WEEKLY_GOALS -> {
                             context.startActivity(Intent(context, WeeklyGoalsActivity::class.java))

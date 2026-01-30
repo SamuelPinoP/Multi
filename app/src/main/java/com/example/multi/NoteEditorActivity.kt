@@ -1,5 +1,7 @@
 package com.example.multi
 
+import android.app.Activity
+import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +64,7 @@ const val EXTRA_NOTE_DELETED = "extra_note_deleted"
 const val EXTRA_NOTE_SCROLL = "extra_note_scroll"
 const val EXTRA_NOTE_CURSOR = "extra_note_cursor"
 const val EXTRA_NOTE_ATTACHMENT_URI = "extra_note_attachment_uri"
+const val EXTRA_NOTE_BACK_TARGET = "extra_note_back_target"
 
 class NoteEditorActivity : SegmentActivity("Note") {
     private var noteId: Long = 0L
@@ -100,6 +103,25 @@ class NoteEditorActivity : SegmentActivity("Note") {
             }
         }
         super.onCreate(savedInstanceState)
+    }
+
+    override fun navigateBackOrFinish() {
+        val backTargetName = intent.getStringExtra(EXTRA_NOTE_BACK_TARGET)
+        if (!backTargetName.isNullOrBlank()) {
+            val backTarget = runCatching { Class.forName(backTargetName) }
+                .getOrNull()
+                ?.takeIf { Activity::class.java.isAssignableFrom(it) } as? Class<out Activity>
+            if (backTarget != null) {
+                startActivity(
+                    Intent(this, backTarget).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    }
+                )
+                finish()
+                return
+            }
+        }
+        super.navigateBackOrFinish()
     }
 
     @OptIn(ExperimentalFoundationApi::class)
