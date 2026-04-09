@@ -3,17 +3,6 @@
 *** Create a single activity and multiple screens ***
     ******************PRIORITY*******************
 
-* Always open the app in the home screen.
-* Images less zoomed in
-* Pressing Multi should change the images
-* Slightly smaller wheel with white edges so it fits in the screen
-* Buttons should be a bit smaller
-
-
-
-
-
-
 * Make sure the Note Widget has an Icon and a name Multi Notes could be the name.
 
 * Sorting notes by alphabetical order or date or access.
