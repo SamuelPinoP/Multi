@@ -92,7 +92,7 @@ private object Wheel {
 
 /** Texture sets (put your images in res/drawable as *_tile_1..10.png) */
 private object Lava { // EVENTS (red)
-    const val Scale = 1.15f        // ≈115% zoom
+    const val Scale = 1.0f         // less zoomed-in crop
     const val GlowStrength = 0.55f
     const val TextOnRimBias = 0.82f
     val ResIds = intArrayOf(
@@ -125,7 +125,7 @@ private object Rock { // CALENDAR (gray)
     )
 }
 private object Moss { // WEEKLY GOALS (green)
-    const val Scale = 1.1f         // ≈110% zoom
+    const val Scale = 1.0f         // less zoomed-in crop
     const val GlowStrength = 0.40f
     const val TextOnRimBias = 0.82f
     val ResIds = intArrayOf(
@@ -156,6 +156,16 @@ private data class WeeklyGoalSliceSummary(
 ) {
     val cappedCompleted: Int = completed.coerceAtMost(total)
     val percent: Int = if (total <= 0) 0 else (cappedCompleted * 100) / total
+}
+
+private fun nextRandomResId(current: Int, options: IntArray): Int {
+    if (options.isEmpty()) return current
+    if (options.size == 1) return options[0]
+    var candidate = current
+    while (candidate == current) {
+        candidate = options.random()
+    }
+    return candidate
 }
 
 private fun summarizeEvents(events: List<EventEntity>): EventSummary {
@@ -407,10 +417,10 @@ fun Medallion(
     val outlineRing: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
 
     // random variant per cold launch
-    val lavaResId  by rememberSaveable { mutableIntStateOf(Lava.ResIds.random()) }
-    val iceResId   by rememberSaveable { mutableIntStateOf(Ice.ResIds.random()) }
-    val rockResId  by rememberSaveable { mutableIntStateOf(Rock.ResIds.random()) }
-    val mossResId  by rememberSaveable { mutableIntStateOf(Moss.ResIds.random()) }
+    var lavaResId by rememberSaveable { mutableIntStateOf(Lava.ResIds.random()) }
+    var iceResId by rememberSaveable { mutableIntStateOf(Ice.ResIds.random()) }
+    var rockResId by rememberSaveable { mutableIntStateOf(Rock.ResIds.random()) }
+    var mossResId by rememberSaveable { mutableIntStateOf(Moss.ResIds.random()) }
 
     val lavaBitmap = ImageBitmap.imageResource(lavaResId)
     val iceBitmap  = ImageBitmap.imageResource(iceResId)
@@ -453,7 +463,13 @@ fun Medallion(
             // Tweak this offset to nudge the "Multi" wordmark higher (negative) or lower (positive).
             val wordmarkVerticalOffset = (-12).dp
             MultiWordmark(modifier = Modifier.offset(y = wordmarkVerticalOffset), onClick = {
-                if (!spinning) order = order.shuffled()
+                if (!spinning) {
+                    order = order.shuffled()
+                    lavaResId = nextRandomResId(lavaResId, Lava.ResIds)
+                    iceResId = nextRandomResId(iceResId, Ice.ResIds)
+                    rockResId = nextRandomResId(rockResId, Rock.ResIds)
+                    mossResId = nextRandomResId(mossResId, Moss.ResIds)
+                }
             })
             Spacer(Modifier.height(48.dp))
 
