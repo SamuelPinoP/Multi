@@ -87,7 +87,10 @@ private object Motion {
 private object Wheel {
     // tiny overlap to hide AA hairlines at slice boundaries (not image seams)
     const val ArcEpsilonDeg = 0f
-    const val WheelScale = 1.15f
+    // Main size knob for the wheel:
+    // - decrease (ex: 0.92f) to make the wheel smaller and keep it inside the screen
+    // - increase (ex: 1.00f) to make it larger
+    const val WheelScale = 0.92f
 }
 
 /** Texture sets (put your images in res/drawable as *_tile_1..10.png) */
