@@ -39,8 +39,9 @@ import kotlinx.coroutines.withContext
 fun HomeQuickActions(
     modifier: Modifier = Modifier,
     calendarLabel: String = "Calendar",
-    cornerRadius: Dp = 22.dp,
-    height: Dp = 112.dp,
+    // ↓ MAIN SIZE CONTROLS (edit these to tune the bottom button size)
+    cornerRadius: Dp = 18.dp,
+    height: Dp = 88.dp,
     gap: Dp = 2.dp,
     borderWidth: Dp = 1.5.dp
 ) {
@@ -200,7 +201,8 @@ private fun SophisticatedButton(
         Text(
             text = label,
             color = textColor,
-            style = MaterialTheme.typography.titleMedium,
+            // ↓ Secondary size control for label text.
+            style = MaterialTheme.typography.titleSmall,
             maxLines = 1
         )
     }

@@ -769,7 +769,12 @@ fun MedallionScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     // Adjust this padding to control how close the buttons sit to the screen edges.
-                    .padding(bottom = 10.dp)
+                    .padding(bottom = 10.dp),
+                // QUICK SIZE TUNING:
+                // - lower `height` for shorter buttons
+                // - lower `cornerRadius` for less-rounded/smaller look
+                height = 88.dp,
+                cornerRadius = 18.dp
             )
         }
     }

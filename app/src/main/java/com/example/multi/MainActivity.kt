@@ -1,6 +1,5 @@
 package com.example.multi
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,7 +17,6 @@ import com.example.multi.data.EventDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.example.multi.util.LastVisitedPreferences
 
 /**
  * Main entry point of the application.
@@ -39,17 +37,6 @@ class MainActivity : ComponentActivity() {
             }
         }
         scheduleDailyActivityReminder(this)
-        val skipLastVisited = intent?.getBooleanExtra(EXTRA_SKIP_LAST_VISITED, false) ?: false
-        if (skipLastVisited) {
-            intent?.removeExtra(EXTRA_SKIP_LAST_VISITED)
-        }
-        if (!skipLastVisited && savedInstanceState == null) {
-            val target = LastVisitedPreferences.getLastVisitedActivity(this)
-                ?: NotesActivity::class.java
-            if (target != this::class.java) {
-                startActivity(Intent(this, target))
-            }
-        }
         enableEdgeToEdge()
         setContent {
             MultiTheme(darkTheme = ThemePreferences.isDarkTheme(this)) {
