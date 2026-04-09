@@ -773,7 +773,7 @@ fun MedallionScreen() {
                 // QUICK SIZE TUNING:
                 // - lower `height` for shorter buttons
                 // - lower `cornerRadius` for less-rounded/smaller look
-                height = 88.dp,
+                height = 95.dp,
                 cornerRadius = 18.dp
             )
         }
