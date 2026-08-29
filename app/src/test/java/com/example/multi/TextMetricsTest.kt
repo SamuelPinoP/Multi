@@ -12,15 +12,33 @@ class TextMetricsTest {
     }
 
     @Test
+    fun blankString_hasZeroWords() {
+        assertEquals(0, TextMetrics.wordCount("   \n\t "))
+    }
+
+    @Test
     fun multipleSpacesAndNewlines_countedCorrectly() {
         val text = "Hello   world\nthis is   a test"
         assertEquals(6, TextMetrics.wordCount(text))
     }
 
     @Test
-    fun urlsEmojisAndPunctuation_notOverCounted() {
+    fun url_countsAsSingleWord() {
+        // "Visit" + the whole URL = 2. The trailing "!" and the emoji are not words.
         val text = "Visit https://example.com! 😊"
-        assertEquals(4, TextMetrics.wordCount(text))
+        assertEquals(2, TextMetrics.wordCount(text))
+    }
+
+    @Test
+    fun emailAndWwwLink_eachCountAsOneWord() {
+        val text = "Email me at sam@example.co.uk or visit www.example.com now"
+        // Email, me, at, <email>, or, visit, <www link>, now
+        assertEquals(8, TextMetrics.wordCount(text))
+    }
+
+    @Test
+    fun punctuationOnly_hasZeroWords() {
+        assertEquals(0, TextMetrics.wordCount("!!! ... ??? -- ,,"))
     }
 
     @Test
