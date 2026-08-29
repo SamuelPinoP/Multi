@@ -143,6 +143,9 @@ interface NoteDao {
     @Query("SELECT * FROM notes ORDER BY lastOpened DESC")
     suspend fun getNotes(): List<NoteEntity>
 
+    @Query("SELECT * FROM notes ORDER BY lastOpened DESC")
+    fun observeNotes(): Flow<List<NoteEntity>>
+
     @Query("SELECT COUNT(*) FROM notes")
     fun observeCount(): Flow<Int>
 

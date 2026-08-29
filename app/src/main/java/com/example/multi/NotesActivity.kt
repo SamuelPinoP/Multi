@@ -3,6 +3,7 @@ package com.example.multi
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,10 +29,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
@@ -42,52 +43,38 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
-import com.example.multi.data.EventDatabase
-import com.example.multi.data.toModel
+import com.example.multi.di.ServiceLocator
+import com.example.multi.ui.notes.NotesViewModel
 import com.example.multi.util.shareNotesAsDocx
 import com.example.multi.util.shareNotesAsPdf
 import com.example.multi.util.shareNotesAsTxt
+import com.example.multi.util.showModernToast
 import com.example.multi.util.toDateString
 import com.example.multi.util.TextMetrics
 import com.example.multi.ui.WordCountChip
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import androidx.lifecycle.lifecycleScope
-import com.example.multi.data.toEntity
 
 class NotesActivity : SegmentActivity("Notes") {
-    private val notes = mutableStateListOf<Note>()
-    private val notesLoaded = mutableStateOf(false)
-    private var importRequest: (() -> Unit)? = null
 
-    override fun onResume() {
-        super.onResume()
-        lifecycleScope.launch {
-            notesLoaded.value = false
-            val db = EventDatabase.getInstance(this@NotesActivity)
-            val threshold = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
-            withContext(Dispatchers.IO) { db.trashedNoteDao().deleteExpired(threshold) }
-            val stored = withContext(Dispatchers.IO) { db.noteDao().getNotes() }
-            notes.clear(); notes.addAll(stored.map { it.toModel() })
-            notesLoaded.value = true
-        }
+    private val viewModel: NotesViewModel by viewModels {
+        NotesViewModel.factory(ServiceLocator.provideNotesRepository(this))
     }
+
+    private var importRequest: (() -> Unit)? = null
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     override fun SegmentContent() {
         val context = LocalContext.current
-        val notes = remember { this@NotesActivity.notes }
-        val notesLoaded = remember { this@NotesActivity.notesLoaded }
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        val notes = uiState.notes
         var selectionMode by remember { mutableStateOf(false) }
         val selectedIds = remember { mutableStateListOf<Long>() }
         var shareMenuExpanded by remember { mutableStateOf(false) }
-        val scope = rememberCoroutineScope()
         val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
             uri?.let {
                 context.contentResolver.takePersistableUriPermission(
@@ -101,21 +88,17 @@ class NotesActivity : SegmentActivity("Notes") {
                         if (idx >= 0) name = c.getString(idx)
                     }
                 }
-                val newNote = Note(
-                    header = name ?: "Imported File",
-                    content = "",
-                    created = System.currentTimeMillis(),
-                    lastOpened = System.currentTimeMillis(),
-                    attachmentUri = it.toString()
-                )
-                scope.launch {
-                    val dao = EventDatabase.getInstance(context).noteDao()
-                    val id = withContext(Dispatchers.IO) { dao.insert(newNote.toEntity()) }
-                    notes.add(0, newNote.copy(id = id))
-                }
+                viewModel.importNote(name ?: "Imported File", it.toString())
             }
         }
         importRequest = { importLauncher.launch(arrayOf("*/*")) }
+
+        uiState.errorMessage?.let { message ->
+            LaunchedEffect(message) {
+                context.showModernToast(message)
+                viewModel.consumeError()
+            }
+        }
 
         BackHandler(enabled = selectionMode) {
             selectedIds.clear()
@@ -123,7 +106,7 @@ class NotesActivity : SegmentActivity("Notes") {
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            if (notesLoaded.value && notes.isEmpty()) {
+            if (uiState.isEmpty) {
                 val composition by rememberLottieComposition(
                     LottieCompositionSpec.RawRes(R.raw.notebook)
                 )
@@ -149,7 +132,7 @@ class NotesActivity : SegmentActivity("Notes") {
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(notes) { note ->
+                    items(notes, key = { it.id }) { note ->
                         val selected = note.id in selectedIds
                         ElevatedCard(
                             elevation = CardDefaults.elevatedCardElevation(),
@@ -293,28 +276,9 @@ class NotesActivity : SegmentActivity("Notes") {
                 ) {
                     ExtendedFloatingActionButton(
                         onClick = {
-                            val targets = notes.filter { it.id in selectedIds }
-                            scope.launch {
-                                val db = EventDatabase.getInstance(context)
-                                withContext(Dispatchers.IO) {
-                                    val noteDao = db.noteDao()
-                                    val trashDao = db.trashedNoteDao()
-                                    targets.forEach { note ->
-                                        trashDao.insert(
-                                            TrashedNote(
-                                                header = note.header,
-                                                content = note.content,
-                                                created = note.created,
-                                                attachmentUri = note.attachmentUri
-                                            ).toEntity()
-                                        )
-                                        noteDao.delete(note.toEntity())
-                                    }
-                                }
-                                notes.removeAll { it.id in selectedIds }
-                                selectedIds.clear()
-                                selectionMode = false
-                            }
+                            viewModel.moveToTrash(selectedIds.toSet())
+                            selectedIds.clear()
+                            selectionMode = false
                         },
                         icon = { Icon(Icons.Default.Delete, contentDescription = null) },
                         text = { M3Text("Delete") },

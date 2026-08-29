@@ -39,12 +39,22 @@ android {
     buildFeatures {
         compose = true
     }
+    lint {
+        // Pre-existing lint debt (deprecated APIs, missing content descriptions,
+        // etc.) is captured in lint-baseline.xml so CI gates *new* regressions
+        // without blocking on a big-bang cleanup. Newly introduced issues fail
+        // the build; anything in the baseline is reported as informational.
+        baseline = file("lint-baseline.xml")
+        warningsAsErrors = false
+        abortOnError = true
+    }
 }
 
 dependencies {
     implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -64,6 +74,7 @@ dependencies {
     implementation("nl.dionsegijn:konfetti-compose:2.0.2")
     testImplementation(libs.junit)
     testImplementation(libs.androidx.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation("androidx.test:core:1.5.0")
     testImplementation("androidx.room:room-testing:2.6.1")
     testImplementation("org.robolectric:robolectric:4.11.1")
