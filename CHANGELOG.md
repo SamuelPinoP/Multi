@@ -6,6 +6,28 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+* **Design system** (`ui/theme/` + `ui/components/`), documented in `DESIGN.md`.
+  * Full Material 3 light **and** dark colour schemes generated from a single
+    indigo brand seed (`#4C3BCF`), plus extended `success` / `warning` roles and
+    four per-feature "segment" accents.
+  * Bundled variable-font pairing — **Space Grotesk** (display) + **Inter**
+    (body) — with the M3 type scale re-voiced around them.
+  * Rounded shape scale, an 8-pt spacing scale (`MultiTheme.spacing`), and
+    motion tokens (`MultiMotion`).
+  * Reusable components: `MultiCard`, `Pill`, `SectionHeader`, `EmptyState`,
+    `MonogramAvatar`, `StatValue`.
+* One-tap light/dark toggle in every screen's app bar.
+
+### Changed
+* **Home, Notes list and Note editor redesigned** to a portfolio finish; every
+  other screen inherits the new theme automatically.
+* Home shortcut bar rebuilt — it was painted with a hard-coded white background
+  and near-black text and was unreadable in dark mode; it is now four
+  segment-accented tiles that respond to both themes.
+* App bar flattened (no drop shadow / corner clip); cold-start window
+  background now matches the Compose canvas so there is no colour flash.
+* `MultiTheme` defaults to the brand palette instead of dynamic colour (the
+  dynamic-colour hook is retained for a future setting).
 * **MVVM + repository architecture for the Notes feature.**
   * `NotesRepository` interface with a Room-backed implementation
     (`RoomNotesRepository`) and an in-memory `FakeNotesRepository` for tests.

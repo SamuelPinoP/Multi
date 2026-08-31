@@ -9,7 +9,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.material.Scaffold
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.example.multi.ui.theme.MultiTheme
 import androidx.lifecycle.lifecycleScope
@@ -42,6 +43,7 @@ class MainActivity : ComponentActivity() {
             MultiTheme(darkTheme = ThemePreferences.isDarkTheme(this)) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
+                    containerColor = MaterialTheme.colorScheme.background,
                     contentWindowInsets = WindowInsets.safeDrawing
                 ) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {

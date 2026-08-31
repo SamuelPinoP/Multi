@@ -67,6 +67,8 @@ const val EXTRA_AUTO_CREATE_EVENT = "extra_auto_create_event"
 
 /** Activity displaying the list of user events. */
 class EventsActivity : SegmentActivity("Events") {
+    override val hasOverflowMenu: Boolean get() = true
+
     private val events = mutableStateListOf<Event>()
     private val eventNotes = mutableStateMapOf<Long, Note>()
     private val showAttachDialogState = mutableStateOf(false)

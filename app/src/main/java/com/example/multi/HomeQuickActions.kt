@@ -1,209 +1,173 @@
 package com.example.multi
 
 import android.content.Intent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
+import com.example.multi.ui.theme.MultiTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * A single-row bar of 4 sophisticated quick-action buttons with subtle animations
+ * The four shortcut tiles under the medallion. Each tile wears its segment
+ * accent so the home screen reads as a colour-coded map of the app.
  */
 @Composable
 fun HomeQuickActions(
     modifier: Modifier = Modifier,
     calendarLabel: String = "Calendar",
-    // ↓ MAIN SIZE CONTROLS (edit these to tune the bottom button size)
-    cornerRadius: Dp = 18.dp,
-    height: Dp = 88.dp,
-    gap: Dp = 2.dp,
-    borderWidth: Dp = 1.5.dp
+    height: Dp = 84.dp,
 ) {
     val context = LocalContext.current
     val appContext = remember(context) { context.applicationContext }
     val database = remember(appContext) { EventDatabase.getInstance(appContext) }
     val scope = rememberCoroutineScope()
-    val shape = RoundedCornerShape(cornerRadius)
+    val ext = MultiTheme.extended
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = height)
-            .padding(horizontal = 0.dp),
-        horizontalArrangement = Arrangement.spacedBy(gap),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = MultiTheme.spacing.lg),
+        horizontalArrangement = Arrangement.spacedBy(MultiTheme.spacing.md),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        SophisticatedButton(
+        QuickTile(
             modifier = Modifier.weight(1f),
             label = "Notes",
-            shape = shape,
-            borderWidth = borderWidth,
-            height = height
+            icon = Icons.Default.Description,
+            container = ext.notes.container,
+            content = ext.notes.color,
+            height = height,
         ) {
             scope.launch {
                 val lastNote = withContext(Dispatchers.IO) {
                     database.noteDao().getNotes().firstOrNull()?.toModel()
                 }
                 if (lastNote != null) {
-                    val intent = Intent(context, NoteEditorActivity::class.java).apply {
-                        putExtra(EXTRA_NOTE_ID, lastNote.id)
-                        putExtra(EXTRA_NOTE_HEADER, lastNote.header)
-                        putExtra(EXTRA_NOTE_CONTENT, lastNote.content)
-                        putExtra(EXTRA_NOTE_CREATED, lastNote.created)
-                        putExtra(EXTRA_NOTE_SCROLL, lastNote.scroll)
-                        putExtra(EXTRA_NOTE_CURSOR, lastNote.cursor)
-                        putExtra(EXTRA_NOTE_ATTACHMENT_URI, lastNote.attachmentUri)
-                        putExtra(EXTRA_NOTE_BACK_TARGET, NotesActivity::class.java.name)
-                    }
-                    context.startActivity(intent)
+                    context.startActivity(
+                        Intent(context, NoteEditorActivity::class.java).apply {
+                            putExtra(EXTRA_NOTE_ID, lastNote.id)
+                            putExtra(EXTRA_NOTE_HEADER, lastNote.header)
+                            putExtra(EXTRA_NOTE_CONTENT, lastNote.content)
+                            putExtra(EXTRA_NOTE_CREATED, lastNote.created)
+                            putExtra(EXTRA_NOTE_SCROLL, lastNote.scroll)
+                            putExtra(EXTRA_NOTE_CURSOR, lastNote.cursor)
+                            putExtra(EXTRA_NOTE_ATTACHMENT_URI, lastNote.attachmentUri)
+                            putExtra(EXTRA_NOTE_BACK_TARGET, NotesActivity::class.java.name)
+                        },
+                    )
                 } else {
                     context.startActivity(Intent(context, NotesActivity::class.java))
                 }
             }
         }
 
-        SophisticatedButton(
+        QuickTile(
             modifier = Modifier.weight(1f),
             label = "Goals",
-            shape = shape,
-            borderWidth = borderWidth,
-            height = height
+            icon = Icons.Default.Flag,
+            container = ext.goals.container,
+            content = ext.goals.color,
+            height = height,
         ) { context.startActivity(Intent(context, WeeklyGoalsActivity::class.java)) }
 
-        SophisticatedButton(
+        QuickTile(
             modifier = Modifier.weight(1f),
             label = "Events",
-            shape = shape,
-            borderWidth = borderWidth,
-            height = height
+            icon = Icons.Default.Event,
+            container = ext.events.container,
+            content = ext.events.color,
+            height = height,
         ) { context.startActivity(Intent(context, EventsActivity::class.java)) }
 
-        SophisticatedButton(
+        QuickTile(
             modifier = Modifier.weight(1f),
             label = calendarLabel,
-            shape = shape,
-            borderWidth = borderWidth,
-            height = height
+            icon = Icons.Default.CalendarMonth,
+            container = ext.calendar.container,
+            content = ext.calendar.color,
+            height = height,
         ) { context.startActivity(Intent(context, CalendarMenuActivity::class.java)) }
     }
 }
 
 @Composable
-private fun SophisticatedButton(
-    modifier: Modifier = Modifier,
+private fun QuickTile(
     label: String,
-    shape: RoundedCornerShape,
-    borderWidth: Dp,
+    icon: ImageVector,
+    container: Color,
+    content: Color,
     height: Dp,
-    onClick: () -> Unit
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    // Subtle scale animation
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "scale"
+        targetValue = if (pressed) 0.95f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "tileScale",
     )
 
-    // Animated border gradient (very subtle)
-    val infiniteTransition = rememberInfiniteTransition(label = "border")
-    val animatedAngle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(8000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "angle"
-    )
-
-    // Text color animation on press
-    val textColor by animateColorAsState(
-        targetValue = if (isPressed) Color(0xFF1a1a1a) else Color(0xFF2a2a2a),
-        animationSpec = tween(150),
-        label = "textColor"
-    )
-
-    Box(
+    Surface(
+        onClick = onClick,
+        interactionSource = interaction,
         modifier = modifier
-            .height(height)
             .scale(scale)
-            .drawWithContent {
-                drawContent()
-
-                // Draw sophisticated gradient border
-                val strokeWidth = borderWidth.toPx()
-                val cornerRadiusPx = shape.topStart.toPx(size, this)
-
-                // Create subtle gradient from dark gray to slightly lighter
-                val colors = listOf(
-                    Color(0xFF2a2a2a),
-                    Color(0xFF404040),
-                    Color(0xFF2a2a2a)
-                )
-
-                val brush = Brush.sweepGradient(
-                    colors = colors,
-                    center = Offset(size.width / 2, size.height / 2)
-                )
-
-                drawRoundRect(
-                    brush = brush,
-                    topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
-                    size = Size(
-                        size.width - strokeWidth,
-                        size.height - strokeWidth
-                    ),
-                    cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
-                    style = Stroke(width = strokeWidth)
-                )
-            }
-            .clip(shape)
-            .background(Color.White)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
+            .heightIn(min = height),
+        shape = MaterialTheme.shapes.large,
+        color = container,
+        contentColor = content,
     ) {
-        Text(
-            text = label,
-            color = textColor,
-            // ↓ Secondary size control for label text.
-            style = MaterialTheme.typography.titleSmall,
-            maxLines = 1
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = MultiTheme.spacing.md),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(MultiTheme.spacing.xs),
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
+        }
     }
 }

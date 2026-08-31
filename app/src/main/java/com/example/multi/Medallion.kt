@@ -18,10 +18,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Note
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -283,14 +283,20 @@ private fun MultiWordmark(
         Text(
             text = title,
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.displaySmall.copy(
+            style = MaterialTheme.typography.displayLarge.copy(
                 brush = fill,
-                fontWeight = FontWeight.ExtraBold,
-                shadow = Shadow(color = c.primary.copy(alpha = 0.35f), offset = Offset(2f, 3f), blurRadius = 10f)
+                fontWeight = FontWeight.Bold,
+                shadow = Shadow(color = c.primary.copy(alpha = 0.30f), offset = Offset(0f, 4f), blurRadius = 16f)
             ),
             modifier = Modifier.fillMaxWidth()
         )
-        // Add your own Spacer/Text composables below if you want a subtitle under "Multi" again.
+        Text(
+            text = "Notes · Goals · Events · Calendar",
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.labelMedium,
+            color = c.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -367,7 +373,7 @@ fun Medallion(
     val c = MaterialTheme.colorScheme
     val defs = remember(c) {
         mapOf(
-            MedallionSegment.NOTES to SegmentDefinition(MedallionSegment.NOTES, R.string.label_notes, Icons.Default.Note, c.inversePrimary),
+            MedallionSegment.NOTES to SegmentDefinition(MedallionSegment.NOTES, R.string.label_notes, Icons.AutoMirrored.Filled.Note, c.inversePrimary),
             MedallionSegment.WEEKLY_GOALS to SegmentDefinition(MedallionSegment.WEEKLY_GOALS, R.string.label_weekly_goals, Icons.Default.Flag, c.primaryContainer),
             MedallionSegment.EVENTS to SegmentDefinition(MedallionSegment.EVENTS, R.string.label_events, Icons.Default.Event, c.tertiaryContainer),
             MedallionSegment.CALENDAR to SegmentDefinition(MedallionSegment.CALENDAR, R.string.label_calendar, Icons.Default.DateRange, c.secondaryContainer)
@@ -787,13 +793,8 @@ fun MedallionScreen() {
             HomeQuickActions(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // Adjust this padding to control how close the buttons sit to the screen edges.
-                    .padding(bottom = 10.dp),
-                // QUICK SIZE TUNING:
-                // - lower `height` for shorter buttons
-                // - lower `cornerRadius` for less-rounded/smaller look
-                height = 95.dp,
-                cornerRadius = 18.dp
+                    .padding(bottom = 12.dp),
+                height = 88.dp,
             )
         }
     }

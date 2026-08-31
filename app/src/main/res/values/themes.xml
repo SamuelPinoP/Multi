@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Multi" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Multi" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Cold-start window background; matches the Compose background so
+             there is no colour flash before the first frame. -->
+        <item name="android:windowBackground">@color/brand_background_light</item>
+        <!-- Edge-to-edge: let Compose draw behind the system bars. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
 </resources>

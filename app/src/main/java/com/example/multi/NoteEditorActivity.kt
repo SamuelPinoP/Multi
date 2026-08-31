@@ -3,8 +3,10 @@ package com.example.multi
 import android.app.Activity
 import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,8 +19,14 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,6 +35,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
+import com.example.multi.ui.components.Pill
+import com.example.multi.ui.theme.Inter
+import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.ui.theme.SpaceGrotesk
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -67,6 +79,8 @@ const val EXTRA_NOTE_ATTACHMENT_URI = "extra_note_attachment_uri"
 const val EXTRA_NOTE_BACK_TARGET = "extra_note_back_target"
 
 class NoteEditorActivity : SegmentActivity("Note") {
+    override val hasOverflowMenu: Boolean get() = true
+
     private var noteId: Long = 0L
     private var noteCreated: Long = System.currentTimeMillis()
     private var noteLastOpened: Long = System.currentTimeMillis()
@@ -213,10 +227,11 @@ class NoteEditorActivity : SegmentActivity("Note") {
                 }
             }
 
+            val spacing = MultiTheme.spacing
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(horizontal = spacing.xl)
             ) {
                 Column(
                     modifier = Modifier
@@ -224,24 +239,32 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         .verticalScroll(scrollState)
                         .imePadding()
                 ) {
-                    Text(
-                        text = "Created: ${noteCreated.toDateString()}",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                    if (readOnly && noteDeleted != 0L) {
-                        val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
-                        Text(
-                            text = "Days remaining: $daysLeft",
-                            style = MaterialTheme.typography.labelSmall
+                    Spacer(Modifier.height(spacing.sm))
+                    Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                        Pill(
+                            text = noteCreated.toDateString(),
+                            icon = Icons.Default.CalendarToday,
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        if (readOnly && noteDeleted != 0L) {
+                            val daysLeft = ((noteDeleted + 30L * 24 * 60 * 60 * 1000 - System.currentTimeMillis()) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
+                            Pill(
+                                text = "$daysLeft days left",
+                                icon = Icons.Default.Schedule,
+                                accent = MultiTheme.extended.warningContainer,
+                                onAccent = MultiTheme.extended.onWarningContainer,
+                            )
+                        }
                     }
+                    Spacer(Modifier.height(spacing.lg))
                     Box {
                         if (headerState.value.isEmpty()) {
                             Text(
-                                text = "Header",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "Title",
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    fontFamily = SpaceGrotesk,
+                                    fontSize = (textSize + 6).sp,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                         }
                         BasicTextField(
@@ -255,6 +278,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 }
                             },
                             enabled = !readOnly,
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .bringIntoViewRequester(headerBringIntoView)
@@ -267,7 +291,10 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
+                                fontFamily = SpaceGrotesk,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = (textSize + 6).sp,
+                                lineHeight = (textSize + 12).sp,
                             ),
                             keyboardOptions = KeyboardOptions.Default.copy(
                                 capitalization = KeyboardCapitalization.Sentences
@@ -276,14 +303,17 @@ class NoteEditorActivity : SegmentActivity("Note") {
                         )
                     }
 
-                    androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = spacing.md),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                    )
 
                     Box(modifier = Modifier.weight(1f)) {
                         if (textState.value.text.isEmpty()) {
                             Text(
-                                text = "Your Note goes here...",
+                                text = "Start writing…",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = textSize.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                         }
                         BasicTextField(
@@ -296,6 +326,7 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 saved = false
                             },
                             enabled = !readOnly,
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .focusRequester(textFocusRequester)
@@ -309,13 +340,16 @@ class NoteEditorActivity : SegmentActivity("Note") {
                                 },
                             textStyle = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = textSize.sp
+                                fontFamily = Inter,
+                                fontSize = textSize.sp,
+                                lineHeight = (textSize * 1.55f).sp,
                             ),
                             keyboardOptions = KeyboardOptions.Default.copy(
                                 capitalization = KeyboardCapitalization.Sentences
                             )
                         )
                     }
+                    Spacer(Modifier.height(spacing.xxl))
                 }
 
 
