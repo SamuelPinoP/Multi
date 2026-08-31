@@ -161,10 +161,15 @@ Press feedback uses a `Spring.DampingRatioMediumBouncy` scale (0.95×) — the
 ### Home (`Medallion.kt` + `HomeQuickActions.kt`)
 - Wordmark promoted to `displayLarge` (Space Grotesk) with a gradient fill and
   a quiet tagline.
-- **Shortcut bar rebuilt from scratch**: was a non-theme-aware white/black bar
-  with an always-spinning border animation; now four rounded tiles, each in its
-  segment accent, with an icon + label and a spring press response. Works in
-  both themes.
+- **Layout tightened**: the medallion now takes a `weight(1f)` slot and bleeds
+  gently past the screen edges instead of sitting as a small square with ~190 dp
+  of dead lavender above and below it. Top spacer cut from 48 dp to 8 dp.
+- **Shortcut deck rebuilt from scratch**: was a non-theme-aware white/black bar
+  with an always-spinning border animation. Now a "Jump in" section plus four
+  rounded, segment-accented tiles that each carry a **live stat** — note count,
+  goal % for the week, events today, today's date — so the space does work
+  instead of being four bare buttons in whitespace. Spring press response;
+  correct in both themes.
 
 ### Notes list (`NotesActivity.kt`)
 - `MultiCard` rows: segment-accent monogram avatar, `titleMedium` title,

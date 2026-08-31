@@ -90,7 +90,7 @@ private object Wheel {
     // Main size knob for the wheel:
     // - decrease (ex: 0.92f) to make the wheel smaller and keep it inside the screen
     // - increase (ex: 1.00f) to make it larger
-    const val WheelScale = 1.12f
+    const val WheelScale = 1.14f
 }
 
 /** Texture sets (put your images in res/drawable as *_tile_1..10.png) */
@@ -148,7 +148,7 @@ private data class SegmentDefinition(
     val color: Color
 )
 
-private data class EventSummary(
+internal data class EventSummary(
     val todayCount: Int = 0,
     val weekCount: Int = 0
 )
@@ -171,7 +171,7 @@ private fun nextRandomResId(current: Int, options: IntArray): Int {
     return candidate
 }
 
-private fun summarizeEvents(events: List<EventEntity>): EventSummary {
+internal fun summarizeEvents(events: List<EventEntity>): EventSummary {
     val today = LocalDate.now()
     val todayDay = today.dayOfWeek
     val startOfWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -462,25 +462,22 @@ fun Medallion(
         AnimatedBackdrop(Modifier.matchParentSize())
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp),
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Tweak this offset to nudge the "Multi" wordmark higher (negative) or lower (positive).
-            val wordmarkVerticalOffset = (-12).dp
-            MultiWordmark(modifier = Modifier.offset(y = wordmarkVerticalOffset), onClick = {
-                if (!spinning) {
-                    order = order.shuffled()
-                    lavaResId = nextRandomResId(lavaResId, Lava.ResIds)
-                    iceResId = nextRandomResId(iceResId, Ice.ResIds)
-                    rockResId = nextRandomResId(rockResId, Rock.ResIds)
-                    mossResId = nextRandomResId(mossResId, Moss.ResIds)
-                }
-            })
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(8.dp))
+            MultiWordmark(
+                modifier = Modifier.padding(horizontal = 20.dp),
+                onClick = {
+                    if (!spinning) {
+                        order = order.shuffled()
+                        lavaResId = nextRandomResId(lavaResId, Lava.ResIds)
+                        iceResId = nextRandomResId(iceResId, Ice.ResIds)
+                        rockResId = nextRandomResId(rockResId, Rock.ResIds)
+                        mossResId = nextRandomResId(mossResId, Moss.ResIds)
+                    }
+                },
+            )
 
             val density = LocalDensity.current
             var containerDp by remember { mutableStateOf(0.dp) }
@@ -488,7 +485,7 @@ fun Medallion(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1f)
+                    .weight(1f)
                     .onSizeChanged { sz ->
                         val minPx = min(sz.width, sz.height)
                         containerDp = with(density) { minPx.toDp() }
@@ -512,9 +509,12 @@ fun Medallion(
                         val rect = Rect(rectTopLeft, Size(rPx * 2f, rPx * 2f))
 
                         // outer ring
+                        val ringStroke = Stroke(width = with(density) { 2.dp.toPx() })
                         drawCircle(
-                            color = outlineRing, radius = rPx, center = center,
-                            style = Stroke(width = with(density) { 2.dp.toPx() })
+                            color = outlineRing,
+                            radius = rPx,
+                            center = center,
+                            style = ringStroke,
                         )
 
                         // slices with ONE centered image each (no tiling)
@@ -585,7 +585,7 @@ fun Medallion(
                         val calendarIndex = order.indexOf(MedallionSegment.CALENDAR)
                         val notesIndex = order.indexOf(MedallionSegment.NOTES)
                         val radiusPx = with(density) { radiusDp.toPx() }
-                        val labelRadiusPx = radiusPx * 0.58f
+                        val labelRadiusPx = radiusPx * 0.54f
                         val labelTextColor = Color.White.copy(alpha = 0.87f)
 
                         if (goalsIndex >= 0) {
@@ -747,7 +747,7 @@ fun MedallionScreen() {
     val context = LocalContext.current
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
+        color = MaterialTheme.colorScheme.background
     ) {
         Column(
             modifier = Modifier
@@ -755,7 +755,6 @@ fun MedallionScreen() {
                 .statusBarsPadding()
                 .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween // keep medallion + buttons nicely spaced
         ) {
             // Top content: Medallion
             Box(
@@ -787,14 +786,10 @@ fun MedallionScreen() {
                 }
             }
 
-            // Bottom buttons row
-            // Bump this spacer value up/down to move the quick action bar further from or closer to the medallion.
-            //Spacer(Modifier.height(70.dp))
             HomeQuickActions(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                height = 88.dp,
+                    .padding(bottom = 8.dp),
             )
         }
     }

@@ -33,102 +33,144 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.multi.data.EventDatabase
 import com.example.multi.data.toModel
+import com.example.multi.ui.components.SectionHeader
 import com.example.multi.ui.theme.MultiTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /**
- * The four shortcut tiles under the medallion. Each tile wears its segment
- * accent so the home screen reads as a colour-coded map of the app.
+ * The shortcut deck under the medallion. Four segment-accented tiles, each
+ * carrying a live stat so the space earns its keep instead of being four bare
+ * navigation buttons floating in whitespace.
  */
 @Composable
 fun HomeQuickActions(
     modifier: Modifier = Modifier,
     calendarLabel: String = "Calendar",
-    height: Dp = 84.dp,
+    height: Dp = 104.dp,
 ) {
     val context = LocalContext.current
     val appContext = remember(context) { context.applicationContext }
     val database = remember(appContext) { EventDatabase.getInstance(appContext) }
     val scope = rememberCoroutineScope()
     val ext = MultiTheme.extended
+    val spacing = MultiTheme.spacing
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = height)
-            .padding(horizontal = MultiTheme.spacing.lg),
-        horizontalArrangement = Arrangement.spacedBy(MultiTheme.spacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        QuickTile(
-            modifier = Modifier.weight(1f),
-            label = "Notes",
-            icon = Icons.Default.Description,
-            container = ext.notes.container,
-            content = ext.notes.color,
-            height = height,
+    val notesCount by remember(database) { database.noteDao().observeCount() }
+        .collectAsStateWithLifecycle(initialValue = 0)
+    val eventSummary by remember(database) {
+        database.eventDao().observeEvents().map(::summarizeEvents)
+    }.collectAsStateWithLifecycle(initialValue = EventSummary())
+    val goalPercent by remember(database) {
+        database.weeklyGoalDao().observeGoals().map { goals ->
+            var done = 0
+            var total = 0
+            goals.map { it.toModel() }.forEach { g ->
+                val freq = g.frequency.coerceAtLeast(0)
+                done += g.dayStates.count { it == 'C' }.coerceAtMost(freq)
+                total += freq
+            }
+            if (total <= 0) 0 else done * 100 / total
+        }
+    }.collectAsStateWithLifecycle(initialValue = 0)
+
+    val todayLabel = remember { LocalDate.now().format(DateTimeFormatter.ofPattern("MMM d")) }
+
+    Column(modifier = modifier) {
+        SectionHeader(
+            text = "Jump in",
+            modifier = Modifier.padding(horizontal = spacing.xl),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = spacing.lg),
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            scope.launch {
-                val lastNote = withContext(Dispatchers.IO) {
-                    database.noteDao().getNotes().firstOrNull()?.toModel()
-                }
-                if (lastNote != null) {
-                    context.startActivity(
-                        Intent(context, NoteEditorActivity::class.java).apply {
-                            putExtra(EXTRA_NOTE_ID, lastNote.id)
-                            putExtra(EXTRA_NOTE_HEADER, lastNote.header)
-                            putExtra(EXTRA_NOTE_CONTENT, lastNote.content)
-                            putExtra(EXTRA_NOTE_CREATED, lastNote.created)
-                            putExtra(EXTRA_NOTE_SCROLL, lastNote.scroll)
-                            putExtra(EXTRA_NOTE_CURSOR, lastNote.cursor)
-                            putExtra(EXTRA_NOTE_ATTACHMENT_URI, lastNote.attachmentUri)
-                            putExtra(EXTRA_NOTE_BACK_TARGET, NotesActivity::class.java.name)
-                        },
-                    )
-                } else {
-                    context.startActivity(Intent(context, NotesActivity::class.java))
+            QuickTile(
+                modifier = Modifier.weight(1f),
+                label = "Notes",
+                stat = if (notesCount == 1) "1 note" else "$notesCount notes",
+                icon = Icons.Default.Description,
+                container = ext.notes.container,
+                content = ext.notes.color,
+                height = height,
+            ) {
+                scope.launch {
+                    val lastNote = withContext(Dispatchers.IO) {
+                        database.noteDao().getNotes().firstOrNull()?.toModel()
+                    }
+                    if (lastNote != null) {
+                        context.startActivity(
+                            Intent(context, NoteEditorActivity::class.java).apply {
+                                putExtra(EXTRA_NOTE_ID, lastNote.id)
+                                putExtra(EXTRA_NOTE_HEADER, lastNote.header)
+                                putExtra(EXTRA_NOTE_CONTENT, lastNote.content)
+                                putExtra(EXTRA_NOTE_CREATED, lastNote.created)
+                                putExtra(EXTRA_NOTE_SCROLL, lastNote.scroll)
+                                putExtra(EXTRA_NOTE_CURSOR, lastNote.cursor)
+                                putExtra(EXTRA_NOTE_ATTACHMENT_URI, lastNote.attachmentUri)
+                                putExtra(EXTRA_NOTE_BACK_TARGET, NotesActivity::class.java.name)
+                            },
+                        )
+                    } else {
+                        context.startActivity(Intent(context, NotesActivity::class.java))
+                    }
                 }
             }
+
+            QuickTile(
+                modifier = Modifier.weight(1f),
+                label = "Goals",
+                stat = "$goalPercent% this week",
+                icon = Icons.Default.Flag,
+                container = ext.goals.container,
+                content = ext.goals.color,
+                height = height,
+            ) { context.startActivity(Intent(context, WeeklyGoalsActivity::class.java)) }
+
+            QuickTile(
+                modifier = Modifier.weight(1f),
+                label = "Events",
+                stat = when {
+                    eventSummary.todayCount > 0 -> "${eventSummary.todayCount} today"
+                    eventSummary.weekCount > 0 -> "${eventSummary.weekCount} this week"
+                    else -> "None soon"
+                },
+                icon = Icons.Default.Event,
+                container = ext.events.container,
+                content = ext.events.color,
+                height = height,
+            ) { context.startActivity(Intent(context, EventsActivity::class.java)) }
+
+            QuickTile(
+                modifier = Modifier.weight(1f),
+                label = calendarLabel,
+                stat = todayLabel,
+                icon = Icons.Default.CalendarMonth,
+                container = ext.calendar.container,
+                content = ext.calendar.color,
+                height = height,
+            ) { context.startActivity(Intent(context, CalendarMenuActivity::class.java)) }
         }
-
-        QuickTile(
-            modifier = Modifier.weight(1f),
-            label = "Goals",
-            icon = Icons.Default.Flag,
-            container = ext.goals.container,
-            content = ext.goals.color,
-            height = height,
-        ) { context.startActivity(Intent(context, WeeklyGoalsActivity::class.java)) }
-
-        QuickTile(
-            modifier = Modifier.weight(1f),
-            label = "Events",
-            icon = Icons.Default.Event,
-            container = ext.events.container,
-            content = ext.events.color,
-            height = height,
-        ) { context.startActivity(Intent(context, EventsActivity::class.java)) }
-
-        QuickTile(
-            modifier = Modifier.weight(1f),
-            label = calendarLabel,
-            icon = Icons.Default.CalendarMonth,
-            container = ext.calendar.container,
-            content = ext.calendar.color,
-            height = height,
-        ) { context.startActivity(Intent(context, CalendarMenuActivity::class.java)) }
     }
 }
 
 @Composable
 private fun QuickTile(
     label: String,
+    stat: String,
     icon: ImageVector,
     container: Color,
     content: Color,
@@ -157,16 +199,25 @@ private fun QuickTile(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = MultiTheme.spacing.md),
+                .padding(vertical = 14.dp, horizontal = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MultiTheme.spacing.xs),
+            verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
         ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
+            Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = stat,
+                style = MaterialTheme.typography.labelSmall,
+                color = content.copy(alpha = 0.75f),
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
