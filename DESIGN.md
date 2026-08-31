@@ -156,20 +156,14 @@ Press feedback uses a `Spring.DampingRatioMediumBouncy` scale (0.95×) — the
 
 ---
 
-## 8. Hero screens redesigned in this pass
+## 8. Screens redesigned in this pass
 
-### Home (`Medallion.kt` + `HomeQuickActions.kt`)
-- Wordmark promoted to `displayLarge` (Space Grotesk) with a gradient fill and
-  a quiet tagline.
-- **Layout tightened**: the medallion now takes a `weight(1f)` slot and bleeds
-  gently past the screen edges instead of sitting as a small square with ~190 dp
-  of dead lavender above and below it. Top spacer cut from 48 dp to 8 dp.
-- **Shortcut deck rebuilt from scratch**: was a non-theme-aware white/black bar
-  with an always-spinning border animation. Now a "Jump in" section plus four
-  rounded, segment-accented tiles that each carry a **live stat** — note count,
-  goal % for the week, events today, today's date — so the space does work
-  instead of being four bare buttons in whitespace. Spring press response;
-  correct in both themes.
+### Home (`Medallion.kt` + `HomeQuickActions.kt`) — reverted
+The home screen was redesigned and then **rolled back to its original design on
+request**. It keeps its pre-redesign layout, the original "sophisticated"
+shortcut buttons, dynamic (wallpaper) colours and the platform default font, via
+`LegacyMultiTheme` (`ui/theme/LegacyTheme.kt`). It is the one screen that does
+**not** use the design system described here.
 
 ### Notes list (`NotesActivity.kt`)
 - `MultiCard` rows: segment-accent monogram avatar, `titleMedium` title,
@@ -208,7 +202,8 @@ trash screens were **not** hand-polished in this pass.
 
 - Every colour pair in the scheme meets WCAG AA for its text size
   (`onX` on `X`, `onXContainer` on `XContainer`).
-- Status/nav bar icon contrast is set from `background` luminance in `MultiTheme`.
+- Status/nav bar icon contrast is set from `background` luminance in `MultiTheme`
+  (the home screen keeps the platform's automatic edge-to-edge scrims).
 - Touch targets stay ≥ 48 dp (icon buttons, tiles, list rows).
 - Icons that carry meaning have `contentDescription`; purely decorative icons
   pass `null`.

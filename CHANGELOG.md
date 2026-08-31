@@ -19,15 +19,12 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 * One-tap light/dark toggle in every screen's app bar.
 
 ### Changed
-* **Home, Notes list and Note editor redesigned** to a portfolio finish; every
-  other screen inherits the new theme automatically.
-* Home shortcut bar rebuilt — it was painted with a hard-coded white background
-  and near-black text and was unreadable in dark mode; it is now a "Jump in"
-  deck of four segment-accented tiles, each showing a live stat (note count,
-  weekly goal %, events today, today's date), that respond to both themes.
-* Home layout tightened — the medallion fills the vertical space and bleeds
-  past the screen edges instead of floating as a small square with large empty
-  margins above and below.
+* **Notes list and Note editor redesigned** to a portfolio finish; every other
+  screen (except the home screen) inherits the new theme automatically.
+* The **home screen keeps its original design** — layout, "sophisticated"
+  shortcut buttons, dynamic wallpaper colours and the platform font are
+  preserved via `LegacyMultiTheme`; it is the one screen that opts out of the
+  design system.
 * App bar flattened (no drop shadow / corner clip); cold-start window
   background now matches the Compose canvas so there is no colour flash.
 * `MultiTheme` defaults to the brand palette instead of dynamic colour (the

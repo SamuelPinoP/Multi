@@ -18,10 +18,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Note
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -90,7 +90,7 @@ private object Wheel {
     // Main size knob for the wheel:
     // - decrease (ex: 0.92f) to make the wheel smaller and keep it inside the screen
     // - increase (ex: 1.00f) to make it larger
-    const val WheelScale = 1.14f
+    const val WheelScale = 1.12f
 }
 
 /** Texture sets (put your images in res/drawable as *_tile_1..10.png) */
@@ -148,7 +148,7 @@ private data class SegmentDefinition(
     val color: Color
 )
 
-internal data class EventSummary(
+private data class EventSummary(
     val todayCount: Int = 0,
     val weekCount: Int = 0
 )
@@ -171,7 +171,7 @@ private fun nextRandomResId(current: Int, options: IntArray): Int {
     return candidate
 }
 
-internal fun summarizeEvents(events: List<EventEntity>): EventSummary {
+private fun summarizeEvents(events: List<EventEntity>): EventSummary {
     val today = LocalDate.now()
     val todayDay = today.dayOfWeek
     val startOfWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -283,20 +283,14 @@ private fun MultiWordmark(
         Text(
             text = title,
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.displayLarge.copy(
+            style = MaterialTheme.typography.displaySmall.copy(
                 brush = fill,
-                fontWeight = FontWeight.Bold,
-                shadow = Shadow(color = c.primary.copy(alpha = 0.30f), offset = Offset(0f, 4f), blurRadius = 16f)
+                fontWeight = FontWeight.ExtraBold,
+                shadow = Shadow(color = c.primary.copy(alpha = 0.35f), offset = Offset(2f, 3f), blurRadius = 10f)
             ),
             modifier = Modifier.fillMaxWidth()
         )
-        Text(
-            text = "Notes · Goals · Events · Calendar",
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.labelMedium,
-            color = c.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth()
-        )
+        // Add your own Spacer/Text composables below if you want a subtitle under "Multi" again.
     }
 }
 
@@ -373,7 +367,7 @@ fun Medallion(
     val c = MaterialTheme.colorScheme
     val defs = remember(c) {
         mapOf(
-            MedallionSegment.NOTES to SegmentDefinition(MedallionSegment.NOTES, R.string.label_notes, Icons.AutoMirrored.Filled.Note, c.inversePrimary),
+            MedallionSegment.NOTES to SegmentDefinition(MedallionSegment.NOTES, R.string.label_notes, Icons.Default.Note, c.inversePrimary),
             MedallionSegment.WEEKLY_GOALS to SegmentDefinition(MedallionSegment.WEEKLY_GOALS, R.string.label_weekly_goals, Icons.Default.Flag, c.primaryContainer),
             MedallionSegment.EVENTS to SegmentDefinition(MedallionSegment.EVENTS, R.string.label_events, Icons.Default.Event, c.tertiaryContainer),
             MedallionSegment.CALENDAR to SegmentDefinition(MedallionSegment.CALENDAR, R.string.label_calendar, Icons.Default.DateRange, c.secondaryContainer)
@@ -462,22 +456,25 @@ fun Medallion(
         AnimatedBackdrop(Modifier.matchParentSize())
 
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(8.dp))
-            MultiWordmark(
-                modifier = Modifier.padding(horizontal = 20.dp),
-                onClick = {
-                    if (!spinning) {
-                        order = order.shuffled()
-                        lavaResId = nextRandomResId(lavaResId, Lava.ResIds)
-                        iceResId = nextRandomResId(iceResId, Ice.ResIds)
-                        rockResId = nextRandomResId(rockResId, Rock.ResIds)
-                        mossResId = nextRandomResId(mossResId, Moss.ResIds)
-                    }
-                },
-            )
+            // Tweak this offset to nudge the "Multi" wordmark higher (negative) or lower (positive).
+            val wordmarkVerticalOffset = (-12).dp
+            MultiWordmark(modifier = Modifier.offset(y = wordmarkVerticalOffset), onClick = {
+                if (!spinning) {
+                    order = order.shuffled()
+                    lavaResId = nextRandomResId(lavaResId, Lava.ResIds)
+                    iceResId = nextRandomResId(iceResId, Ice.ResIds)
+                    rockResId = nextRandomResId(rockResId, Rock.ResIds)
+                    mossResId = nextRandomResId(mossResId, Moss.ResIds)
+                }
+            })
+            Spacer(Modifier.height(48.dp))
 
             val density = LocalDensity.current
             var containerDp by remember { mutableStateOf(0.dp) }
@@ -485,7 +482,7 @@ fun Medallion(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
+                    .aspectRatio(1f)
                     .onSizeChanged { sz ->
                         val minPx = min(sz.width, sz.height)
                         containerDp = with(density) { minPx.toDp() }
@@ -509,12 +506,9 @@ fun Medallion(
                         val rect = Rect(rectTopLeft, Size(rPx * 2f, rPx * 2f))
 
                         // outer ring
-                        val ringStroke = Stroke(width = with(density) { 2.dp.toPx() })
                         drawCircle(
-                            color = outlineRing,
-                            radius = rPx,
-                            center = center,
-                            style = ringStroke,
+                            color = outlineRing, radius = rPx, center = center,
+                            style = Stroke(width = with(density) { 2.dp.toPx() })
                         )
 
                         // slices with ONE centered image each (no tiling)
@@ -585,7 +579,7 @@ fun Medallion(
                         val calendarIndex = order.indexOf(MedallionSegment.CALENDAR)
                         val notesIndex = order.indexOf(MedallionSegment.NOTES)
                         val radiusPx = with(density) { radiusDp.toPx() }
-                        val labelRadiusPx = radiusPx * 0.54f
+                        val labelRadiusPx = radiusPx * 0.58f
                         val labelTextColor = Color.White.copy(alpha = 0.87f)
 
                         if (goalsIndex >= 0) {
@@ -747,7 +741,7 @@ fun MedallionScreen() {
     val context = LocalContext.current
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -755,6 +749,7 @@ fun MedallionScreen() {
                 .statusBarsPadding()
                 .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween // keep medallion + buttons nicely spaced
         ) {
             // Top content: Medallion
             Box(
@@ -786,10 +781,19 @@ fun MedallionScreen() {
                 }
             }
 
+            // Bottom buttons row
+            // Bump this spacer value up/down to move the quick action bar further from or closer to the medallion.
+            //Spacer(Modifier.height(70.dp))
             HomeQuickActions(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp),
+                    // Adjust this padding to control how close the buttons sit to the screen edges.
+                    .padding(bottom = 10.dp),
+                // QUICK SIZE TUNING:
+                // - lower `height` for shorter buttons
+                // - lower `cornerRadius` for less-rounded/smaller look
+                height = 95.dp,
+                cornerRadius = 18.dp
             )
         }
     }
