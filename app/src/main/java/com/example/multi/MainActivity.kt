@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.Scaffold
 import androidx.compose.ui.Modifier
-import com.example.multi.ui.theme.MultiTheme
+import com.example.multi.ui.theme.LegacyMultiTheme
 import androidx.lifecycle.lifecycleScope
 import com.example.multi.data.EventDatabase
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
         scheduleDailyActivityReminder(this)
         enableEdgeToEdge()
         setContent {
-            MultiTheme(darkTheme = ThemePreferences.isDarkTheme(this)) {
+            LegacyMultiTheme(darkTheme = ThemePreferences.isDarkTheme(this)) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     contentWindowInsets = WindowInsets.safeDrawing
